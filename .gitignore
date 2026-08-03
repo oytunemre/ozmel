@@ -1,0 +1,14 @@
+# Veritabanı şifresini içerir — asla depoya girmemeli.
+# Kurulumda config.example.php dosyasını kopyalayıp config.php adıyla doldurun.
+config.php
+
+# Claude Code yerel ayarları
+.claude/settings.local.json
+
+# macOS
+.DS_Store
+
+# Editör
+.vscode/
+.idea/
+*.swp
