@@ -425,6 +425,9 @@
     .content{ padding:16px; }
     .bar-label{ width:auto; flex:1 1 90px; min-width:0; }
     .panel{ max-width:100%; overflow-x:auto; }
+    .table-wrap{ -webkit-overflow-scrolling:touch; }
+    .table-wrap table{ width:auto; min-width:100%; }
+    .table-wrap td, .table-wrap th{ white-space:nowrap; }
   }
   .menu-toggle{ display:none; }
   @media (max-width:880px){ .menu-toggle{ display:inline-flex; } }
