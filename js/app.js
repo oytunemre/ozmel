@@ -339,6 +339,14 @@ async function boot(){
   render();
 }
 
+const YENI_API = true;
+const TABLO_ESLEME = {
+  sites:'suppliers', parts:'parts', milestones:'milestones', audits:'audits',
+  routes:'routes', capacity:'capacities', kontrolPlani:'control_plan',
+  firstOffNoktalari:'first_off_points', saatlikNoktalari:'hourly_points',
+  gorevler:'gorevler', gorevKisiler:'gorev_kisiler', urunAgaclari:'urun_agaclari'
+};
+
 async function saveAll(){
   return apiSet(DB);
 }
@@ -392,8 +400,17 @@ async function handleImportFile(input){
     input.value='';
   }
 }
-async function persist(_tableKey){
-  return saveAll();
+async function persist(tableKey){
+  const tablo = TABLO_ESLEME[tableKey];
+  if(!YENI_API || !tablo) return saveAll();
+  const r = await fetch(`./api.php?r=${tablo}&op=degistir`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Session-Token':SESSION_TOKEN},
+    body: JSON.stringify(DB[tableKey])
+  });
+  const j = await r.json();
+  if(!j.ok){ showToast('Kayit hatasi: '+(j.error||''), true); return false; }
+  return true;
 }
 
 /* ---------------- toast ---------------- */
