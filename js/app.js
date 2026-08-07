@@ -4978,3 +4978,10 @@ function openStepLogModal(id, workOrderId){
   });
 }
 
+ document.addEventListener('click', function(e){
+  const sb = document.getElementById('sidebar');
+  if(!sb || !sb.classList.contains('open')) return;
+  if(e.target.closest('.menu-toggle')) return;
+  const r = sb.getBoundingClientRect();
+  if(e.clientX > r.right) sb.classList.remove('open');
+   });
