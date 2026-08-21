@@ -25,7 +25,7 @@ final class OperatorValidator extends Validator
         return $this;
     }
 
-    /** Yetkin operasyonlar: string dizisi, her eleman dolu ve <=128 karakter. */
+    /** Yetkin operasyonlar: operasyon id dizisi, her eleman pozitif tam sayi. */
     private function skills(mixed $skills): void
     {
         if (!is_array($skills)) {
@@ -33,12 +33,12 @@ final class OperatorValidator extends Validator
             return;
         }
         foreach ($skills as $s) {
-            if (!is_string($s) || trim($s) === '') {
-                $this->add('skills', 'Yetkin operasyon adi bos olamaz');
+            if (!is_int($s) && !(is_string($s) && ctype_digit($s))) {
+                $this->add('skills', 'Yetkin operasyon bir operasyon id olmali');
                 return;
             }
-            if (mb_strlen($s) > 128) {
-                $this->add('skills', 'Yetkin operasyon adi en fazla 128 karakter olabilir');
+            if ((int) $s <= 0) {
+                $this->add('skills', 'Gecersiz operasyon id');
                 return;
             }
         }

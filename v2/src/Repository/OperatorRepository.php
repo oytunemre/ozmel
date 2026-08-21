@@ -77,7 +77,7 @@ final class OperatorRepository extends BaseRepository
 
     /**
      * Ana kayit + yetkinlikler tek transaction'da.
-     * @param list<string> $skills
+     * @param list<int> $skills operasyon id'leri (v2_operations.id)
      */
     public function createWithSkills(array $data, array $skills): int
     {
@@ -92,7 +92,7 @@ final class OperatorRepository extends BaseRepository
      * Ana kayit guncelleme + (istege bagli) yetkinlikleri degistirme, tek transaction.
      * $skills null ise yetkinliklere dokunulmaz (kismi guncelleme).
      *
-     * @param list<string>|null $skills
+     * @param list<int>|null $skills operasyon id'leri (v2_operations.id)
      * @throws \RuntimeException NOT_FOUND | STALE (BaseRepository::update'ten)
      */
      public function updateWithSkills(int $id, array $data, ?array $skills, ?string $expectedUpdatedAt): void
@@ -110,22 +110,22 @@ final class OperatorRepository extends BaseRepository
         });
     }
 
-    /** @return list<string> */
+    /** @return list<int> operasyon id'leri (v2_operations.id) */
     public function skillsFor(int $operatorId): array
     {
         $stmt = $this->pdo()->prepare(
-            "SELECT operation_name FROM `{$this->skillsTable()}`
+            "SELECT operation_id FROM `{$this->skillsTable()}`
               WHERE operator_id = :op AND tenant_id = :t
-              ORDER BY operation_name"
+              ORDER BY operation_id"
         );
         $stmt->execute(['op' => $operatorId, 't' => $this->ctx->tenantId]);
-        return array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
     }
 
     /**
-     * Operator id -> yetkinlik adlari. Bos girdide bos dizi.
+     * Operator id -> yetkin operasyon id'leri. Bos girdide bos dizi.
      * @param int[] $operatorIds
-     * @return array<int, list<string>>
+     * @return array<int, list<int>>
      */
     private function skillsForMany(array $operatorIds): array
     {
@@ -134,22 +134,22 @@ final class OperatorRepository extends BaseRepository
         }
         $placeholders = implode(',', array_fill(0, count($operatorIds), '?'));
         $stmt = $this->pdo()->prepare(
-            "SELECT operator_id, operation_name FROM `{$this->skillsTable()}`
+            "SELECT operator_id, operation_id FROM `{$this->skillsTable()}`
               WHERE tenant_id = ? AND operator_id IN ($placeholders)
-              ORDER BY operation_name"
+              ORDER BY operation_id"
         );
         $stmt->execute([$this->ctx->tenantId, ...$operatorIds]);
 
         $out = [];
         foreach ($stmt->fetchAll() as $r) {
-            $out[(int) $r['operator_id']][] = (string) $r['operation_name'];
+            $out[(int) $r['operator_id']][] = (int) $r['operation_id'];
         }
         return $out;
     }
 
     /**
      * Operatorun yetkinliklerini sil-ve-yeniden-yaz. Transaction icinde cagrilir.
-     * @param list<string> $skills DTO'da temizlenmis + tekillestirilmis
+     * @param list<int> $skills operasyon id'leri; DTO'da tekillestirilmis
      */
     private function replaceSkills(int $operatorId, array $skills): void
     {
@@ -165,14 +165,14 @@ final class OperatorRepository extends BaseRepository
         // bu yuzden created_by/updated_by ayri baglanir.
         $ins = $this->pdo()->prepare(
             "INSERT INTO `{$this->skillsTable()}`
-                (tenant_id, operator_id, operation_name, created_by, updated_by)
-             VALUES (:t, :op, :name, :cb, :ub)"
+                (tenant_id, operator_id, operation_id, created_by, updated_by)
+             VALUES (:t, :op, :opn, :cb, :ub)"
         );
-        foreach ($skills as $name) {
+        foreach ($skills as $operationId) {
             $ins->execute([
                 't'    => $this->ctx->tenantId,
                 'op'   => $operatorId,
-                'name' => $name,
+                'opn'  => $operationId,
                 'cb'   => $this->ctx->userId,
                 'ub'   => $this->ctx->userId,
             ]);

@@ -13,7 +13,8 @@ namespace App\Dto;
  *   adSoyad             -> fullName / full_name
  *   sicilNo             -> badgeNo  / badge_no
  *   durum (Aktif/Pasif) -> isActive / is_active (bool)
- *   yetkinOperasyonlar  -> skills   (cocuk tablo: v2_operator_skills)
+ *   yetkinOperasyonlar  -> skills   (cocuk tablo: v2_operator_skills; operasyon
+ *                                    ID dizisi -> v2_operations.id)
  */
 final class Operator
 {
@@ -24,7 +25,7 @@ final class Operator
             'fullName'  => (string) $row['full_name'],
             'badgeNo'   => (string) $row['badge_no'],
             'isActive'  => (bool) $row['is_active'],
-            'skills'    => array_map('strval', $row['skills'] ?? []),
+            'skills'    => array_map('intval', $row['skills'] ?? []),
             'updatedAt' => (string) $row['updated_at'],
         ];
     }
@@ -52,11 +53,11 @@ final class Operator
     }
 
     /**
-     * Yetkin operasyon adlari (cocuk tabloya gidecek). Temizlenir + tekillestirilir.
+     * Yetkin operasyon id'leri (cocuk tabloya gidecek). Tekillestirilir.
      * `skills` anahtari YOKSA null doner — guncellemede "yetkinlige dokunma" demektir.
      * Varsa (bos dizi bile) mevcut yetkinlikler bununla degistirilir.
      *
-     * @return list<string>|null
+     * @return list<int>|null
      */
     public static function toSkills(array $input): ?array
     {
@@ -68,9 +69,9 @@ final class Operator
         }
         $clean = [];
         foreach ($input['skills'] as $s) {
-            $name = trim((string) $s);
-            if ($name !== '' && !in_array($name, $clean, true)) {
-                $clean[] = $name;
+            $id = (int) $s;
+            if ($id > 0 && !in_array($id, $clean, true)) {
+                $clean[] = $id;
             }
         }
         return $clean;
