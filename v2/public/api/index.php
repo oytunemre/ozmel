@@ -53,6 +53,7 @@ $ctx = Context::fromRequest();
 
 $routes = [
     'work-centers' => App\Controller\WorkCenterController::class,
+    'operators'    => App\Controller\OperatorController::class,
 ];
 
 if (!isset($routes[$resource])) {

@@ -112,6 +112,16 @@ abstract class BaseRepository
         $stmt->execute(['id' => $id, 't' => $this->ctx->tenantId]);
         return $stmt->rowCount() > 0;
     }
+        /** updated_at'i ilerletir. Cocuk tablo degisikliklerinde cagrilir. */
+       /** updated_at'i ilerletir. Cocuk tablo degisikliklerinde cagrilir. */
+    protected function touch(int $id): void
+    {
+        $this->pdo()->prepare(
+            "UPDATE `{$this->table()}`
+                SET updated_at = CURRENT_TIMESTAMP(6), updated_by = :u
+              WHERE id = :id AND tenant_id = :t"
+        )->execute(['u' => $this->ctx->userId, 'id' => $id, 't' => $this->ctx->tenantId]);
+    }
 
     /** Istemci fazladan alan gonderirse (tenant_id gibi) sessizce atilir. */
     private function onlyAllowed(array $data): array
