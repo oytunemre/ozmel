@@ -18,7 +18,8 @@ const LOGOUT_URL = API_BASE + '/logout.php';
 const SEED = JSON.parse(document.getElementById('seed-data').textContent);
 
 let DB = { sites: [], parts: [], milestones: [], audits: [], dimwork: [], qfw: [], routes: [], capacity: [], workorders: [], production: [], orders: [], kontrolPlani: [], kaliteOlcumleri: [],
-  firstOffNoktalari: [], saatlikNoktalari: [], firstOffKayitlari: [], saatlikKayitlari: [], makinePlani: [], satinalmaIstekleri: [], satinalmaGirisleri: [], urunAgaclari: [], gorevler: [], gorevKisiler: [], girisKaliteKontrolleri: [] };
+  firstOffNoktalari: [], saatlikNoktalari: [], firstOffKayitlari: [], saatlikKayitlari: [], makinePlani: [], satinalmaIstekleri: [], satinalmaGirisleri: [], urunAgaclari: [], gorevler: [], gorevKisiler: [], girisKaliteKontrolleri: [],
+  isMerkezleri: [], operatorler: [], operasyonlarListesi: [], calismaSaatleri: [], kodTanimlari: [], terimCevirileri: [], gizliTerimler: [] };
 let ROUTE = 'dashboard';
 let SEARCH = '';
 let SORT = {};
@@ -35,7 +36,7 @@ let SELECTED_VARDIYA = '1';
 let EXPANDED_KALITE_SIRA = {}; // orderId -> expanded sira, for Kalite Kontrol accordion
 let GUNLUK_URUN = null, GUNLUK_OP = null, GUNLUK_TARIH = null, GUNLUK_TAB = 'ozet';
 const GUNLUK_OPS = ['Cutting','Countersink','Marking','Pressing'];
-const GUNLUK_OP_LABELS = {'Cutting':'Kesim','Countersink':'Havşalama','Marking':'Markalama','Pressing':'Presleme'};
+// GUNLUK_OP_LABELS artık dil-duyarlı olarak aşağıda (i18n bölümünde) tanımlanıyor.
 const SAATLER = ['10:30','12:00','15:00','18:00'];
 
 /* ---------------- oturum / kullanıcı ---------------- */
@@ -465,6 +466,100 @@ function escapeHtml(s){
 // Wraps row-level action buttons; renders empty (but keeps the <td>) for viewer accounts.
 function actionsCell(buttonsHtml){
   return `<td>${canEdit() ? `<div class="row-actions">${buttonsHtml}</div>` : ''}</td>`;
+}
+
+/* =======================================================================
+   DİL / ÇEVİRİ (i18n) — sol menü, ortak arayüz metinleri ve ana ekran
+   başlıkları TR/EN olarak değiştirilebilir. Ürün/hammadde/yarı mamül
+   açıklamaları KASITLI OLARAK çevrilmez (gerçek veri olarak kalır).
+   ======================================================================= */
+const I18N = {
+  tr: {
+    grp_genel:'Genel', grp_tedarik:'Tedarik Zinciri', grp_surec:'Süreç Takibi', grp_satis:'Satış',
+    grp_uretimplanlama:'Üretim Planlama', grp_urunyonetimi:'Ürün Yönetimi', grp_satinalma:'Satınalma & Stok',
+    nav_dashboard:'Genel Bakış', nav_sites:'Tedarikçi & Site', nav_parts:'Parça Yönetimi',
+    nav_gorevler:'Görev Takibi', nav_kalite:'Kalite Kontrol', nav_gunluk:'Günlük Kalite Raporları',
+    nav_satisSiparisleri:'Satış Siparişleri', nav_satisRaporlari:'Satış Raporları',
+    nav_routes:'Rotalar', nav_ismerkezleri:'İş Merkezleri & Operasyonlar', nav_capacity:'Kapasite Yönetimi', nav_uretimplani:'Üretim Planı (Haftalık)',
+    nav_orders:'Üretim Siparişleri', nav_workorders:'İş Emirleri', nav_uretimgirisi:'Üretim Girişi',
+    nav_produktivite:'Productivity', nav_operatorler:'Operatörler', nav_uretimpanosu:'Üretim Panosu (Ekran)', nav_calismasaatleri:'Çalışma Saatleri',
+    nav_urunagaclari:'Ürün Ağaçları', nav_kodtanimlari:'Kod Tanımları', nav_cevirisozlugu:'Çeviri Sözlüğü',
+    nav_satinalma:'Satınalma İstekleri', nav_satinalmaGirisleri:'Satınalma Girişleri', nav_stok:'Stok Durumu',
+
+    btn_save:'Kaydet', btn_cancel:'İptal', btn_delete:'Sil', btn_edit:'Düzenle', btn_new:'Yeni', btn_close:'Kapat',
+    btn_add:'Ekle', btn_back:'Geri', btn_detail:'Detay', btn_filter_clear:'Filtreyi Temizle',
+
+    lbl_date:'Tarih', lbl_shift:'Vardiya', lbl_product:'Ürün', lbl_operation:'Operasyon', lbl_machine:'Makine / İş Merkezi',
+    lbl_target:'Hedef', lbl_actual:'Gerçekleşen', lbl_scrap:'Fire', lbl_note:'Not', lbl_status:'Durum',
+    lbl_remaining:'Kalan', lbl_progress:'İlerleme', lbl_supplier:'Tedarikçi', lbl_customer:'Müşteri',
+    lbl_orderno:'Sipariş No', lbl_quantity:'Miktar', lbl_unit:'Birim', lbl_capacity:'Kapasite',
+    shift_morning:'Sabah', shift_afternoon:'Öğleden Sonra', shift_overtime:'Mesai',
+
+    dash_title:'Genel Bakış',
+    wo_title:'İş Emirleri', wo_bysipraris:'Sipariş Bazlı', wo_byliste:'Liste Görünümü', wo_datefilter:'Tarih Filtresi',
+    wo_planned:'Haftalık Planda Planlanmış', wo_unplanned:'Planlanmamış',
+    ug_title:'Üretim Girişi', ug_target:'Vardiya Hedefi', ug_manual:'Hedef (elle girilir)', ug_downtime_start:'Duruş Başlangıç', ug_downtime_end:'Duruş Bitiş',
+    panosu_title:'Üretim Panosu', panosu_today_planned:'Bugün Planlanan', panosu_today_actual:'Bugün Gerçekleşen',
+    panosu_overall:'Genel Gerçekleşme', panosu_downtime:'Bugün Toplam Duruş', panosu_thisweek:'Bu Hafta', panosu_fullscreen:'Tam Ekran',
+    prod_title:'Productivity Özeti', prod_planned_total:'Toplam Planlanan', prod_actual_total:'Toplam Gerçekleşen',
+    prod_overall:'Genel Gerçekleşme', prod_downtime_total:'Toplam Duruş', prod_daily:'Günlük', prod_weekly:'Haftalık', prod_monthly:'Aylık',
+    cap_title:'Kapasite Yönetimi', route_title:'Rotalar',
+    kpi_suppliers:'Toplam Tedarikçi / Site', kpi_parts:'Toplam Parça', kpi_overdue_tasks:'Geciken Görev',
+    kpi_task_completion:'Görev Tamamlanma', kpi_capacity_warning:'Kapasite Veri Uyarısı',
+  },
+  en: {
+    grp_genel:'General', grp_tedarik:'Supply Chain', grp_surec:'Process Tracking', grp_satis:'Sales',
+    grp_uretimplanlama:'Production Planning', grp_urunyonetimi:'Product Management', grp_satinalma:'Purchasing & Stock',
+    nav_dashboard:'Overview', nav_sites:'Supplier & Site', nav_parts:'Part Management',
+    nav_gorevler:'Task Tracking', nav_kalite:'Quality Control', nav_gunluk:'Daily Quality Reports',
+    nav_satisSiparisleri:'Sales Orders', nav_satisRaporlari:'Sales Reports',
+    nav_routes:'Routes', nav_ismerkezleri:'Work Centers & Operations', nav_capacity:'Capacity Management', nav_uretimplani:'Production Plan (Weekly)',
+    nav_orders:'Production Orders', nav_workorders:'Work Orders', nav_uretimgirisi:'Production Entry',
+    nav_produktivite:'Productivity', nav_operatorler:'Operators', nav_uretimpanosu:'Production Board (Screen)', nav_calismasaatleri:'Working Hours',
+    nav_urunagaclari:'Bill of Materials', nav_kodtanimlari:'Code Definitions', nav_cevirisozlugu:'Translation Dictionary',
+    nav_satinalma:'Purchase Requests', nav_satinalmaGirisleri:'Goods Receipts', nav_stok:'Stock Status',
+
+    btn_save:'Save', btn_cancel:'Cancel', btn_delete:'Delete', btn_edit:'Edit', btn_new:'New', btn_close:'Close',
+    btn_add:'Add', btn_back:'Back', btn_detail:'Detail', btn_filter_clear:'Clear Filter',
+
+    lbl_date:'Date', lbl_shift:'Shift', lbl_product:'Product', lbl_operation:'Operation', lbl_machine:'Machine / Work Center',
+    lbl_target:'Target', lbl_actual:'Actual', lbl_scrap:'Scrap', lbl_note:'Note', lbl_status:'Status',
+    lbl_remaining:'Remaining', lbl_progress:'Progress', lbl_supplier:'Supplier', lbl_customer:'Customer',
+    lbl_orderno:'Order No', lbl_quantity:'Quantity', lbl_unit:'Unit', lbl_capacity:'Capacity',
+    shift_morning:'Morning', shift_afternoon:'Afternoon', shift_overtime:'Overtime',
+
+    dash_title:'Overview',
+    wo_title:'Work Orders', wo_bysipraris:'By Order', wo_byliste:'List View', wo_datefilter:'Date Filter',
+    wo_planned:'Planned in Weekly Plan', wo_unplanned:'Not Planned',
+    ug_title:'Production Entry', ug_target:'Shift Target', ug_manual:'Target (entered manually)', ug_downtime_start:'Downtime Start', ug_downtime_end:'Downtime End',
+    panosu_title:'Production Board', panosu_today_planned:"Today's Planned", panosu_today_actual:"Today's Actual",
+    panosu_overall:'Overall Achievement', panosu_downtime:"Today's Total Downtime", panosu_thisweek:'This Week', panosu_fullscreen:'Fullscreen',
+    prod_title:'Productivity Summary', prod_planned_total:'Total Planned', prod_actual_total:'Total Actual',
+    prod_overall:'Overall Achievement', prod_downtime_total:'Total Downtime', prod_daily:'Daily', prod_weekly:'Weekly', prod_monthly:'Monthly',
+    cap_title:'Capacity Management', route_title:'Routes',
+    kpi_suppliers:'Total Suppliers / Sites', kpi_parts:'Total Parts', kpi_overdue_tasks:'Overdue Tasks',
+    kpi_task_completion:'Task Completion', kpi_capacity_warning:'Capacity Data Warnings',
+  }
+};
+let LANG = 'tr';
+try{ const kayitli = localStorage.getItem('appLang'); if(kayitli==='en'||kayitli==='tr') LANG = kayitli; }catch(e){}
+function t(key){ return (I18N[LANG] && I18N[LANG][key]) || I18N.tr[key] || key; }
+function setLang(l){
+  LANG = l;
+  try{ localStorage.setItem('appLang', l); }catch(e){}
+  gunlukOpEtiketleriUygula();
+  render();
+}
+// Operasyon adı sözlüğü — TR modda Türkçe etiket, EN modda operasyon kodunu (zaten İngilizce) olduğu gibi gösterir.
+const GUNLUK_OP_LABELS_TR = {Cutting:'Kesim', Countersink:'Havşalama', Marking:'Markalama', Pressing:'Presleme', Packaging:'Paketleme'};
+let GUNLUK_OP_LABELS = {...GUNLUK_OP_LABELS_TR};
+function gunlukOpEtiketleriUygula(){ GUNLUK_OP_LABELS = LANG==='en' ? {} : {...GUNLUK_OP_LABELS_TR}; }
+// Serbest metin makine/operasyon adları (örn. "Upcut Saw 1", "CNC Machining - 2. Operasyon") için
+// kullanıcı tanımlı çeviri sözlüğü — bkz. Çeviri Sözlüğü modülü.
+function terimCevir(metin){
+  if(LANG==='en' || !metin) return metin;
+  const kayit = DB.terimCevirileri && DB.terimCevirileri.find(c=>c.orijinal===metin);
+  return kayit && kayit.ceviri ? kayit.ceviri : metin;
 }
 
 /* ---------------- nav config ---------------- */
