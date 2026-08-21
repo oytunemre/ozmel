@@ -9,7 +9,7 @@ final class WorkCenterRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'work_centers';
+        return 'v2_work_centers';
     }
 
     protected function columns(): array
@@ -19,15 +19,15 @@ final class WorkCenterRepository extends BaseRepository
 
     /** UNIQUE(tenant_id, name) hatasini yakalamak yerine once sorar — mesaj daha net olur. */
     public function nameExists(string $name, ?int $exceptId = null): bool
-    {
-        $sql = 'SELECT COUNT(*) FROM work_centers WHERE tenant_id = :t AND name = :n';
-        $params = ['t' => $this->ctx->tenantId, 'n' => $name];
-        if ($exceptId !== null) {
-            $sql .= ' AND id <> :id';
-            $params['id'] = $exceptId;
-        }
-        $stmt = $this->pdo()->prepare($sql);
-        $stmt->execute($params);
-        return (int) $stmt->fetchColumn() > 0;
+{
+    $sql = "SELECT COUNT(*) FROM `{$this->table()}` WHERE tenant_id = :t AND name = :n";
+    $params = ['t' => $this->ctx->tenantId, 'n' => $name];
+    if ($exceptId !== null) {
+        $sql .= ' AND id <> :id';
+        $params['id'] = $exceptId;
     }
+    $stmt = $this->pdo()->prepare($sql);
+    $stmt->execute($params);
+    return (int) $stmt->fetchColumn() > 0;
+}
 }
