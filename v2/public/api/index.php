@@ -73,6 +73,7 @@ $routes = [
     'audits'        => App\Controller\AuditController::class,
     'task-people'   => App\Controller\TaskPersonController::class,
     'tasks'         => App\Controller\TaskController::class,
+    'purchase-requests' => App\Controller\PurchaseRequestController::class,
 ];
 
 // Tek-satir konfig kaynaklari: id yok. GET tek nesne doner, POST ?op=guncelle gunceller.
