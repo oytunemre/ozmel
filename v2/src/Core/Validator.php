@@ -46,6 +46,16 @@ class Validator
         return $this;
     }
 
+    /** Saat: 'HH:MM' veya 'HH:MM:SS' (00-23 / 00-59). Bos degilse bicim kontrol edilir. */
+    public function time(array $data, string $field, string $label): static
+    {
+        if (isset($data[$field]) && trim((string) $data[$field]) !== ''
+            && !preg_match('/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/', (string) $data[$field])) {
+            $this->errors[$field] = "$label saat bicimi olmali (SS:DD)";
+        }
+        return $this;
+    }
+
     /** @param list<string> $allowed */
     public function inList(array $data, string $field, array $allowed, string $label): static
     {

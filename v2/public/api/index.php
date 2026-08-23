@@ -57,7 +57,11 @@ $routes = [
     'operations'   => App\Controller\OperationController::class,
     'product-codes' => App\Controller\ProductCodeController::class,
     'terms'         => App\Controller\TermController::class,
+    'working-hours' => App\Controller\WorkingHoursController::class,
 ];
+
+// Tek-satir konfig kaynaklari: id yok. GET tek nesne doner, POST ?op=guncelle gunceller.
+$singletons = ['working-hours'];
 
 if (!isset($routes[$resource])) {
     Response::fail(404, "Bilinmeyen kaynak: $resource");
@@ -76,6 +80,17 @@ if ($method === 'POST') {
 }
 
 try {
+    if (in_array($resource, $singletons, true)) {
+        // Tekil konfig: id kullanilmaz. show() tek nesne, update() id'siz gunceller.
+        if ($method === 'GET') {
+            $controller->show();
+        }
+        if ($method === 'POST' && $op === 'guncelle') {
+            $controller->update($input);
+        }
+        Response::fail(400, 'Gecersiz islem — GET ya da POST ?op=guncelle bekleniyordu');
+    }
+
     if ($method === 'GET') {
         $id === null ? $controller->index($_GET) : $controller->show($id);
     }
