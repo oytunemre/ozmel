@@ -59,6 +59,16 @@ class Validator
         return $this;
     }
 
+    /** Tarih: 'YYYY-MM-DD'. Bos degilse bicim kontrol edilir. */
+    public function date(array $data, string $field, string $label): static
+    {
+        if (isset($data[$field]) && trim((string) $data[$field]) !== ''
+            && !preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $data[$field])) {
+            $this->errors[$field] = "$label tarih bicimi olmali (YYYY-AA-GG)";
+        }
+        return $this;
+    }
+
     /** Saat: 'HH:MM' veya 'HH:MM:SS' (00-23 / 00-59). Bos degilse bicim kontrol edilir. */
     public function time(array $data, string $field, string $label): static
     {
