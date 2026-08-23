@@ -69,6 +69,7 @@ $routes = [
     'first-off-records' => App\Controller\FirstOffRecordController::class,
     'hourly-points' => App\Controller\HourlyPointController::class,
     'hourly-records' => App\Controller\HourlyRecordController::class,
+    'incoming-inspections' => App\Controller\IncomingInspectionController::class,
 ];
 
 // Tek-satir konfig kaynaklari: id yok. GET tek nesne doner, POST ?op=guncelle gunceller.
