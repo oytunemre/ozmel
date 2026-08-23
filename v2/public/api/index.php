@@ -67,6 +67,7 @@ $routes = [
     'machine-plans' => App\Controller\MachinePlanController::class,
     'first-off-points' => App\Controller\FirstOffPointController::class,
     'first-off-records' => App\Controller\FirstOffRecordController::class,
+    'hourly-points' => App\Controller\HourlyPointController::class,
 ];
 
 // Tek-satir konfig kaynaklari: id yok. GET tek nesne doner, POST ?op=guncelle gunceller.
