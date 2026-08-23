@@ -37,6 +37,19 @@ class Validator
         return $this;
     }
 
+    /** Bos ('' / null) gecerlidir — zorunluluk ayri kontrol edilir. Aksi halde pozitif tam sayi (FK id) olmali. */
+    public function positiveInt(array $data, string $field, string $label): static
+    {
+        if (isset($data[$field]) && !(is_string($data[$field]) && trim($data[$field]) === '')) {
+            $v = $data[$field];
+            $ok = (is_int($v) && $v > 0) || (is_string($v) && ctype_digit($v) && (int) $v > 0);
+            if (!$ok) {
+                $this->errors[$field] = "$label gecerli bir kayit olmali";
+            }
+        }
+        return $this;
+    }
+
     /** Bos ('' / null) gecerlidir — zorunluluk ayri kontrol edilir. Aksi halde sayi olmali. */
     public function numeric(array $data, string $field, string $label): static
     {
