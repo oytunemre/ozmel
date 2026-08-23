@@ -63,14 +63,23 @@ final class ProductTreeController
     {
         $this->requireEditor();
 
-        // selfId verilir ki dugum kendi kendine parent olamasin.
+        // selfId verilir ki dugum kendi kendine parent olamasin (dogrudan dongu).
         $v = (new ProductTreeValidator())->validate($input, isCreate: false, selfId: $id);
         if ($v->fails()) {
             Response::invalid($v->errors());
         }
 
+        $cols = ProductTree::toColumns($input);
+
+        // Dolayli dongu: onerilen ust dugum, bu dugumun alt agacindaysa reddet.
+        // (Validator yalnizca dogrudan self-parent'i gorur; zincir yuruyusu Repository'de.)
+        if (array_key_exists('parent_id', $cols) && $cols['parent_id'] !== null
+            && $this->repo->wouldCycle($id, (int) $cols['parent_id'])) {
+            Response::invalid(['parentId' => 'Bir dugum kendi alt agacinin altina tasinamaz']);
+        }
+
         try {
-            $this->repo->update($id, ProductTree::toColumns($input), $input['updatedAt'] ?? null);
+            $this->repo->update($id, $cols, $input['updatedAt'] ?? null);
         } catch (RuntimeException $e) {
             if ($e->getMessage() === 'NOT_FOUND') {
                 Response::fail(404, 'Agac dugumu bulunamadi');
