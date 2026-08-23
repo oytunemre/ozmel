@@ -71,6 +71,8 @@ $routes = [
     'hourly-records' => App\Controller\HourlyRecordController::class,
     'incoming-inspections' => App\Controller\IncomingInspectionController::class,
     'audits'        => App\Controller\AuditController::class,
+    'task-people'   => App\Controller\TaskPersonController::class,
+    'tasks'         => App\Controller\TaskController::class,
 ];
 
 // Tek-satir konfig kaynaklari: id yok. GET tek nesne doner, POST ?op=guncelle gunceller.
