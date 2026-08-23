@@ -37,6 +37,24 @@ class Validator
         return $this;
     }
 
+    /** Bos ('' / null) gecerlidir — zorunluluk ayri kontrol edilir. Aksi halde sayi olmali. */
+    public function numeric(array $data, string $field, string $label): static
+    {
+        if (isset($data[$field]) && !(is_string($data[$field]) && trim($data[$field]) === '') && !is_numeric($data[$field])) {
+            $this->errors[$field] = "$label sayi olmali";
+        }
+        return $this;
+    }
+
+    /** @param list<string> $allowed */
+    public function inList(array $data, string $field, array $allowed, string $label): static
+    {
+        if (isset($data[$field]) && !in_array($data[$field], $allowed, true)) {
+            $this->errors[$field] = "$label gecersiz — kabul edilenler: " . implode(', ', $allowed);
+        }
+        return $this;
+    }
+
     public function add(string $field, string $message): static
     {
         $this->errors[$field] = $message;
