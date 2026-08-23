@@ -63,6 +63,7 @@ $routes = [
     'capacities'    => App\Controller\CapacityController::class,
     'orders'        => App\Controller\OrderController::class,
     'work-orders'   => App\Controller\WorkOrderController::class,
+    'production'    => App\Controller\ProductionController::class,
 ];
 
 // Tek-satir konfig kaynaklari: id yok. GET tek nesne doner, POST ?op=guncelle gunceller.
