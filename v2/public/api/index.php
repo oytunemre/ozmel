@@ -56,6 +56,7 @@ $routes = [
     'operators'    => App\Controller\OperatorController::class,
     'operations'   => App\Controller\OperationController::class,
     'product-codes' => App\Controller\ProductCodeController::class,
+    'terms'         => App\Controller\TermController::class,
 ];
 
 if (!isset($routes[$resource])) {
