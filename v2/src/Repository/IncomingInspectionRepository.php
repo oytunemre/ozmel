@@ -38,8 +38,8 @@ final class IncomingInspectionRepository extends BaseRepository
     protected function columns(): array
     {
         return [
-            'legacy_purchase_receipt_id', 'supplier', 'material_code_id', 'drawing_no',
-            'reason', 'arrival_date', 'inspection_date', 'received_qty', 'sample_qty',
+            'legacy_purchase_receipt_id', 'purchase_receipt_id', 'supplier', 'material_code_id',
+            'drawing_no', 'reason', 'arrival_date', 'inspection_date', 'received_qty', 'sample_qty',
             'inspector_name', 'overall_result',
         ];
     }

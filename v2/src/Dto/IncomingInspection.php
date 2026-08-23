@@ -9,7 +9,8 @@ namespace App\Dto;
  *
  * v1 alan adlari burada Ingilizce API anahtarlarina ve DB sutunlarina cevrilir —
  * camelCase <-> snake_case sinirinin tek yeri. Ekran metinleri FE'de Turkce kalir.
- *   satinalmaGirisIdleri -> legacyPurchaseReceiptId (Faz 7'de FK olacak; simdilik CHAR(16) metin)
+ *   satinalmaGirisIdleri -> legacyPurchaseReceiptId (ETL eslesme icin CHAR(16) metin, korunur)
+ *                        -> purchaseReceiptId (v2_purchase_receipts.id FK; 025 ile eklendi)
  *   tedarikci            -> supplier
  *   malzeme              -> materialCodeId (v2_product_codes.id)
  *   cizimNo              -> drawingNo
@@ -43,6 +44,7 @@ final class IncomingInspection
         return [
             'id'                => (int) $row['id'],
             'legacyPurchaseReceiptId' => $row['legacy_purchase_receipt_id'] !== null ? (string) $row['legacy_purchase_receipt_id'] : null,
+            'purchaseReceiptId' => $row['purchase_receipt_id'] !== null ? (int) $row['purchase_receipt_id'] : null,
             'supplier'          => $row['supplier'] !== null ? (string) $row['supplier'] : null,
             'materialCodeId'    => $row['material_code_id'] !== null ? (int) $row['material_code_id'] : null,
             'drawingNo'         => $row['drawing_no'] !== null ? (string) $row['drawing_no'] : null,
@@ -71,6 +73,10 @@ final class IncomingInspection
         if (array_key_exists('legacyPurchaseReceiptId', $input)) {
             $val = trim((string) $input['legacyPurchaseReceiptId']);
             $out['legacy_purchase_receipt_id'] = $val === '' ? null : $val;
+        }
+        if (array_key_exists('purchaseReceiptId', $input)) {
+            $id = (int) $input['purchaseReceiptId'];
+            $out['purchase_receipt_id'] = $id > 0 ? $id : null;
         }
         if (array_key_exists('supplier', $input)) {
             $val = trim((string) $input['supplier']);

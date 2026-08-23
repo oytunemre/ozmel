@@ -13,6 +13,7 @@ final class IncomingInspectionValidator extends Validator
     {
         // Ana alanlar: sema hepsini NULL kabul eder; yalnizca bicim/uzunluk kontrolu.
         $this->maxLength($input, 'legacyPurchaseReceiptId', 16, 'Satinalma giris referansi')
+             ->positiveInt($input, 'purchaseReceiptId', 'Satinalma girisi')
              ->maxLength($input, 'supplier', 255, 'Tedarikci')
              ->positiveInt($input, 'materialCodeId', 'Malzeme kodu')
              ->maxLength($input, 'drawingNo', 128, 'Cizim no')
