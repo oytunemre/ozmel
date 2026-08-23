@@ -68,13 +68,14 @@ final class ProductCodeController
     {
         $this->requireEditor();
 
-        // Tip gonderilmediyse tip'e bagli kural mevcut kaydin tipi uzerinden isler.
+        // Mevcut satir Validator'a verilir: tip'e bagli kural hem istekteki hem de
+        // kayitta onceden dolu olan olcu alanlarini gorur (Hammadde -> Urun bosluğu).
         $existing = $this->repo->find($id);
         if ($existing === null) {
             Response::fail(404, 'Kod tanimi bulunamadi');
         }
 
-        $v = (new ProductCodeValidator())->validate($input, isCreate: false, existingType: (string) $existing['type']);
+        $v = (new ProductCodeValidator())->validate($input, isCreate: false, existing: $existing);
         if ($v->fails()) {
             Response::invalid($v->errors());
         }

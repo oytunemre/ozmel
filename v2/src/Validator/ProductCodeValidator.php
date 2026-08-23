@@ -10,14 +10,24 @@ final class ProductCodeValidator extends Validator
 {
     public const TYPES = ['Hammadde', 'Yarı Mamül', 'Ürün'];
 
-    /** Yalnizca Hammadde'de anlamli olan olcu alanlari (v1: sparse alanlar). */
-    private const HAMMADDE_ONLY = ['outerDiameter', 'innerDiameter', 'materialLength', 'materialWeight'];
+    /**
+     * Yalnizca Hammadde'de anlamli olan olcu alanlari (v1: sparse alanlar).
+     * API anahtari => DB sutunu (mevcut satirdan okumak icin).
+     */
+    private const HAMMADDE_ONLY = [
+        'outerDiameter'  => 'outer_diameter',
+        'innerDiameter'  => 'inner_diameter',
+        'materialLength' => 'material_length',
+        'materialWeight' => 'material_weight',
+    ];
 
     /**
-     * @param string|null $existingType Guncellemede mevcut kaydin tipi. Istemci `type`
-     *        gondermezse tip'e bagli kural bu deger uzerinden uygulanir.
+     * @param array<string,mixed>|null $existing Guncellemede mevcut DB satiri. Tip'e
+     *        bagli kural hem istekteki hem de kayitta ONCEDEN dolu olan olcu alanlarini
+     *        gorur: yeni tip Hammadde degilse ve alan guncelleme sonrasi dolu kalacaksa
+     *        reddedilir (sessiz veri kaybi yerine acik hata).
      */
-    public function validate(array $input, bool $isCreate, ?string $existingType = null): static
+    public function validate(array $input, bool $isCreate, ?array $existing = null): static
     {
         if ($isCreate || array_key_exists('code', $input)) {
             $this->required($input, 'code', 'Kod')
@@ -37,12 +47,16 @@ final class ProductCodeValidator extends Validator
             $this->numeric($input, $key, $key);
         }
 
-        // Tip'e gore kural: olcu alanlari yalnizca Hammadde'de kabul edilir.
-        $type = $input['type'] ?? $existingType;
+        // Tip'e gore kural: olcu alanlari yalnizca Hammadde'de dolu olabilir.
+        // Guncelleme sonrasi "etkin" degere bakariz: istek alani gondermezse eski
+        // deger kalir; bu yuzden Hammadde -> Urun donusumunde kayitta onceden dolu
+        // olan alanlar da yakalanir. Reddedilenler tek tek raporlanir ki kullanici
+        // hangi alanlari temizlemesi gerektigini gorsun.
+        $type = $input['type'] ?? ($existing['type'] ?? null);
         if ($type !== null && $type !== 'Hammadde') {
-            foreach (self::HAMMADDE_ONLY as $key) {
-                if ($this->hasValue($input, $key)) {
-                    $this->add($key, 'Bu alan yalnizca Hammadde tipinde girilebilir');
+            foreach (self::HAMMADDE_ONLY as $key => $col) {
+                if ($this->effectivelyFilled($input, $key, $existing[$col] ?? null)) {
+                    $this->add($key, "Tip '$type' oldugundan bu alan bos olmali — temizleyip tekrar deneyin");
                 }
             }
         }
@@ -50,11 +64,14 @@ final class ProductCodeValidator extends Validator
         return $this;
     }
 
-    /** Alan gonderilmis VE bos degil mi? Bos string / null "temizleme" sayilir, reddedilmez. */
-    private function hasValue(array $input, string $key): bool
+    /**
+     * Guncelleme sonrasi alan dolu kalacak mi?
+     *   - Istek alani gonderdiyse: gonderilen deger belirleyicidir (bos string / null = temizleme).
+     *   - Gondermediyse: mevcut kayittaki deger oldugu gibi kalir.
+     */
+    private function effectivelyFilled(array $input, string $key, mixed $existingValue): bool
     {
-        return array_key_exists($key, $input)
-            && $input[$key] !== null
-            && !(is_string($input[$key]) && trim($input[$key]) === '');
+        $value = array_key_exists($key, $input) ? $input[$key] : $existingValue;
+        return $value !== null && trim((string) $value) !== '';
     }
 }
