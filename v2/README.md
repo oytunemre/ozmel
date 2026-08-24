@@ -57,3 +57,24 @@ Yanit zarfi her zaman ayni:
 - Guncellemede istemci `updatedAt` gonderir; degismisse 409 doner.
 - Kimlik DB'de uretilir. `uid()` yok.
 - Acilista veri duzeltme kodu calismaz; duzeltmeler migration'dir.
+
+## ETL (v1 -> v2 tasima)
+
+`tools/etl.php` v1 yedek JSON'unu (`data/qfw_konsol_yedek_*.json`) v2 tablolarina aktarir.
+
+```
+php tools/etl.php --file=data/qfw_konsol_yedek_2026-08-23.json --dry-run   # rapor, yazma yok
+php tools/etl.php --file=data/qfw_konsol_yedek_2026-08-23.json             # canli
+```
+
+- Her v1 kaydinin eski string id'si `legacy_id` sutununa yazilir; bellekte
+  `[koleksiyon][eski_id] => yeni_id` haritasi tutulur, FK'ler bundan cozulur.
+- Metin -> FK: `isMerkezi`/`operasyon`/kisi adlari ad uzerinden, urun/malzeme kod
+  uzerinden cozulur. Referans tablolarda (work_centers/operations/task_people) yoksa
+  otomatik olusturulur; product_codes'ta kod yoksa kayit ATLANIR (kod uydurulamaz).
+- Yeniden calistirilabilir: `legacy_id` zaten varsa guncellenir, ikilenmez.
+- Her koleksiyon kendi `Db::transaction()`'inda; biri patlarsa oncekiler korunur.
+  Sonda koleksiyon basina rapor (okundu/eklendi/guncellendi/atlandi/oto-referans).
+- Yalnizca Repository katmani kullanilir (ETL yardimcilari: `BaseRepository::etlUpsert`,
+  `etlEnsureByName`, `etlFindByLegacy`). Bu metotlar yalnizca ETL icindir; API akisi
+  `legacy_id` yazmaz.

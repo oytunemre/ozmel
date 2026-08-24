@@ -44,10 +44,19 @@ final class Db
     /**
      * Callback'i transaction icinde calistirir. Hata olursa geri alir.
      * Birden fazla tabloya yazan islemler icin (siparis + is emirleri gibi).
+     *
+     * REENTRANT: zaten acik bir transaction varsa yenisini ACMAZ, dis transaction'a
+     * KATILIR (callback'i dogrudan calistirir). Boylece ic ice cagrilar (or. ETL bir
+     * koleksiyonu transaction'a alir, iceride updateWithSkills yine transaction ister)
+     * "zaten aktif transaction" hatasi vermez; commit/rollback en distaki cagriya kalir.
      */
     public static function transaction(callable $fn): mixed
     {
         $pdo = self::pdo();
+        if ($pdo->inTransaction()) {
+            return $fn($pdo);
+        }
+
         $pdo->beginTransaction();
         try {
             $result = $fn($pdo);

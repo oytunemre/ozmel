@@ -128,4 +128,110 @@ abstract class BaseRepository
     {
         return array_intersect_key($data, array_flip($this->columns()));
     }
+
+    // --- ETL destegi ---------------------------------------------------------
+    // Yalnizca v1 -> v2 tasima araci (tools/etl.php) icindir. Normal API akisi bunlari
+    // KULLANMAZ: legacy_id whitelist disidir, API'den yazilmaz. Buradaki metotlar
+    // legacy_id'yi bilerek yazar (kimlik esleme) ve eszamanlilik kontrolu yapmaz.
+
+    /** legacy_id'ye gore satiri getirir (tenant kapsamli). ETL yeniden-calistirilabilirlik icin. */
+    public function etlFindByLegacy(string $legacyId): ?array
+    {
+        $stmt = $this->pdo()->prepare(
+            "SELECT * FROM `{$this->table()}` WHERE tenant_id = :t AND legacy_id = :l"
+        );
+        $stmt->execute(['t' => $this->ctx->tenantId, 'l' => $legacyId]);
+        return $stmt->fetch() ?: null;
+    }
+
+    /**
+     * legacy_id'ye gore ekle-ya-da-guncelle. Kayit varsa alanlari gunceller, yoksa
+     * legacy_id ile ekler. Ikinci calistirmada veri ikilenmez.
+     *
+     * @return array{id:int, action:string} action: 'created' | 'updated'
+     */
+    public function etlUpsert(?string $legacyId, array $data): array
+    {
+        $data = $this->onlyAllowed($data);
+
+        if ($legacyId !== null && ($existing = $this->etlFindByLegacy($legacyId)) !== null) {
+            if ($data !== []) {
+                $data['updated_by'] = $this->ctx->userId;
+                $sets = implode(',', array_map(fn($c) => "`$c` = :$c", array_keys($data)));
+                $this->pdo()->prepare(
+                    "UPDATE `{$this->table()}` SET $sets WHERE id = :_id AND tenant_id = :_t"
+                )->execute($data + ['_id' => (int) $existing['id'], '_t' => $this->ctx->tenantId]);
+            }
+            return ['id' => (int) $existing['id'], 'action' => 'updated'];
+        }
+
+        $data['tenant_id']  = $this->ctx->tenantId;
+        $data['created_by'] = $this->ctx->userId;
+        $data['updated_by'] = $this->ctx->userId;
+        if ($legacyId !== null) {
+            $data['legacy_id'] = $legacyId;
+        }
+        $cols = array_keys($data);
+        $this->pdo()->prepare(sprintf(
+            'INSERT INTO `%s` (%s) VALUES (%s)',
+            $this->table(),
+            implode(',', array_map(fn($c) => "`$c`", $cols)),
+            implode(',', array_map(fn($c) => ":$c", $cols))
+        ))->execute($data);
+
+        return ['id' => (int) $this->pdo()->lastInsertId(), 'action' => 'created'];
+    }
+
+    /**
+     * Bir sutunun degeri -> id haritasi (tenant kapsamli). ETL kimlik cozumlemesi icin
+     * (or. legacy_id -> yeni id, ya da name -> id). $keyColumn kod-kontrollu (kullanici girdisi degil).
+     *
+     * @return array<string,int>
+     */
+    public function etlMapBy(string $keyColumn): array
+    {
+        $stmt = $this->pdo()->prepare(
+            "SELECT `$keyColumn` AS k, id FROM `{$this->table()}` WHERE tenant_id = :t AND `$keyColumn` IS NOT NULL"
+        );
+        $stmt->execute(['t' => $this->ctx->tenantId]);
+        $out = [];
+        foreach ($stmt->fetchAll() as $r) {
+            $out[(string) $r['k']] = (int) $r['id'];
+        }
+        return $out;
+    }
+
+    /**
+     * Bir ad sutununa gore bul-ya-da-olustur (referans tablolar icin: work_centers,
+     * operations, task_people). ETL'de serbest metin bir ada rastlanip karsiligi yoksa
+     * otomatik olusturulur. $nameColumn kod-kontrollu.
+     *
+     * @return array{id:int, created:bool}
+     */
+    public function etlEnsureByName(string $nameColumn, string $name, array $extra = []): array
+    {
+        $stmt = $this->pdo()->prepare(
+            "SELECT id FROM `{$this->table()}` WHERE tenant_id = :t AND `$nameColumn` = :n"
+        );
+        $stmt->execute(['t' => $this->ctx->tenantId, 'n' => $name]);
+        $id = $stmt->fetchColumn();
+        if ($id !== false) {
+            return ['id' => (int) $id, 'created' => false];
+        }
+
+        $data = $this->onlyAllowed($extra);
+        $data[$nameColumn]  = $name;
+        $data['tenant_id']  = $this->ctx->tenantId;
+        $data['created_by'] = $this->ctx->userId;
+        $data['updated_by'] = $this->ctx->userId;
+        $cols = array_keys($data);
+        $this->pdo()->prepare(sprintf(
+            'INSERT INTO `%s` (%s) VALUES (%s)',
+            $this->table(),
+            implode(',', array_map(fn($c) => "`$c`", $cols)),
+            implode(',', array_map(fn($c) => ":$c", $cols))
+        ))->execute($data);
+
+        return ['id' => (int) $this->pdo()->lastInsertId(), 'created' => true];
+    }
 }
