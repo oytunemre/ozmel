@@ -4,8 +4,9 @@ declare(strict_types=1);
 /**
  * etl.php — Melih'in KRC yedek JSON'unu v2 tablolarina aktarir.
  *
- * Kullanim:
+ * Kullanim (CLI):
  *   php etl.php --file=../data/qfw_konsol_yedek_2026-08-23.json [--dry-run]
+ * SSH yoksa tarayicidan: tools/etl_web.php (gecici, anahtar korumali sarmalayici).
  *
  * --dry-run : hicbir sey KALICI yazilmaz. Tum is tek bir transaction icinde yapilir
  *             ve sonunda GERI ALINIR; rapor "ne olurdu"yu gosterir.
@@ -35,23 +36,40 @@ spl_autoload_register(static function (string $class): void {
     }
 });
 
-// --- argumanlar --------------------------------------------------------------
-$opts    = getopt('', ['file:', 'dry-run']);
-$file    = $opts['file'] ?? null;
-$dryRun  = array_key_exists('dry-run', $opts);
+// --- girdi: CLI (getopt) ya da web sarmalayici -------------------------------
+// CLI'da --file / --dry-run. Web'de (tools/etl_web.php — gecici sarmalayici) bu iki
+// deger $ETL_FILE / $ETL_DRYRUN olarak onceden set edilir. Web SAPI'de STDERR
+// tanimli olmadigindan hata mesajlari echo ile verilir.
+$isCli = (PHP_SAPI === 'cli');
+if ($isCli) {
+    $opts   = getopt('', ['file:', 'dry-run']);
+    $file   = $opts['file'] ?? null;
+    $dryRun = array_key_exists('dry-run', $opts);
+} else {
+    $file   = $ETL_FILE ?? null;
+    $dryRun = $ETL_DRYRUN ?? true; // web'de varsayilan dry-run
+}
+
+$stderr = static function (string $msg) use ($isCli): void {
+    if ($isCli && defined('STDERR')) {
+        fwrite(STDERR, $msg . "\n");
+    } else {
+        echo $msg . "\n";
+    }
+};
 
 if ($file === null) {
-    fwrite(STDERR, "Kullanim: php etl.php --file=yedek.json [--dry-run]\n");
+    $stderr('Kullanim: php etl.php --file=yedek.json [--dry-run]');
     exit(1);
 }
 if (!is_file($file)) {
-    fwrite(STDERR, "Dosya bulunamadi: $file\n");
+    $stderr("Dosya bulunamadi: $file");
     exit(1);
 }
 
 $raw = json_decode((string) file_get_contents($file), true);
 if (!is_array($raw) || !isset($raw['data']) || !is_array($raw['data'])) {
-    fwrite(STDERR, "Gecersiz yedek: beklenen {data:{...}} yapisi yok\n");
+    $stderr('Gecersiz yedek: beklenen {data:{...}} yapisi yok');
     exit(1);
 }
 $D = $raw['data'];
