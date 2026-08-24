@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Özmel QFW</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="app">
+    <nav class="sidebar" id="nav">
+      <div class="brand">Özmel QFW</div>
+      <!-- Bağlantılar JS'ten üretilir -->
+    </nav>
+    <main class="content" id="content"></main>
+  </div>
+
+  <script type="module">
+    // Oturum: token ve rol. Gerçek uygulamada giriş ekranından gelir; burada
+    // ?token= / ?role= veya localStorage ile ayarlanabilir (geliştirme kabuğu).
+    const params = new URLSearchParams(location.search);
+    window.SESSION_TOKEN = params.get('token') || localStorage.getItem('sessionToken') || '';
+    window.SESSION_ROLE  = params.get('role')  || localStorage.getItem('sessionRole')  || 'editor';
+    if (params.get('token')) localStorage.setItem('sessionToken', params.get('token'));
+
+    // Modül kaydı: her giriş dinamik import + dışa aktarılan view fonksiyonu.
+    // operators TAM bağlı örnektir; diğerleri kendi (liste) görünümünü çizer.
+    const MODULES = [
+      { key: 'operators',    label: 'Operatörler',      file: 'operators.js',    fn: 'viewOperators' },
+      { key: 'work-centers', label: 'İş Merkezleri',     file: 'workCenters.js',  fn: 'viewWorkCenters' },
+      { key: 'operations',   label: 'Operasyonlar',      file: 'operations.js',   fn: 'viewOperations' },
+      { key: 'orders',       label: 'Siparişler',        file: 'orders.js',       fn: 'viewOrders' },
+      { key: 'dashboard',    label: 'Genel Bakış',       file: 'dashboard.js',    fn: 'viewDashboard' },
+      { key: 'sales',        label: 'Satış Raporları',   file: 'salesReports.js', fn: 'viewSalesReports' }
+    ];
+
+    const nav = document.getElementById('nav');
+    const content = document.getElementById('content');
+
+    for (const m of MODULES) {
+      const a = document.createElement('a');
+      a.href = '#' + m.key;
+      a.textContent = m.label;
+      a.dataset.key = m.key;
+      nav.appendChild(a);
+    }
+
+    async function route() {
+      const key = location.hash.slice(1) || 'operators';
+      const m = MODULES.find(x => x.key === key) || MODULES[0];
+      nav.querySelectorAll('a').forEach(a =>
+        a.setAttribute('aria-current', a.dataset.key === m.key ? 'page' : 'false'));
+      content.innerHTML = '<div class="loading">Yükleniyor…</div>';
+      try {
+        const mod = await import(`./js/modules/${m.file}`);
+        mod[m.fn](content);
+      } catch (err) {
+        content.innerHTML = `<div class="state error"><div class="state-title">Modül yüklenemedi</div>
+          <div class="state-msg">${err.message}</div></div>`;
+      }
+    }
+
+    window.addEventListener('hashchange', route);
+    route();
+  </script>
+</body>
+</html>

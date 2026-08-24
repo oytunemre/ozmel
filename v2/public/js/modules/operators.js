@@ -1,80 +1,118 @@
-// Operatorler — v2 modulu.
+// Operatorler — v2 modulu. Ortak FE katmani (core/) uzerine TAM baglanmis ornek:
+// liste + ekleme + duzenleme + silme + yetkinlik FK secici. Diger 23 modul bunu ornek alir.
 //
-// Bu modul VERI TUTMAZ. Global bir DB nesnesi yok, seed yok, blob yok.
-// Her render kendi verisini API'den ceker. Ekran metinleri Turkce,
-// kod ve API anahtarlari Ingilizce (fullName/badgeNo/isActive/skills).
-//
-// yetkinOperasyonlar v1'de bir string diziydi; API'de `skills` olarak gelir
-// ve sunucuda ayri bir tabloda (v2_operator_skills) tutulur.
+// Bu modul VERI TUTMAZ. Her render veriyi API'den ceker. Ekran metinleri Turkce,
+// API anahtarlari Ingilizce (fullName/badgeNo/isActive/skills).
 
-const API = '../api/index.php';
+import { resource } from '../core/api.js';
+import { DataTable } from '../core/table.js';
+import { openDrawer } from '../core/drawer.js';
+import { FkSelect } from '../core/fkselect.js';
+import { toast } from '../core/toast.js';
+import { confirmDialog, errorState, esc } from '../core/states.js';
 
-async function request(path, { method = 'GET', body = null } = {}) {
-  const res = await fetch(API + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Session-Token': window.SESSION_TOKEN || ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
+const operatorsApi = resource('operators');
+const operationsApi = resource('operations');
 
-  const json = await res.json().catch(() => ({}));
-
-  if (!json.ok) {
-    const message = json.errors?._ || Object.values(json.errors || {})[0] || 'Bilinmeyen hata';
-    throw Object.assign(new Error(message), { status: res.status, errors: json.errors || {} });
-  }
-  return json;
-}
-
-export const operators = {
-  list:   (page = 1)   => request(`/operators?page=${page}&limit=50`),
-  get:    (id)         => request(`/operators/${id}`),
-  create: (data)       => request('/operators', { method: 'POST', body: data }),
-  update: (id, data)   => request(`/operators/${id}?op=guncelle`, { method: 'POST', body: data }),
-  remove: (id)         => request(`/operators/${id}?op=sil`, { method: 'POST' })
-};
+// Salt okuma mu? Oturum rolu editor degilse yazma kapali (aksiyonlar devre disi + ipucu).
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewOperators(container) {
   container.innerHTML = '<div class="loading">Yukleniyor…</div>';
 
+  // Operasyonlar bir kez cekilir: hem yetkinlik adlarini gostermek hem FK secici icin.
+  let operations;
   try {
-    const { data, meta } = await operators.list();
-
-    container.innerHTML = `
-      <div class="module-head">
-        <h2>Operatorler</h2>
-        <button id="op-add" class="btn">Yeni Operator</button>
-      </div>
-      <table class="tbl">
-        <thead><tr><th>Ad Soyad</th><th>Sicil No</th><th>Yetkin Operasyonlar</th><th>Durum</th><th></th></tr></thead>
-        <tbody>
-          ${data.map(op => `
-            <tr data-id="${op.id}" data-updated="${op.updatedAt}">
-              <td>${escapeHtml(op.fullName)}</td>
-              <td>${escapeHtml(op.badgeNo)}</td>
-              <td>${op.skills.length ? escapeHtml(op.skills.join(', ')) : '—'}</td>
-              <td>${op.isActive ? 'Aktif' : 'Pasif'}</td>
-              <td>
-                <button class="op-edit" data-id="${op.id}">Duzenle</button>
-                <button class="op-del"  data-id="${op.id}">Sil</button>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="meta">Toplam ${meta.total} kayit</p>`;
-
-    if (data.length === 0) {
-      container.querySelector('tbody').innerHTML =
-        '<tr><td colspan="5">Henuz operator eklenmemis. "Yeni Operator" ile baslayin.</td></tr>';
-    }
+    operations = (await operationsApi.list({ limit: 200 })).data;
   } catch (err) {
-    container.innerHTML = `<div class="error">Liste alinamadi: ${escapeHtml(err.message)}</div>`;
+    container.innerHTML = '';
+    container.appendChild(errorState({ message: err.message, onRetry: () => viewOperators(container) }));
+    return;
   }
-}
+  const opName = new Map(operations.map(o => [o.id, o.name]));
+  const opsSource = async () => ({
+    rows: operations.map(o => ({ id: o.id, name: o.name })),
+    total: operations.length
+  });
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const table = new DataTable(container, {
+    title: 'Operatorler',
+    canWrite,
+    addLabel: 'Yeni Operator',
+    onAdd: () => openForm(null),
+    onEdit: (row) => openForm(row),
+    onDelete: (row) => remove(row),
+    load: () => operatorsApi.list({ limit: 200 }).then(r => r.data),
+    rowId: (r) => r.id,
+    searchText: (r) => [r.fullName, r.badgeNo, r.skills.map(id => opName.get(id) || '').join(' ')].join(' '),
+    emptyMessage: 'Henuz operator eklenmemis. "Yeni Operator" ile baslayin.',
+    columns: [
+      { label: 'Ad Soyad', key: 'fullName' },
+      { label: 'Sicil No', key: 'badgeNo' },
+      {
+        label: 'Yetkin Operasyonlar',
+        render: (r) => r.skills.length
+          ? r.skills.map(id => `<span class="tag tag-accent">${esc(opName.get(id) || ('#' + id))}</span>`).join('')
+          : '<span class="text-muted">—</span>'
+      },
+      {
+        label: 'Durum',
+        render: (r) => r.isActive
+          ? '<span class="tag tag-success">Aktif</span>'
+          : '<span class="tag tag-neutral">Pasif</span>'
+      }
+    ]
+  });
+
+  function openForm(row) {
+    const editing = !!row;
+    if (editing) table.markActive(row.id);   // panjur aciykken ilgili satir vurgulu
+
+    const skillsFk = new FkSelect({
+      source: opsSource, multiple: true, value: row?.skills ?? [],
+      rows: operations.map(o => ({ id: o.id, name: o.name }))   // etiketler hemen cozulsun
+    });
+
+    openDrawer({
+      title: editing ? 'Operator Duzenle' : 'Yeni Operator',
+      submitLabel: editing ? 'Guncelle' : 'Ekle',
+      values: editing ? { ...row } : { isActive: 1 },
+      fields: [
+        { name: 'fullName', label: 'Ad Soyad', type: 'text', required: true },
+        { name: 'badgeNo', label: 'Sicil No', type: 'text', required: true },
+        { name: 'isActive', label: 'Durum', type: 'bool' },
+        { name: 'skills', label: 'Yetkin Operasyonlar', type: 'fk', fk: skillsFk,
+          help: 'Bu operatorun yetkin oldugu operasyonlar (coklu secim).' }
+      ],
+      onSubmit: async (v) => {
+        const payload = { fullName: v.fullName, badgeNo: v.badgeNo, isActive: v.isActive, skills: v.skills };
+        const { data } = editing
+          ? await operatorsApi.update(row.id, { ...payload, updatedAt: v.updatedAt })
+          : await operatorsApi.create(payload);
+        return data;
+      },
+      onSaved: async (saved) => {
+        toast(editing ? 'Operator guncellendi' : 'Operator eklendi', 'success');
+        await table.reload();
+        table.flash(saved.id);
+      },
+      onClose: () => table.markActive(null)
+    });
+  }
+
+  async function remove(row) {
+    const ok = await confirmDialog({
+      title: 'Operator silinsin mi?',
+      body: `"${row.fullName}" ve yetkinlikleri kalici olarak silinecek.`,
+      confirmLabel: 'Sil', danger: true
+    });
+    if (!ok) return;
+    try {
+      await operatorsApi.remove(row.id);
+      toast('Operator silindi', 'success');
+      await table.reload();
+    } catch (err) {
+      toast(err.message, 'danger');
+    }
+  }
 }
