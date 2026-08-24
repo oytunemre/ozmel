@@ -81,24 +81,27 @@ final class DashboardRepository
     }
 
     /**
-     * Son 24 saatte limit disi kalan olcumler (first-off + saatlik birlesik).
-     * Nokta lower_limit/upper_limit ile karsilastirilir. detail'de kac farkli parca.
+     * Son gunlerde limit disi kalan olcumler (first-off + saatlik birlesik). Zaman
+     * olcutu kaydin KENDI tarihi (records.date) — created_at kaydin yazildigi andir,
+     * ETL'de hepsi ayni olacagindan yaniltir. Nokta lower_limit/upper_limit ile
+     * karsilastirilir; detail'de kac farkli parca.
      */
     private function outOfTolerance(): array
     {
-        $sql = fn(string $mTable, string $pTable): string =>
+        $sql = fn(string $mTable, string $pTable, string $rTable): string =>
             "SELECT p.product_code_id AS pc
                FROM $mTable m
                JOIN $pTable p ON p.id = m.point_id AND p.tenant_id = m.tenant_id
+               JOIN $rTable r ON r.id = m.record_id AND r.tenant_id = m.tenant_id
               WHERE m.tenant_id = :t AND m.value IS NOT NULL
-                AND m.created_at >= (NOW() - INTERVAL 1 DAY)
+                AND r.`date` >= (CURDATE() - INTERVAL 1 DAY)
                 AND ((p.lower_limit IS NOT NULL AND m.value < p.lower_limit)
                   OR (p.upper_limit IS NOT NULL AND m.value > p.upper_limit))";
 
         $products = [];
         foreach ([
-            $sql('v2_first_off_measurements', 'v2_first_off_points'),
-            $sql('v2_hourly_measurements', 'v2_hourly_points'),
+            $sql('v2_first_off_measurements', 'v2_first_off_points', 'v2_first_off_records'),
+            $sql('v2_hourly_measurements', 'v2_hourly_points', 'v2_hourly_records'),
         ] as $q) {
             $stmt = $this->pdo()->prepare($q);
             $stmt->execute(['t' => $this->ctx->tenantId]);
@@ -154,21 +157,27 @@ final class DashboardRepository
         return $out;
     }
 
-    /** Son 10 olcum (first-off + saatlik birlesik), en yeni once. */
+    /**
+     * Son 10 olcum (first-off + saatlik birlesik), en yeni once. Siralama ve `at`
+     * kaydin KENDI tarihi (records.date) uzerinden — created_at ETL'de ayni olacagindan
+     * kullanilmaz.
+     */
     private function recentQuality(): array
     {
         $stmt = $this->pdo()->prepare(
             "(SELECT pc.code AS code, fp.characteristic AS measure,
-                     m.value AS value, m.result AS result, m.created_at AS at_ts
+                     m.value AS value, m.result AS result, r.`date` AS at_ts
                 FROM v2_first_off_measurements m
                 JOIN v2_first_off_points fp ON fp.id = m.point_id AND fp.tenant_id = m.tenant_id
+                JOIN v2_first_off_records r ON r.id = m.record_id AND r.tenant_id = m.tenant_id
                 JOIN v2_product_codes pc ON pc.id = fp.product_code_id AND pc.tenant_id = m.tenant_id
                WHERE m.tenant_id = :t1)
              UNION ALL
              (SELECT pc.code, hp.measure_location,
-                     m.value, NULL, m.created_at
+                     m.value, NULL, r.`date`
                 FROM v2_hourly_measurements m
                 JOIN v2_hourly_points hp ON hp.id = m.point_id AND hp.tenant_id = m.tenant_id
+                JOIN v2_hourly_records r ON r.id = m.record_id AND r.tenant_id = m.tenant_id
                 JOIN v2_product_codes pc ON pc.id = hp.product_code_id AND pc.tenant_id = m.tenant_id
                WHERE m.tenant_id = :t2)
              ORDER BY at_ts DESC
