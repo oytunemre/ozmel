@@ -55,8 +55,8 @@ final class OrderController
         }
 
         $cols = Order::toColumns($input);
-        if ($this->repo->orderNoExists($cols['order_no'])) {
-            Response::invalid(['orderNo' => 'Bu siparis no ile bir kayit zaten var']);
+        if ($this->repo->orderNoExists($cols['order_no'], $cols['product_code_id'])) {
+            Response::invalid(['orderNo' => 'Bu siparis no altinda bu urun zaten var']);
         }
 
         $id = $this->repo->create($cols);
@@ -73,8 +73,18 @@ final class OrderController
         }
 
         $cols = Order::toColumns($input);
-        if (isset($cols['order_no']) && $this->repo->orderNoExists($cols['order_no'], $id)) {
-            Response::invalid(['orderNo' => 'Bu siparis no ile bir kayit zaten var']);
+        // Benzersizlik no + urun bilesik; guncelleme ikisinden birini degistiriyorsa
+        // etkin cifti (degismeyen alan icin mevcut deger) kontrol et.
+        if (array_key_exists('order_no', $cols) || array_key_exists('product_code_id', $cols)) {
+            $existing = $this->repo->find($id);
+            if ($existing === null) {
+                Response::fail(404, 'Siparis bulunamadi');
+            }
+            $orderNo   = $cols['order_no']        ?? (string) $existing['order_no'];
+            $productId = $cols['product_code_id'] ?? (int) $existing['product_code_id'];
+            if ($this->repo->orderNoExists($orderNo, $productId, $id)) {
+                Response::invalid(['orderNo' => 'Bu siparis no altinda bu urun zaten var']);
+            }
         }
 
         try {

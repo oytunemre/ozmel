@@ -21,11 +21,16 @@ final class OrderRepository extends BaseRepository
         ];
     }
 
-    /** UNIQUE(tenant_id, order_no) hatasini yakalamak yerine once sorar — mesaj daha net olur. */
-    public function orderNoExists(string $orderNo, ?int $exceptId = null): bool
+    /**
+     * UNIQUE(tenant_id, order_no, product_code_id) hatasini yakalamak yerine once sorar.
+     * order_no bir musteri siparis numarasidir; ayni no altinda FARKLI urunler olabilir,
+     * ama ayni urun iki kez girilemez — bu yuzden kontrol no + urun bilesik.
+     */
+    public function orderNoExists(string $orderNo, int $productCodeId, ?int $exceptId = null): bool
     {
-        $sql = "SELECT COUNT(*) FROM `{$this->table()}` WHERE tenant_id = :t AND order_no = :o";
-        $params = ['t' => $this->ctx->tenantId, 'o' => $orderNo];
+        $sql = "SELECT COUNT(*) FROM `{$this->table()}`
+                 WHERE tenant_id = :t AND order_no = :o AND product_code_id = :p";
+        $params = ['t' => $this->ctx->tenantId, 'o' => $orderNo, 'p' => $productCodeId];
         if ($exceptId !== null) {
             $sql .= ' AND id <> :id';
             $params['id'] = $exceptId;

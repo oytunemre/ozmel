@@ -55,8 +55,8 @@ final class WorkOrderController
         }
 
         $cols = WorkOrder::toColumns($input);
-        if ($this->repo->woNoExists($cols['wo_no'])) {
-            Response::invalid(['woNo' => 'Bu is emri no ile bir kayit zaten var']);
+        if ($this->repo->woNoExists($cols['wo_no'], $cols['product_code_id'])) {
+            Response::invalid(['woNo' => 'Bu is emri no altinda bu urun zaten var']);
         }
 
         $id = $this->repo->create($cols);
@@ -73,8 +73,18 @@ final class WorkOrderController
         }
 
         $cols = WorkOrder::toColumns($input);
-        if (isset($cols['wo_no']) && $this->repo->woNoExists($cols['wo_no'], $id)) {
-            Response::invalid(['woNo' => 'Bu is emri no ile bir kayit zaten var']);
+        // Benzersizlik no + urun bilesik; guncelleme ikisinden birini degistiriyorsa
+        // etkin cifti (degismeyen alan icin mevcut deger) kontrol et.
+        if (array_key_exists('wo_no', $cols) || array_key_exists('product_code_id', $cols)) {
+            $existing = $this->repo->find($id);
+            if ($existing === null) {
+                Response::fail(404, 'Is emri bulunamadi');
+            }
+            $woNo      = $cols['wo_no']           ?? (string) $existing['wo_no'];
+            $productId = $cols['product_code_id'] ?? (int) $existing['product_code_id'];
+            if ($this->repo->woNoExists($woNo, $productId, $id)) {
+                Response::invalid(['woNo' => 'Bu is emri no altinda bu urun zaten var']);
+            }
         }
 
         try {
