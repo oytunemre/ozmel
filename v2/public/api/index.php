@@ -75,6 +75,9 @@ $routes = [
     'tasks'         => App\Controller\TaskController::class,
     'purchase-requests' => App\Controller\PurchaseRequestController::class,
     'purchase-receipts' => App\Controller\PurchaseReceiptController::class,
+    // Salt okunur toplu rapor uc noktalari (CRUD degil; yalnizca GET index).
+    'dashboard'     => App\Controller\DashboardController::class,
+    'sales-reports' => App\Controller\SalesReportController::class,
 ];
 
 // Tek-satir konfig kaynaklari: id yok. GET tek nesne doner, POST ?op=guncelle gunceller.
