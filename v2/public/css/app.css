@@ -333,3 +333,19 @@ textarea.input { min-height: 84px; resize: vertical; }
 .char-block .char-body { padding: 8px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 12px; }
 .char-block .char-body > * { min-width: 0; }   /* alanlar taşmasın */
 .char-block .char-values { grid-column: 1 / -1; }
+
+/* — genişleyen satır + ölçüm detayı — */
+.table th.expander, .table td.expander { width: 1%; padding-right: 0; }
+.table td.expander .tree-toggle { visibility: visible; }
+.table .detail-row > .detail-cell { padding: 0; background: var(--color-neutral-100);
+  border-bottom: 1px solid var(--color-divider); }
+.meas-detail { padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+.meas-detail .mrow { display: grid; grid-template-columns: 220px 1fr auto; gap: 14px; align-items: baseline; font-size: 13.5px; }
+.meas-detail .mloc { font-weight: 500; min-width: 0; }
+.meas-detail .limits { display: block; font-size: 11px; color: var(--color-neutral-600); font-family: var(--font-mono); font-weight: 400; }
+.meas-detail .mvals { font-family: var(--font-mono); display: flex; flex-wrap: wrap; gap: 4px 10px; min-width: 0; }
+.meas-detail .v.out { color: var(--color-danger); font-weight: 700; }
+.meas-detail .mstat { font-size: 12px; white-space: nowrap; }
+.meas-detail .mstat.ok { color: var(--color-success); }
+.meas-detail .mstat.bad { color: var(--color-danger); }
+.meas-detail .empty { font-size: 13px; color: var(--color-neutral-600); }

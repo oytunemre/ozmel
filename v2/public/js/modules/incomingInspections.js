@@ -10,6 +10,7 @@ import { TagList } from '../core/taglist.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
 import { loadLookup, mapProduct, INSPECTION_RESULT_OPTIONS, withCurrent } from '../core/lookups.js';
+import { measurementDetail } from './_measDetail.js';
 
 const api = resource('incoming-inspections');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
@@ -35,6 +36,10 @@ export async function viewIncomingInspections(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
+    // Genişleyen satır: her karakteristik + değerleri + kendi limitlerine göre tolerans.
+    expand: (row) => measurementDetail((row.characteristics || []).map(c => ({
+      location: c.name || ('#' + c.charNo), lower: c.lowerLimit, upper: c.upperLimit, values: c.values || []
+    }))),
     load: () => api.list({ limit: 200 }).then(r => r.data),
     searchText: (r) => [r.supplier, products.label(r.materialCodeId), r.inspectorName].join(' '),
     emptyMessage: 'Henüz kontrol yok. "Yeni Kontrol" ile başlayın.',

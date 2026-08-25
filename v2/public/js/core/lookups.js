@@ -80,6 +80,15 @@ export function fmtMeasure(v) {
   return s;
 }
 
+/** Değer tolerans dışında mı? Sayı değilse (or. 'Uygun') tolerans yok -> false. */
+export function outOfTolerance(v, lower, upper) {
+  const n = Number(v);
+  if (v == null || v === '' || !isFinite(n)) return false;
+  if (lower != null && lower !== '' && n < Number(lower)) return true;
+  if (upper != null && upper !== '' && n > Number(upper)) return true;
+  return false;
+}
+
 // Durum seçenekleri (backend VARCHAR; kısıt yalnızca arayüzde). Gerçek veriden.
 export const ORDER_STATUS_OPTIONS = [
   { value: 'Aktif', label: 'Aktif' },

@@ -32,6 +32,7 @@ export class DataTable {
     this.search = '';
     this.page = 1;
     this.activeId = null;
+    this.expanded = new Set();   // genişletilmiş satır id'leri (opts.expand verilmişse)
     this.render();
   }
 
@@ -141,19 +142,23 @@ export class DataTable {
     const start = (this.page - 1) * pageSize;
     const slice = rows.slice(start, start + pageSize);
     const hasActions = this.o.onEdit || this.o.onDelete;
+    const hasExpand = !!this.o.expand;
+    this._colCount = this.o.columns.length + (hasActions ? 1 : 0) + (hasExpand ? 1 : 0);
 
     const wrap = el('div', 'table-wrap');
     const table = document.createElement('table');
     table.className = 'table';
-    table.innerHTML = `<thead><tr>${
+    table.innerHTML = `<thead><tr>${hasExpand ? '<th class="expander"></th>' : ''}${
       this.o.columns.map(c => `<th>${esc(c.label)}</th>`).join('')
     }${hasActions ? '<th></th>' : ''}</tr></thead>`;
 
     const tbody = document.createElement('tbody');
     for (const row of slice) {
+      const id = String(this.o.rowId(row));
       const tr = document.createElement('tr');
-      tr.dataset.id = String(this.o.rowId(row));
-      if (tr.dataset.id === this.activeId) tr.classList.add('is-active');
+      tr.dataset.id = id;
+      if (id === this.activeId) tr.classList.add('is-active');
+      if (hasExpand) tr.appendChild(this.expanderCell(id, row));
       for (const col of this.o.columns) {
         const td = document.createElement('td');
         if (col.className) td.className = col.className;
@@ -163,11 +168,35 @@ export class DataTable {
       }
       if (hasActions) tr.appendChild(this.actionsCell(row));
       tbody.appendChild(tr);
+      if (hasExpand && this.expanded.has(id)) tbody.appendChild(this.detailRow(row));
     }
     table.appendChild(tbody);
     wrap.appendChild(table);
     this.body.appendChild(wrap);
     this.body.appendChild(this.pager(rows.length, start, slice.length, pages));
+  }
+
+  // Genişletme (chevron) hücresi — Ürün Ağaçları'ndaki .tree-toggle deseni.
+  expanderCell(id, row) {
+    const td = el('td', 'expander');
+    const b = el('button', 'tree-toggle', this.expanded.has(id) ? '▾' : '▸');
+    b.addEventListener('click', () => {
+      if (this.expanded.has(id)) this.expanded.delete(id); else this.expanded.add(id);
+      this.paint();
+    });
+    td.appendChild(b);
+    return td;
+  }
+
+  detailRow(row) {
+    const tr = el('tr', 'detail-row');
+    const td = el('td', 'detail-cell');
+    td.colSpan = this._colCount;
+    const content = this.o.expand(row);
+    if (typeof content === 'string') td.innerHTML = content;
+    else if (content) td.appendChild(content);
+    tr.appendChild(td);
+    return tr;
   }
 
   actionsCell(row) {

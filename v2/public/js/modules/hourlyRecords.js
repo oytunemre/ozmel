@@ -10,19 +10,27 @@ import { TagList } from '../core/taglist.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
 import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
+import { measurementDetail } from './_measDetail.js';
 
 const api = resource('hourly-records');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewHourlyRecords(container) {
   container.innerHTML = '<div class="loading">Yükleniyor…</div>';
-  let products, ops, pointRows;
+  let products, ops, pointRows, pointsById;
   try {
     products = await loadLookup('product-codes', mapProduct);
     ops = await loadLookup('operations', mapNamed);
     const pts = (await resource('hourly-points').list({ limit: 200 })).data;
     pointRows = pts.map(p => ({ id: p.id, code: products.byId.get(p.productCodeId)?.code || '', name: p.measureLocation }));
+    pointsById = new Map(pts.map(p => [p.id, p]));
   } catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewHourlyRecords(container) })); return; }
+
+  // Genişleyen satır: her nokta için ölçüm yeri + değerler (sırayla) + tolerans.
+  const expand = (row) => measurementDetail(row.measurements.map(m => {
+    const p = pointsById.get(m.pointId) || {};
+    return { location: p.measureLocation || ('#' + m.pointId), lower: p.lowerLimit, upper: p.upperLimit, values: m.values };
+  }));
 
   const table = new DataTable(container, {
     title: 'Saatlik Kayıtlar',
@@ -32,6 +40,7 @@ export async function viewHourlyRecords(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
+    expand,
     load: () => api.list({ limit: 200 }).then(r => r.data),
     searchText: (r) => [products.label(r.productCodeId), ops.label(r.operationId), r.personnelName, r.machineName].join(' '),
     emptyMessage: 'Henüz kayıt yok. "Yeni Kayıt" ile başlayın.',
