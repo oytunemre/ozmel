@@ -79,11 +79,13 @@ export class DataTable {
       left.appendChild(sub);
     }
     head.appendChild(left);
+    this.addBtn = null;
     if (this.o.addLabel && this.o.onAdd) {
       const b = el('button', 'btn btn-primary', esc(this.o.addLabel));
       if (!this.o.canWrite) { b.disabled = true; b.title = READONLY_HINT; }
       else b.addEventListener('click', () => this.o.onAdd());
       head.appendChild(b);
+      this.addBtn = b;
     }
     return head;
   }
@@ -115,6 +117,11 @@ export class DataTable {
   paint() {
     this.body.innerHTML = '';
     const rows = this.filtered();
+
+    // Liste TAMAMEN boşken sağ üstteki ekleme butonunu gizle — boş hal kartındaki
+    // buton (daha görünür, yönlendirici) yeterli. Arama sonucu boşsa (kayıt var)
+    // üstteki buton kalır.
+    if (this.addBtn) this.addBtn.style.display = this.all.length === 0 ? 'none' : '';
 
     if (rows.length === 0) {
       this.body.appendChild(this.all.length === 0

@@ -104,13 +104,25 @@ abstract class BaseRepository
         $this->pdo()->prepare($sql)->execute($data + ['_id' => $id, '_t' => $this->ctx->tenantId]);
     }
 
+    /**
+     * @throws RuntimeException IN_USE — kayit baska tablolarca referans veriliyor (FK)
+     */
     public function delete(int $id): bool
     {
-        $stmt = $this->pdo()->prepare(
-            "DELETE FROM `{$this->table()}` WHERE id = :id AND tenant_id = :t"
-        );
-        $stmt->execute(['id' => $id, 't' => $this->ctx->tenantId]);
-        return $stmt->rowCount() > 0;
+        try {
+            $stmt = $this->pdo()->prepare(
+                "DELETE FROM `{$this->table()}` WHERE id = :id AND tenant_id = :t"
+            );
+            $stmt->execute(['id' => $id, 't' => $this->ctx->tenantId]);
+            return $stmt->rowCount() > 0;
+        } catch (\PDOException $e) {
+            // MySQL 1451 = "parent row: FK constraint fails" (SQLSTATE 23000).
+            // Kayit hala kullanimda — 500 yerine anlamli IN_USE.
+            if (($e->errorInfo[1] ?? null) === 1451 || (string) $e->getCode() === '23000') {
+                throw new RuntimeException('IN_USE');
+            }
+            throw $e;
+        }
     }
         /** updated_at'i ilerletir. Cocuk tablo degisikliklerinde cagrilir. */
        /** updated_at'i ilerletir. Cocuk tablo degisikliklerinde cagrilir. */

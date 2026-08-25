@@ -129,6 +129,13 @@ try {
     }
 
     Response::fail(405, "Desteklenmeyen metot: $method");
+} catch (RuntimeException $e) {
+    // BaseRepository::delete() FK ihlalinde IN_USE firlatir — silme reddi 409.
+    if ($e->getMessage() === 'IN_USE') {
+        Response::fail(409, 'Bu kayıt başka yerlerde kullanıldığı için silinemez. Önce bağlı kayıtları kaldırın.', 'IN_USE');
+    }
+    error_log('[ozmel-api] ' . $e->getMessage());
+    Response::fail(500, 'Sunucu hatasi');
 } catch (Throwable $e) {
     error_log('[ozmel-api] ' . $e->getMessage());
     Response::fail(500, 'Sunucu hatasi');
