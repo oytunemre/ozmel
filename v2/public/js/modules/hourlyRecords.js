@@ -1,83 +1,139 @@
-// Saatlik kontrol kayitlari — v2 modulu.
-//
-// Bu modul VERI TUTMAZ. Global bir DB nesnesi yok, seed yok, blob yok.
-// Her render kendi verisini API'den ceker. Ekran metinleri Turkce,
-// kod ve API anahtarlari Ingilizce.
-//
-// v1'de saatlikKayitlari degerler{} nesnesi tutuyordu: nokta -> DEGISKEN uzunlukta
-// deger dizisi. API'de `measurements` = [{pointId, values:[...]}]; sunucuda her
-// deger ayri satir (sequence sirayi korur), tek transaction'da yazilir.
+// Saatlik Kayıtlar — v2 modülü. Parent + çocuk ölçümler; her nokta DEĞİŞKEN sayıda
+// değer tutar. Editör: nokta seçici + değerler (TagList, sırayla). API şekli:
+// measurements = [{ pointId, values:[...] }].
 
-const API = '../api/index.php';
+import { resource } from '../core/api.js';
+import { DataTable } from '../core/table.js';
+import { openDrawer } from '../core/drawer.js';
+import { FkSelect } from '../core/fkselect.js';
+import { TagList } from '../core/taglist.js';
+import { toast } from '../core/toast.js';
+import { confirmDialog, errorState, esc } from '../core/states.js';
+import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
 
-async function request(path, { method = 'GET', body = null } = {}) {
-  const res = await fetch(API + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Session-Token': window.SESSION_TOKEN || ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
-
-  const json = await res.json().catch(() => ({}));
-
-  if (!json.ok) {
-    const message = json.errors?._ || Object.values(json.errors || {})[0] || 'Bilinmeyen hata';
-    throw Object.assign(new Error(message), { status: res.status, errors: json.errors || {} });
-  }
-  return json;
-}
-
-export const hourlyRecords = {
-  list:   (page = 1)   => request(`/hourly-records?page=${page}&limit=50`),
-  get:    (id)         => request(`/hourly-records/${id}`),
-  create: (data)       => request('/hourly-records', { method: 'POST', body: data }),
-  update: (id, data)   => request(`/hourly-records/${id}?op=guncelle`, { method: 'POST', body: data }),
-  remove: (id)         => request(`/hourly-records/${id}?op=sil`, { method: 'POST' })
-};
+const api = resource('hourly-records');
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewHourlyRecords(container) {
-  container.innerHTML = '<div class="loading">Yukleniyor…</div>';
-
+  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  let products, ops, pointRows;
   try {
-    const { data, meta } = await hourlyRecords.list();
+    products = await loadLookup('product-codes', mapProduct);
+    ops = await loadLookup('operations', mapNamed);
+    const pts = (await resource('hourly-points').list({ limit: 200 })).data;
+    pointRows = pts.map(p => ({ id: p.id, code: products.byId.get(p.productCodeId)?.code || '', name: p.measureLocation }));
+  } catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewHourlyRecords(container) })); return; }
 
-    container.innerHTML = `
-      <div class="module-head">
-        <h2>Saatlik Kayitlar</h2>
-        <button id="hr-add" class="btn">Yeni Kayit</button>
-      </div>
-      <table class="tbl">
-        <thead><tr><th>Urun</th><th>Operasyon</th><th>Tarih</th><th>Saat</th><th>Personel</th><th>Nokta</th><th></th></tr></thead>
-        <tbody>
-          ${data.map(r => `
-            <tr data-id="${r.id}" data-updated="${r.updatedAt}">
-              <td>${r.productCodeId}</td>
-              <td>${r.operationId}</td>
-              <td>${escapeHtml(r.date)}</td>
-              <td>${r.hour ? escapeHtml(r.hour) : '—'}</td>
-              <td>${r.personnelName ? escapeHtml(r.personnelName) : '—'}</td>
-              <td>${r.measurements.length}</td>
-              <td>
-                <button class="hr-edit" data-id="${r.id}">Duzenle</button>
-                <button class="hr-del"  data-id="${r.id}">Sil</button>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="meta">Toplam ${meta.total} kayit</p>`;
+  const table = new DataTable(container, {
+    title: 'Saatlik Kayıtlar',
+    subtitle: 'Saatlik kontrol kayıtları — nokta başına ölçüm dizisi',
+    canWrite,
+    addLabel: 'Yeni Kayıt',
+    onAdd: () => openForm(null),
+    onEdit: (row) => openForm(row),
+    onDelete: (row) => remove(row),
+    load: () => api.list({ limit: 200 }).then(r => r.data),
+    searchText: (r) => [products.label(r.productCodeId), ops.label(r.operationId), r.personnelName, r.machineName].join(' '),
+    emptyMessage: 'Henüz kayıt yok. "Yeni Kayıt" ile başlayın.',
+    columns: [
+      { label: 'Ürün', render: (r) => esc(products.label(r.productCodeId)) },
+      { label: 'Operasyon', render: (r) => esc(ops.label(r.operationId)) },
+      { label: 'Tarih', render: (r) => esc(r.date || '—') },
+      { label: 'Saat', render: (r) => esc(r.hour || '—') },
+      { label: 'Personel', render: (r) => esc(r.personnelName || '—') },
+      { label: 'Nokta', render: (r) => r.measurements.length, className: 'mono' }
+    ]
+  });
 
-    if (data.length === 0) {
-      container.querySelector('tbody').innerHTML =
-        '<tr><td colspan="7">Henuz kayit eklenmemis. "Yeni Kayit" ile baslayin.</td></tr>';
-    }
-  } catch (err) {
-    container.innerHTML = `<div class="error">Liste alinamadi: ${escapeHtml(err.message)}</div>`;
+  function openForm(row) {
+    const editing = !!row;
+    if (editing) table.markActive(row.id);
+    const productFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.productCodeId ?? null, placeholder: 'Ürün seçin…' });
+    const opFk = new FkSelect({ source: ops.source, rows: ops.rows, value: row?.operationId ?? null, placeholder: 'Operasyon seçin…' });
+    const meas = new HourlyMeasurementsEditor(pointRows);
+
+    openDrawer({
+      title: editing ? 'Kayıt Düzenle' : 'Yeni Kayıt',
+      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      values: editing ? { ...row } : {},
+      fields: [
+        { name: 'secId', type: 'section', label: 'Kayıt' },
+        { name: 'productCodeId', label: 'Ürün', type: 'fk', fk: productFk, required: true },
+        { name: 'operationId', label: 'Operasyon', type: 'fk', fk: opFk, required: true },
+        { name: 'date', label: 'Tarih', type: 'date', required: true },
+        { name: 'shift', label: 'Vardiya', type: 'text', required: true },
+        { name: 'hour', label: 'Saat', type: 'time' },
+        { name: 'personnelName', label: 'Personel', type: 'text' },
+        { name: 'machineName', label: 'Makina', type: 'text' },
+        { name: 'productionCount', label: 'Üretim Adedi', type: 'number' },
+        { name: 'secMeas', type: 'section', label: 'Ölçümler' },
+        { name: 'measurements', type: 'component', component: meas }
+      ],
+      onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
+      onSaved: async (saved) => { toast(editing ? 'Kayıt güncellendi' : 'Kayıt eklendi', 'success'); await table.reload(); table.flash(saved.id); },
+      onClose: () => table.markActive(null)
+    });
+  }
+
+  async function remove(row) {
+    const ok = await confirmDialog({ title: 'Kayıt silinsin mi?', body: 'Bu saatlik kayıt ve ölçümleri silinecek.', confirmLabel: 'Sil', danger: true });
+    if (!ok) return;
+    try { await api.remove(row.id); toast('Kayıt silindi', 'success'); await table.reload(); }
+    catch (err) { toast(err.message, 'danger'); }
   }
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Ölçüm editörü: her satır bir nokta + değişken sayıda değer (TagList).
+class HourlyMeasurementsEditor {
+  constructor(pointRows) {
+    this.pointRows = pointRows;
+    this.rows = [];
+    this.cb = null;
+    this.el = document.createElement('div');
+    this.box = el('div', 'rows-ed');
+    this.head = el('div', 'rows-head');
+    this.head.style.gridTemplateColumns = '220px 1fr 24px';
+    this.head.innerHTML = '<span>Nokta</span><span>Değerler (sırayla)</span><span></span>';
+    this.body = el('div', '');
+    this.box.append(this.head, this.body);
+    this.el.appendChild(this.box);
+    const add = el('button', 'btn btn-secondary btn-sm rows-ed-add', '+ Nokta ekle');
+    add.type = 'button';
+    add.addEventListener('click', () => { this.addRow({}); this.emit(); });
+    this.el.appendChild(add);
+    this.paintEmpty();
+  }
+  onChange(cb) { this.cb = cb; }
+  emit() { this.cb && this.cb(); }
+  setValue(measurements) {
+    this.rows.forEach(r => r.line.remove());
+    this.rows = [];
+    for (const m of (measurements || [])) this.addRow(m);
+    this.paintEmpty();
+  }
+  getValue() {
+    return this.rows.map(r => ({ pointId: r.fk.getValue(), values: r.values.getValue() }))
+      .filter(m => m.pointId);
+  }
+  addRow(m) {
+    const line = el('div', 'row-line');
+    line.style.gridTemplateColumns = '220px 1fr 24px';
+    const fk = new FkSelect({ source: async () => ({ rows: this.pointRows, total: this.pointRows.length }), rows: this.pointRows, value: m.pointId ?? null, placeholder: 'Nokta…' });
+    const values = new TagList({ value: (m.values || []).map(String), placeholder: 'Değer yaz ve Enter…' });
+    const x = el('button', 'row-x', '×'); x.type = 'button';
+    fk.onChange(() => this.emit()); values.onChange(() => this.emit());
+    const entry = { fk, values, line };
+    x.addEventListener('click', () => { line.remove(); this.rows = this.rows.filter(r => r !== entry); this.emit(); this.paintEmpty(); });
+    line.append(fk.el, values.el, x);
+    this.body.appendChild(line);
+    this.rows.push(entry);
+    this.paintEmpty();
+  }
+  paintEmpty() {
+    let e = this.body.querySelector('.rows-empty');
+    if (this.rows.length === 0) { if (!e) { e = el('div', 'rows-empty', 'Nokta eklenmedi.'); this.body.appendChild(e); } }
+    else if (e) e.remove();
+  }
 }
+
+function el(tag, cls, html) { const n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }

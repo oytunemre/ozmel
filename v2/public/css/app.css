@@ -310,3 +310,19 @@ textarea.input { min-height: 84px; resize: vertical; }
 .wgrid td.cell { cursor: pointer; font-family: var(--font-mono); color: var(--color-neutral-500); }
 .wgrid td.cell.has { background: var(--color-accent-100); color: var(--color-accent-900); font-weight: 500; }
 .wgrid td.cell:hover { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+
+/* — tekrarlı satır editörü (ölçümler / karakteristikler) — */
+.rows-ed { border: 1px solid var(--color-divider); }
+.rows-ed .rows-head { display: grid; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--color-divider);
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-neutral-600); }
+.rows-ed .row-line { display: grid; gap: 8px; align-items: start; padding: 6px 8px; }
+.rows-ed .row-line + .row-line { border-top: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent); }
+.rows-ed .row-x { border: 0; background: none; cursor: pointer; color: var(--color-danger); font-size: 15px; line-height: 1; padding: 6px 2px; }
+.rows-ed .rows-empty { padding: 8px; font-size: 13px; color: var(--color-neutral-600); }
+.rows-ed-add { margin-top: 6px; }
+.rows-ed .input, .rows-ed .fk-control { min-height: 32px; }
+.char-block { border: 1px solid var(--color-divider); margin-bottom: 10px; }
+.char-block .char-head { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+  padding: 8px; background: var(--color-neutral-100); border-bottom: 1px solid var(--color-divider); }
+.char-block .char-body { padding: 8px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 12px; }
+.char-block .char-values { grid-column: 1 / -1; }

@@ -216,6 +216,13 @@ function buildField(f, value, markDirty, form) {
     tl.onChange(markDirty);
     wrap.appendChild(tl.el);
     read = () => tl.getValue();
+  } else if (f.type === 'component') {
+    // Modülün sağladığı özel alt-editör: { el, getValue(), setValue?(), onChange?() }.
+    const c = f.component;
+    if (value != null && c.setValue) c.setValue(value);
+    c.onChange?.(markDirty);
+    wrap.appendChild(c.el);
+    read = () => c.getValue();
   } else if (f.type === 'bool') {
     const seg = h('div', 'seg');
     const cur = value ? '1' : '0';
