@@ -206,6 +206,12 @@ function buildField(f, value, markDirty, form) {
     fk.onChange(markDirty);
     wrap.appendChild(fk.el);
     read = () => fk.getValue();
+  } else if (f.type === 'tags') {
+    const tl = f.tags;
+    if (value != null) tl.setValue(value);
+    tl.onChange(markDirty);
+    wrap.appendChild(tl.el);
+    read = () => tl.getValue();
   } else if (f.type === 'bool') {
     const seg = h('div', 'seg');
     const cur = value ? '1' : '0';

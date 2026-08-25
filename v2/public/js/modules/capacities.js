@@ -1,80 +1,85 @@
-// Kapasiteler — v2 modulu.
+// Kapasiteler — v2 modülü. Ortak FE katmanı (core/) üzerine.
 //
-// Bu modul VERI TUTMAZ. Global bir DB nesnesi yok, seed yok, blob yok.
-// Her render kendi verisini API'den ceker. Ekran metinleri Turkce,
-// kod ve API anahtarlari Ingilizce.
-//
-// v1'de capacity urun/isMerkezi serbest metindi; API'de productCodeId /
-// workCenterId FK olur. Bir urun-is merkezi cifti icin tek kapasite kaydi vardir.
+// product_code_id + work_center_id FK. Bir ürün-iş merkezi çifti için tek kapasite.
 
-const API = '../api/index.php';
+import { resource } from '../core/api.js';
+import { DataTable } from '../core/table.js';
+import { openDrawer } from '../core/drawer.js';
+import { FkSelect } from '../core/fkselect.js';
+import { toast } from '../core/toast.js';
+import { confirmDialog, errorState, esc } from '../core/states.js';
+import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
 
-async function request(path, { method = 'GET', body = null } = {}) {
-  const res = await fetch(API + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Session-Token': window.SESSION_TOKEN || ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
-
-  const json = await res.json().catch(() => ({}));
-
-  if (!json.ok) {
-    const message = json.errors?._ || Object.values(json.errors || {})[0] || 'Bilinmeyen hata';
-    throw Object.assign(new Error(message), { status: res.status, errors: json.errors || {} });
-  }
-  return json;
-}
-
-export const capacities = {
-  list:   (page = 1)   => request(`/capacities?page=${page}&limit=50`),
-  get:    (id)         => request(`/capacities/${id}`),
-  create: (data)       => request('/capacities', { method: 'POST', body: data }),
-  update: (id, data)   => request(`/capacities/${id}?op=guncelle`, { method: 'POST', body: data }),
-  remove: (id)         => request(`/capacities/${id}?op=sil`, { method: 'POST' })
-};
+const api = resource('capacities');
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewCapacities(container) {
-  container.innerHTML = '<div class="loading">Yukleniyor…</div>';
-
+  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  let products, centers;
   try {
-    const { data, meta } = await capacities.list();
-
-    container.innerHTML = `
-      <div class="module-head">
-        <h2>Kapasiteler</h2>
-        <button id="cap-add" class="btn">Yeni Kapasite</button>
-      </div>
-      <table class="tbl">
-        <thead><tr><th>Urun</th><th>Is Merkezi</th><th>Kapasite (vardiya)</th><th>Dakika</th><th></th></tr></thead>
-        <tbody>
-          ${data.map(c => `
-            <tr data-id="${c.id}" data-updated="${c.updatedAt}">
-              <td>${c.productCodeId}</td>
-              <td>${c.workCenterId}</td>
-              <td>${c.capacityPerShift}</td>
-              <td>${c.minutes ?? '—'}</td>
-              <td>
-                <button class="cap-edit" data-id="${c.id}">Duzenle</button>
-                <button class="cap-del"  data-id="${c.id}">Sil</button>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="meta">Toplam ${meta.total} kayit</p>`;
-
-    if (data.length === 0) {
-      container.querySelector('tbody').innerHTML =
-        '<tr><td colspan="5">Henuz kapasite eklenmemis. "Yeni Kapasite" ile baslayin.</td></tr>';
-    }
+    products = await loadLookup('product-codes', mapProduct);
+    centers = await loadLookup('work-centers', mapNamed);
   } catch (err) {
-    container.innerHTML = `<div class="error">Liste alinamadi: ${escapeHtml(err.message)}</div>`;
+    container.innerHTML = '';
+    container.appendChild(errorState({ message: err.message, onRetry: () => viewCapacities(container) }));
+    return;
   }
-}
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const table = new DataTable(container, {
+    title: 'Kapasiteler',
+    canWrite,
+    addLabel: 'Yeni Kapasite',
+    onAdd: () => openForm(null),
+    onEdit: (row) => openForm(row),
+    onDelete: (row) => remove(row),
+    load: () => api.list({ limit: 200 }).then(r => r.data),
+    searchText: (r) => [products.label(r.productCodeId), centers.label(r.workCenterId)].join(' '),
+    emptyMessage: 'Henüz kapasite eklenmemiş. "Yeni Kapasite" ile başlayın.',
+    columns: [
+      { label: 'Ürün', render: (r) => esc(products.label(r.productCodeId)) },
+      { label: 'İş Merkezi', render: (r) => esc(centers.label(r.workCenterId)) },
+      { label: 'Kapasite (vardiya)', key: 'capacityPerShift', className: 'mono' },
+      { label: 'Dakika', render: (r) => r.minutes ?? '—' }
+    ]
+  });
+
+  function openForm(row) {
+    const editing = !!row;
+    if (editing) table.markActive(row.id);
+    const productFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.productCodeId ?? null, placeholder: 'Ürün seçin…' });
+    const centerFk = new FkSelect({ source: centers.source, rows: centers.rows, value: row?.workCenterId ?? null, placeholder: 'İş merkezi seçin…' });
+
+    openDrawer({
+      title: editing ? 'Kapasite Düzenle' : 'Yeni Kapasite',
+      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      values: editing ? { ...row } : {},
+      fields: [
+        { name: 'productCodeId', label: 'Ürün', type: 'fk', fk: productFk, required: true },
+        { name: 'workCenterId', label: 'İş Merkezi', type: 'fk', fk: centerFk, required: true },
+        { name: 'capacityPerShift', label: 'Kapasite (vardiya başı)', type: 'number', step: 'any', required: true },
+        { name: 'minutes', label: 'Dakika', type: 'number', step: 'any' }
+      ],
+      onSubmit: async (v) => {
+        const { data } = editing ? await api.update(row.id, v) : await api.create(v);
+        return data;
+      },
+      onSaved: async (saved) => {
+        toast(editing ? 'Kapasite güncellendi' : 'Kapasite eklendi', 'success');
+        await table.reload();
+        table.flash(saved.id);
+      },
+      onClose: () => table.markActive(null)
+    });
+  }
+
+  async function remove(row) {
+    const ok = await confirmDialog({
+      title: 'Kapasite silinsin mi?',
+      body: `${products.label(row.productCodeId)} · ${centers.label(row.workCenterId)} kaydı silinecek.`,
+      confirmLabel: 'Sil', danger: true
+    });
+    if (!ok) return;
+    try { await api.remove(row.id); toast('Kapasite silindi', 'success'); await table.reload(); }
+    catch (err) { toast(err.message, 'danger'); }
+  }
 }

@@ -1,79 +1,66 @@
-// Terim cevirileri — v2 modulu.
+// Çeviri Sözlüğü (Terimler) — v2 modülü. Ortak FE katmanı (core/) üzerine.
 //
-// Bu modul VERI TUTMAZ. Global bir DB nesnesi yok, seed yok, blob yok.
-// Her render kendi verisini API'den ceker. Ekran metinleri Turkce,
-// kod ve API anahtarlari Ingilizce (original/translation/isHidden).
-//
-// v1'de "gizliTerimler" ayri bir string diziydi; API'de terimin `isHidden`
-// alani olur — ayri liste/endpoint yok.
+// original (benzersiz), translation, isHidden. v1'deki gizliTerimler burada boolean.
 
-const API = '../api/index.php';
+import { resource } from '../core/api.js';
+import { DataTable } from '../core/table.js';
+import { openDrawer } from '../core/drawer.js';
+import { toast } from '../core/toast.js';
+import { confirmDialog, esc } from '../core/states.js';
 
-async function request(path, { method = 'GET', body = null } = {}) {
-  const res = await fetch(API + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Session-Token': window.SESSION_TOKEN || ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
-
-  const json = await res.json().catch(() => ({}));
-
-  if (!json.ok) {
-    const message = json.errors?._ || Object.values(json.errors || {})[0] || 'Bilinmeyen hata';
-    throw Object.assign(new Error(message), { status: res.status, errors: json.errors || {} });
-  }
-  return json;
-}
-
-export const terms = {
-  list:   (page = 1)   => request(`/terms?page=${page}&limit=50`),
-  get:    (id)         => request(`/terms/${id}`),
-  create: (data)       => request('/terms', { method: 'POST', body: data }),
-  update: (id, data)   => request(`/terms/${id}?op=guncelle`, { method: 'POST', body: data }),
-  remove: (id)         => request(`/terms/${id}?op=sil`, { method: 'POST' })
-};
+const api = resource('terms');
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewTerms(container) {
-  container.innerHTML = '<div class="loading">Yukleniyor…</div>';
+  const table = new DataTable(container, {
+    title: 'Çeviri Sözlüğü',
+    canWrite,
+    addLabel: 'Yeni Terim',
+    onAdd: () => openForm(null),
+    onEdit: (row) => openForm(row),
+    onDelete: (row) => remove(row),
+    load: () => api.list({ limit: 200 }).then(r => r.data),
+    searchText: (r) => [r.original, r.translation].join(' '),
+    emptyMessage: 'Henüz terim eklenmemiş. "Yeni Terim" ile başlayın.',
+    columns: [
+      { label: 'Orijinal', key: 'original' },
+      { label: 'Çeviri', render: (r) => esc(r.translation || '—') },
+      { label: 'Gizli', render: (r) => r.isHidden ? '<span class="tag tag-neutral">Gizli</span>' : '—' }
+    ]
+  });
 
-  try {
-    const { data, meta } = await terms.list();
-
-    container.innerHTML = `
-      <div class="module-head">
-        <h2>Terim Cevirileri</h2>
-        <button id="term-add" class="btn">Yeni Terim</button>
-      </div>
-      <table class="tbl">
-        <thead><tr><th>Orijinal</th><th>Ceviri</th><th>Gizli</th><th></th></tr></thead>
-        <tbody>
-          ${data.map(t => `
-            <tr data-id="${t.id}" data-updated="${t.updatedAt}">
-              <td>${escapeHtml(t.original)}</td>
-              <td>${t.translation ? escapeHtml(t.translation) : '—'}</td>
-              <td>${t.isHidden ? 'Evet' : 'Hayir'}</td>
-              <td>
-                <button class="term-edit" data-id="${t.id}">Duzenle</button>
-                <button class="term-del"  data-id="${t.id}">Sil</button>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="meta">Toplam ${meta.total} kayit</p>`;
-
-    if (data.length === 0) {
-      container.querySelector('tbody').innerHTML =
-        '<tr><td colspan="4">Henuz terim eklenmemis. "Yeni Terim" ile baslayin.</td></tr>';
-    }
-  } catch (err) {
-    container.innerHTML = `<div class="error">Liste alinamadi: ${escapeHtml(err.message)}</div>`;
+  function openForm(row) {
+    const editing = !!row;
+    if (editing) table.markActive(row.id);
+    openDrawer({
+      title: editing ? 'Terim Düzenle' : 'Yeni Terim',
+      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      values: editing ? { ...row } : { isHidden: 0 },
+      fields: [
+        { name: 'original', label: 'Orijinal', type: 'text', required: true },
+        { name: 'translation', label: 'Çeviri', type: 'text' },
+        { name: 'isHidden', label: 'Gizli', type: 'bool' }
+      ],
+      onSubmit: async (v) => {
+        const { data } = editing ? await api.update(row.id, v) : await api.create(v);
+        return data;
+      },
+      onSaved: async (saved) => {
+        toast(editing ? 'Terim güncellendi' : 'Terim eklendi', 'success');
+        await table.reload();
+        table.flash(saved.id);
+      },
+      onClose: () => table.markActive(null)
+    });
   }
-}
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  async function remove(row) {
+    const ok = await confirmDialog({
+      title: 'Terim silinsin mi?', body: `"${row.original}" silinecek.`,
+      confirmLabel: 'Sil', danger: true
+    });
+    if (!ok) return;
+    try { await api.remove(row.id); toast('Terim silindi', 'success'); await table.reload(); }
+    catch (err) { toast(err.message, 'danger'); }
+  }
 }

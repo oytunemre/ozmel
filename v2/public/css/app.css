@@ -194,6 +194,7 @@ textarea.input { min-height: 84px; resize: vertical; }
 .fk-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px;
   padding: 2px 7px; background: var(--color-accent-100); color: var(--color-accent-800); }
 .fk-chip button { border: 0; background: none; cursor: pointer; color: inherit; font-size: 13px; line-height: 1; padding: 0; }
+.fk-control .taginput { border: 0; outline: 0; background: none; font: inherit; font-size: 14px; flex: 1; min-width: 90px; padding: 2px; }
 .fk-pop { position: absolute; z-index: 55; left: 0; right: 0; margin-top: 3px; background: var(--color-surface);
   border: 1px solid var(--color-accent); box-shadow: var(--shadow-md); max-height: 300px; display: flex; flex-direction: column; }
 .fk-search { padding: var(--space-2); border-bottom: 1px solid var(--color-divider); }
