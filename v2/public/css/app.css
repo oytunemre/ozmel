@@ -93,17 +93,45 @@ textarea.input { min-height: 84px; resize: vertical; }
 .tag-danger { background: var(--color-danger-fill); color: var(--color-danger); }
 .tag + .tag { margin-left: 4px; }
 
-/* — app layout — */
-.app { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
-.sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 30px 18px;
-  border-right: 1px solid var(--color-neutral-300); display: flex; flex-direction: column; gap: 2px; }
-.sidebar .brand { font-family: var(--font-heading); font-size: 21px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.1; margin-bottom: 20px; }
-.sidebar a { color: var(--color-text); text-decoration: none; font-size: 14px;
-  padding: 7px 10px; border-radius: var(--radius); }
-.sidebar a:hover { background: color-mix(in srgb, var(--color-text) 6%, transparent); }
-.sidebar a[aria-current='page'] { background: var(--color-accent); color: var(--color-bg); }
-.content { padding: 30px 34px; min-width: 0; }
+/* — app kabuk: koyu gruplu kenar cubugu + ust bar — */
+.app { display: grid; grid-template-columns: 240px minmax(0, 1fr); height: 100vh; }
+
+.sidebar { background: var(--color-accent-900); color: #e6ebf1; display: flex; flex-direction: column; overflow: hidden; }
+.sidebar-brand { display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.14); flex: none;
+  font-family: var(--font-heading); font-weight: 700; font-size: 20px; letter-spacing: 0.05em; text-transform: uppercase; }
+.sidebar-brand .mark { width: 22px; height: 22px; border: 1.5px solid var(--color-accent-500); flex: none; }
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 10px 0 28px; display: flex; flex-direction: column; gap: 2px; }
+.nav-group { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; color: #8397ac; padding: 14px 18px 6px; }
+.sidebar-nav a { display: flex; align-items: center; height: 36px; padding: 0 18px; color: #e6ebf1;
+  font-size: 14.5px; text-decoration: none; border-left: 3px solid transparent; }
+.sidebar-nav a:hover { background: rgba(255,255,255,0.08); }
+.sidebar-nav a[aria-current='page'] { background: rgba(255,255,255,0.12); color: #fff; font-weight: 500;
+  border-left-color: var(--color-accent-500); padding-left: 15px; }
+.sidebar-nav a .count { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: #93a7bc; }
+
+.main { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.topbar { height: 60px; flex: none; background: var(--color-neutral-100);
+  border-bottom: 1px solid var(--color-neutral-300); display: flex; align-items: center; gap: 16px; padding: 0 24px; }
+.topbar .crumb { font-family: var(--font-mono); font-size: 12px; color: var(--color-neutral-600); }
+.topbar .right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+.topbar .sep { width: 1px; height: 28px; background: var(--color-neutral-300); }
+.lang { display: flex; border: 1px solid var(--color-neutral-300); font-family: var(--font-mono); font-size: 12px; }
+.lang button { border: 0; background: none; padding: 5px 11px; cursor: pointer; color: var(--color-neutral-600); font: inherit; }
+.lang button.on { background: var(--color-accent-900); color: #fff; }
+.user { display: flex; align-items: center; gap: 10px; }
+.user .avatar { width: 34px; height: 34px; background: var(--color-accent-200); border: 1px solid var(--color-accent-500);
+  display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; color: var(--color-accent-800); }
+.user .who { line-height: 1.25; }
+.user .who .name { font-size: 14px; font-weight: 500; }
+.user .who .role { font-size: 11.5px; color: var(--color-neutral-600); }
+.content { flex: 1; overflow: auto; padding: 24px 24px 40px; min-width: 0; }
+
+/* form bolum basligi (uzun formlari gruplar, or. kod tanimlari) */
+.form-section { margin: var(--space-6) 0 var(--space-3); }
+.form-section:first-child { margin-top: 0; }
+.form-section h4 { font-family: var(--font-heading); font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--color-neutral-700); padding-bottom: 5px; border-bottom: 1px solid var(--color-divider); }
 
 /* — module head + toolbar — */
 .module-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); gap: var(--space-4); }

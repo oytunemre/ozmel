@@ -1,81 +1,136 @@
-// Kod tanimlari — v2 modulu.
+// Kod Tanımları — v2 modülü. Ortak FE katmanı (core/) üzerine.
 //
-// Bu modul VERI TUTMAZ. Global bir DB nesnesi yok, seed yok, blob yok.
-// Her render kendi verisini API'den ceker. Ekran metinleri Turkce,
-// kod ve API anahtarlari Ingilizce (code/name/type/...).
-//
-// v1'de kodTanimlari `kod`u dogal anahtar olan tek listeydi; hammadde/yari
-// mamul/urun tek tabloda (type ile) durur. Olcu alanlari (disCap/icCap/...)
-// yalnizca Hammadde tipinde anlamli; sunucu digerlerinde reddeder.
+// 21 alanlı form; TİP seçimine göre ölçü alanları görünür/gizli olur:
+// dış çap / iç çap / malzeme uzunluğu / malzeme ağırlığı YALNIZCA Hammadde'de.
+// Tip Hammadde'den başkasına çevrilince bu alanlar doluysa sunucu 422 döner;
+// drawer o alanları hatalı olarak yeniden gösterir (temizlenene kadar).
 
-const API = '../api/index.php';
+import { resource } from '../core/api.js';
+import { DataTable } from '../core/table.js';
+import { openDrawer } from '../core/drawer.js';
+import { FkSelect } from '../core/fkselect.js';
+import { toast } from '../core/toast.js';
+import { confirmDialog, errorState, esc } from '../core/states.js';
 
-async function request(path, { method = 'GET', body = null } = {}) {
-  const res = await fetch(API + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Session-Token': window.SESSION_TOKEN || ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
+const api = resource('product-codes');
+const operationsApi = resource('operations');
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
-  const json = await res.json().catch(() => ({}));
-
-  if (!json.ok) {
-    const message = json.errors?._ || Object.values(json.errors || {})[0] || 'Bilinmeyen hata';
-    throw Object.assign(new Error(message), { status: res.status, errors: json.errors || {} });
-  }
-  return json;
-}
-
-export const productCodes = {
-  list:   (page = 1)   => request(`/product-codes?page=${page}&limit=50`),
-  get:    (id)         => request(`/product-codes/${id}`),
-  create: (data)       => request('/product-codes', { method: 'POST', body: data }),
-  update: (id, data)   => request(`/product-codes/${id}?op=guncelle`, { method: 'POST', body: data }),
-  remove: (id)         => request(`/product-codes/${id}?op=sil`, { method: 'POST' })
-};
+const TYPES = [
+  { value: '', label: '— Tip seçin —' },
+  { value: 'Hammadde', label: 'Hammadde' },
+  { value: 'Yarı Mamül', label: 'Yarı Mamül' },
+  { value: 'Ürün', label: 'Ürün' }
+];
+const isRaw = (v) => v.type === 'Hammadde';   // ölçü alanları yalnızca Hammadde
 
 export async function viewProductCodes(container) {
-  container.innerHTML = '<div class="loading">Yukleniyor…</div>';
+  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
 
+  // Çıkan operasyon FK'si için operasyonlar bir kez çekilir.
+  let operations;
   try {
-    const { data, meta } = await productCodes.list();
-
-    container.innerHTML = `
-      <div class="module-head">
-        <h2>Kod Tanimlari</h2>
-        <button id="prodcode-add" class="btn">Yeni Kod</button>
-      </div>
-      <table class="tbl">
-        <thead><tr><th>Kod</th><th>Ad</th><th>Tip</th><th>Birim</th><th></th></tr></thead>
-        <tbody>
-          ${data.map(pc => `
-            <tr data-id="${pc.id}" data-updated="${pc.updatedAt}">
-              <td>${escapeHtml(pc.code)}</td>
-              <td>${escapeHtml(pc.name)}</td>
-              <td>${escapeHtml(pc.type)}</td>
-              <td>${escapeHtml(pc.unit ?? '—')}</td>
-              <td>
-                <button class="prodcode-edit" data-id="${pc.id}">Duzenle</button>
-                <button class="prodcode-del"  data-id="${pc.id}">Sil</button>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="meta">Toplam ${meta.total} kayit</p>`;
-
-    if (data.length === 0) {
-      container.querySelector('tbody').innerHTML =
-        '<tr><td colspan="5">Henuz kod tanimi eklenmemis. "Yeni Kod" ile baslayin.</td></tr>';
-    }
+    operations = (await operationsApi.list({ limit: 200 })).data;
   } catch (err) {
-    container.innerHTML = `<div class="error">Liste alinamadi: ${escapeHtml(err.message)}</div>`;
+    container.innerHTML = '';
+    container.appendChild(errorState({ message: err.message, onRetry: () => viewProductCodes(container) }));
+    return;
   }
-}
+  const opsRows = operations.map(o => ({ id: o.id, name: o.name }));
+  const opsSource = async () => ({ rows: opsRows, total: opsRows.length });
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const table = new DataTable(container, {
+    title: 'Kod Tanımları',
+    canWrite,
+    addLabel: 'Yeni Kod',
+    onAdd: () => openForm(null),
+    onEdit: (row) => openForm(row),
+    onDelete: (row) => remove(row),
+    load: () => api.list({ limit: 200 }).then(r => r.data),
+    searchText: (r) => [r.code, r.name, r.type, r.unit].join(' '),
+    emptyMessage: 'Henüz kod tanımı eklenmemiş. "Yeni Kod" ile başlayın.',
+    columns: [
+      { label: 'Kod', key: 'code', className: 'mono' },
+      { label: 'Ad', key: 'name' },
+      { label: 'Tip', render: (r) => `<span class="tag tag-neutral">${esc(r.type)}</span>` },
+      { label: 'Birim', render: (r) => esc(r.unit ?? '—') },
+      { label: 'Durum', render: (r) => esc(r.status ?? '—') }
+    ]
+  });
+
+  function openForm(row) {
+    const editing = !!row;
+    if (editing) table.markActive(row.id);
+
+    const opFk = new FkSelect({
+      source: opsSource, rows: opsRows,
+      value: row?.outgoingOperationId ?? null, placeholder: 'Operasyon seçin…'
+    });
+
+    openDrawer({
+      title: editing ? 'Kod Tanımı Düzenle' : 'Yeni Kod Tanımı',
+      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      values: editing ? { ...row } : { type: '' },
+      fields: [
+        { name: 'secId', type: 'section', label: 'Kimlik' },
+        { name: 'code', label: 'Kod', type: 'text', required: true },
+        { name: 'name', label: 'Ad', type: 'text', required: true },
+        { name: 'type', label: 'Tip', type: 'select', required: true, options: TYPES },
+        { name: 'unit', label: 'Birim', type: 'text' },
+        { name: 'status', label: 'Durum', type: 'text' },
+        { name: 'category', label: 'Kategori', type: 'text' },
+
+        { name: 'secDrawing', type: 'section', label: 'Çizim & Revizyon' },
+        { name: 'drawingNo', label: 'Çizim No', type: 'text' },
+        { name: 'revision', label: 'Revizyon', type: 'text' },
+        { name: 'revisionDate', label: 'Revizyon Tarihi', type: 'date' },
+
+        { name: 'secMeasures', type: 'section', label: 'Ölçüler (yalnızca Hammadde)', showIf: isRaw },
+        { name: 'outerDiameter', label: 'Dış Çap', type: 'number', step: 'any', showIf: isRaw },
+        { name: 'innerDiameter', label: 'İç Çap', type: 'number', step: 'any', showIf: isRaw },
+        { name: 'materialLength', label: 'Malzeme Uzunluğu', type: 'number', step: 'any', showIf: isRaw },
+        { name: 'materialWeight', label: 'Malzeme Ağırlığı', type: 'number', step: 'any', showIf: isRaw },
+
+        { name: 'secStock', type: 'section', label: 'Stok & Tedarik' },
+        { name: 'minStockLevel', label: 'Min. Stok Seviyesi', type: 'number', step: 'any' },
+        { name: 'supplyDays', label: 'Tedarik Süresi (gün)', type: 'number', step: 'any' },
+        { name: 'boxQuantity', label: 'Koli Adedi', type: 'number', step: 'any' },
+        { name: 'suppliers', label: 'Tedarikçiler', type: 'text' },
+        { name: 'customer', label: 'Müşteri', type: 'text' },
+
+        { name: 'secRel', type: 'section', label: 'İlişkiler' },
+        { name: 'outgoingOperationId', label: 'Çıkan Operasyon', type: 'fk', fk: opFk },
+        { name: 'parentProductCode', label: 'Ana Ürün Kodu', type: 'text', help: 'Bağlı olduğu üst ürünün kodu.' },
+
+        { name: 'note', label: 'Not', type: 'textarea' }
+      ],
+      // v: tüm alanlar (gizli ölçüler dahil) + updatedAt. Backend bilmediği anahtarları yok sayar.
+      onSubmit: async (v) => {
+        const { data } = editing ? await api.update(row.id, v) : await api.create(v);
+        return data;
+      },
+      onSaved: async (saved) => {
+        toast(editing ? 'Kod tanımı güncellendi' : 'Kod tanımı eklendi', 'success');
+        await table.reload();
+        table.flash(saved.id);
+      },
+      onClose: () => table.markActive(null)
+    });
+  }
+
+  async function remove(row) {
+    const ok = await confirmDialog({
+      title: 'Kod tanımı silinsin mi?',
+      body: `"${row.code} — ${row.name}" kalıcı olarak silinecek.`,
+      confirmLabel: 'Sil', danger: true
+    });
+    if (!ok) return;
+    try {
+      await api.remove(row.id);
+      toast('Kod tanımı silindi', 'success');
+      await table.reload();
+    } catch (err) {
+      toast(err.message, 'danger');
+    }
+  }
 }

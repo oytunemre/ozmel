@@ -43,14 +43,16 @@ export function openDrawer(opts) {
   bodyEl.appendChild(banner);
 
   const controls = {};   // name -> { read(), setError(msg), clearError(), fieldEl }
+  const forceShow = new Set();  // showIf ile gizliyken sunucu hatasi alan alanlar gorunur kalir
   const form = h('form');
   for (const f of fields) {
-    const ctl = buildField(f, values[f.name], markDirty, form);
+    const ctl = buildField(f, values[f.name], onFieldChange, form);
     controls[f.name] = ctl;
     form.appendChild(ctl.fieldEl);   // alanı forma ekle (yoksa panel boş açılır)
   }
   bodyEl.appendChild(form);
   drawer.appendChild(bodyEl);
+  applyVisibility();  // tipe bagli (showIf) alanlarin ilk gorunurlugu
 
   // --- aksiyonlar ---
   const actions = h('div', 'drawer-actions');
@@ -66,11 +68,30 @@ export function openDrawer(opts) {
   const firstInput = form.querySelector('input, textarea, select, .fk-control');
   firstInput?.focus();
 
-  function markDirty() { dirty = true; }
+  function onFieldChange() { dirty = true; applyVisibility(); }
+
+  /** Anlik alan degerleri (showIf icin). Bolum alanlari (section) atlanir. */
+  function currentValues() {
+    const v = {};
+    for (const f of fields) if (f.type !== 'section') v[f.name] = controls[f.name].read();
+    return v;
+  }
+
+  /** showIf'e gore alanlari goster/gizle. forceShow'daki alanlar (hatali) gorunur kalir. */
+  function applyVisibility() {
+    const v = currentValues();
+    for (const f of fields) {
+      if (!f.showIf) continue;
+      const show = forceShow.has(f.name) || f.showIf(v);
+      controls[f.name].fieldEl.style.display = show ? '' : 'none';
+    }
+  }
 
   function collect() {
     const out = {};
-    for (const f of fields) out[f.name] = controls[f.name].read();
+    // Gizli alanlar da GONDERILIR: tip degisince eski olcu degerleri kalirsa
+    // sunucu 422 dondurur ve bunu gostermek isteriz (alanlar temizlenene kadar).
+    for (const f of fields) if (f.type !== 'section') out[f.name] = controls[f.name].read();
     // Eszamanlilik: mevcut kaydin updatedAt'i degismeden geri gonderilir.
     if (values.updatedAt != null) out.updatedAt = values.updatedAt;
     return out;
@@ -79,7 +100,9 @@ export function openDrawer(opts) {
   function clearErrors() {
     banner.style.display = 'none';
     banner.textContent = '';
+    forceShow.clear();
     for (const name in controls) controls[name].clearError();
+    applyVisibility();
   }
 
   async function submit() {
@@ -97,8 +120,13 @@ export function openDrawer(opts) {
       if (err instanceof ValidationError) {
         let firstBad = null;
         for (const [name, msg] of Object.entries(err.fields)) {
-          if (controls[name]) { controls[name].setError(msg); firstBad = firstBad || controls[name]; }
+          if (controls[name]) {
+            controls[name].setError(msg);
+            forceShow.add(name);   // showIf ile gizliyse bile hatayi gorunur kil
+            firstBad = firstBad || controls[name];
+          }
         }
+        applyVisibility();   // hatali gizli alanlar (or. tip degisince olculer) ortaya cikar
         // Hangi alana ait olmayan hatalar banner'a.
         const unknown = Object.entries(err.fields).filter(([n]) => !controls[n]).map(([, m]) => m);
         const bannerMsg = unknown.length ? unknown.join(' · ') : (Object.keys(err.fields).length ? '' : err.message);
@@ -158,6 +186,14 @@ export function openDrawer(opts) {
 
 // --- tek alan kurulumu ---
 function buildField(f, value, markDirty, form) {
+  // Bolum basligi — girdi degil, formu gruplar. read() deger uretmez.
+  if (f.type === 'section') {
+    const sec = h('div', 'form-section');
+    sec.appendChild(h('h4', '', esc(f.label)));
+    if (f.help) sec.appendChild(h('small', 'text-muted', esc(f.help)));
+    return { fieldEl: sec, read: () => undefined, setError() {}, clearError() {}, focus() {} };
+  }
+
   const wrap = h('div', 'field');
   const label = h('label', '', esc(f.label));
   if (f.required) label.insertAdjacentHTML('beforeend', ' <span class="req">*</span>');

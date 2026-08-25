@@ -8,48 +8,128 @@
 </head>
 <body>
   <div class="app">
-    <nav class="sidebar" id="nav">
-      <div class="brand">Özmel</div>
-      <!-- Bağlantılar JS'ten üretilir -->
-    </nav>
-    <main class="content" id="content"></main>
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span class="mark"></span>Özmel</div>
+      <nav class="sidebar-nav" id="nav"></nav>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb" id="crumb"></div>
+        <div class="right">
+          <div class="lang" id="lang">
+            <button data-lang="tr" class="on">TR</button>
+            <button data-lang="en">EN</button>
+          </div>
+          <div class="sep"></div>
+          <div class="user">
+            <div class="avatar" id="avatar">?</div>
+            <div class="who">
+              <div class="name" id="user-name">—</div>
+              <div class="role" id="user-role">—</div>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div class="content" id="content"></div>
+    </main>
   </div>
 
   <script type="module">
-    // Oturum: token ve rol. Gerçek uygulamada giriş ekranından gelir; burada
-    // ?token= / ?role= veya localStorage ile ayarlanabilir (geliştirme kabuğu).
+    // Oturum: gerçek uygulamada giriş ekranından gelir; geliştirmede ?token=/?role=/?user=.
     const params = new URLSearchParams(location.search);
     window.SESSION_TOKEN = params.get('token') || localStorage.getItem('sessionToken') || '';
     window.SESSION_ROLE  = params.get('role')  || localStorage.getItem('sessionRole')  || 'editor';
+    window.SESSION_USER  = params.get('user')  || localStorage.getItem('sessionUser')  || 'Kullanıcı';
     if (params.get('token')) localStorage.setItem('sessionToken', params.get('token'));
 
-    // Modül kaydı: her giriş dinamik import + dışa aktarılan view fonksiyonu.
-    // operators TAM bağlı örnektir; diğerleri kendi (liste) görünümünü çizer.
-    const MODULES = [
-      { key: 'operators',    label: 'Operatörler',      file: 'operators.js',    fn: 'viewOperators' },
-      { key: 'work-centers', label: 'İş Merkezleri',     file: 'workCenters.js',  fn: 'viewWorkCenters' },
-      { key: 'operations',   label: 'Operasyonlar',      file: 'operations.js',   fn: 'viewOperations' },
-      { key: 'orders',       label: 'Siparişler',        file: 'orders.js',       fn: 'viewOrders' },
-      { key: 'dashboard',    label: 'Genel Bakış',       file: 'dashboard.js',    fn: 'viewDashboard' },
-      { key: 'sales',        label: 'Satış Raporları',   file: 'salesReports.js', fn: 'viewSalesReports' }
+    // Modül kaydı — tasarim/Yon-B-Rahat.dc.html'deki gruplu düzen.
+    const GROUPS = [
+      ['GENEL', [
+        ['dashboard', 'Genel Bakış', 'dashboard.js', 'viewDashboard'],
+      ]],
+      ['TEDARİKÇİ & KALİTE', [
+        ['incoming-inspections', 'Giriş Kalite Kontrolleri', 'incomingInspections.js', 'viewIncomingInspections'],
+        ['first-off-points', 'First-Off Noktaları', 'firstOffPoints.js', 'viewFirstOffPoints'],
+        ['first-off-records', 'First-Off Kayıtları', 'firstOffRecords.js', 'viewFirstOffRecords'],
+        ['hourly-points', 'Saatlik Noktalar', 'hourlyPoints.js', 'viewHourlyPoints'],
+        ['hourly-records', 'Saatlik Kayıtlar', 'hourlyRecords.js', 'viewHourlyRecords'],
+      ]],
+      ['ÜRETİM', [
+        ['work-centers', 'İş Merkezleri', 'workCenters.js', 'viewWorkCenters'],
+        ['operations', 'Operasyonlar', 'operations.js', 'viewOperations'],
+        ['operators', 'Operatörler', 'operators.js', 'viewOperators'],
+        ['routes', 'Rotalar', 'routes.js', 'viewRoutes'],
+        ['capacities', 'Kapasiteler', 'capacities.js', 'viewCapacities'],
+        ['machine-plans', 'Üretim Planı', 'machinePlans.js', 'viewMachinePlans'],
+        ['work-orders', 'İş Emirleri', 'workOrders.js', 'viewWorkOrders'],
+        ['production', 'Üretim Girişi', 'production.js', 'viewProduction'],
+        ['product-trees', 'Ürün Ağaçları', 'productTrees.js', 'viewProductTrees'],
+      ]],
+      ['SATINALMA & STOK', [
+        ['purchase-requests', 'Satınalma İstekleri', 'purchaseRequests.js', 'viewPurchaseRequests'],
+        ['purchase-receipts', 'Satınalma Girişleri', 'purchaseReceipts.js', 'viewPurchaseReceipts'],
+      ]],
+      ['SATIŞ', [
+        ['orders', 'Siparişler', 'orders.js', 'viewOrders'],
+        ['sales', 'Satış Raporları', 'salesReports.js', 'viewSalesReports'],
+      ]],
+      ['TANIMLAR', [
+        ['product-codes', 'Kod Tanımları', 'productCodes.js', 'viewProductCodes'],
+        ['task-people', 'Görev Kişileri', 'taskPeople.js', 'viewTaskPeople'],
+        ['terms', 'Terimler', 'terms.js', 'viewTerms'],
+        ['working-hours', 'Çalışma Saatleri', 'workingHours.js', 'viewWorkingHours'],
+      ]],
+      ['YÖNETİM', [
+        ['tasks', 'Görevler', 'tasks.js', 'viewTasks'],
+        ['audits', 'Denetim Soruları', 'audits.js', 'viewAudits'],
+      ]],
     ];
+
+    // key -> { label, file, fn, group } ve düz liste
+    const BY_KEY = {};
+    for (const [group, items] of GROUPS)
+      for (const [key, label, file, fn] of items) BY_KEY[key] = { key, label, file, fn, group };
 
     const nav = document.getElementById('nav');
     const content = document.getElementById('content');
+    const crumb = document.getElementById('crumb');
 
-    for (const m of MODULES) {
-      const a = document.createElement('a');
-      a.href = '#' + m.key;
-      a.textContent = m.label;
-      a.dataset.key = m.key;
-      nav.appendChild(a);
+    for (const [group, items] of GROUPS) {
+      const g = document.createElement('div');
+      g.className = 'nav-group';
+      g.textContent = group;
+      nav.appendChild(g);
+      for (const [key, label] of items) {
+        const a = document.createElement('a');
+        a.href = '#' + key;
+        a.textContent = label;
+        a.dataset.key = key;
+        nav.appendChild(a);
+      }
     }
 
+    // Üst bar: kullanıcı + rol + baş harfler
+    document.getElementById('user-name').textContent = window.SESSION_USER;
+    document.getElementById('user-role').textContent = window.SESSION_ROLE;
+    document.getElementById('avatar').textContent =
+      window.SESSION_USER.split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase() || '?';
+
+    // Dil seçimi (görsel; modüller şimdilik Türkçe). Tercihi saklar.
+    const lang = document.getElementById('lang');
+    lang.addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      lang.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+      localStorage.setItem('lang', b.dataset.lang);
+    });
+    const savedLang = localStorage.getItem('lang') || 'tr';
+    lang.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.lang === savedLang));
+
     async function route() {
-      const key = location.hash.slice(1) || 'operators';
-      const m = MODULES.find(x => x.key === key) || MODULES[0];
+      const key = location.hash.slice(1) || 'work-centers';
+      const m = BY_KEY[key] || BY_KEY['work-centers'];
       nav.querySelectorAll('a').forEach(a =>
         a.setAttribute('aria-current', a.dataset.key === m.key ? 'page' : 'false'));
+      crumb.textContent = `${m.group} / ${m.label}`;
       content.innerHTML = '<div class="loading">Yükleniyor…</div>';
       try {
         const mod = await import(`./js/modules/${m.file}`);
