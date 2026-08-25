@@ -251,7 +251,7 @@ function buildField(f, value, markDirty, form) {
     ta.value = value ?? '';
     ta.addEventListener('input', markDirty);
     wrap.appendChild(ta);
-    read = () => ta.value;
+    read = () => ta.value.trim();   // baştaki/sondaki boşlukları kırp
   } else {
     const inp = document.createElement('input');
     inp.className = 'input';
@@ -261,7 +261,7 @@ function buildField(f, value, markDirty, form) {
     inp.value = value ?? '';
     inp.addEventListener('input', markDirty);
     wrap.appendChild(inp);
-    read = () => inp.value;
+    read = () => inp.value.trim();   // baştaki/sondaki boşlukları kırp
   }
 
   if (f.help) wrap.appendChild(h('small', 'text-muted', esc(f.help)));

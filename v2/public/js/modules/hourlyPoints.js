@@ -7,7 +7,7 @@ import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
+import { loadLookup, mapProduct, mapNamed, MEASURE_UNIT_OPTIONS, withCurrent } from '../core/lookups.js';
 
 const api = resource('hourly-points');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
@@ -63,7 +63,7 @@ export async function viewHourlyPoints(container) {
         { name: 'nominal', label: 'Nominal', type: 'number', step: 'any' },
         { name: 'lowerLimit', label: 'Alt Limit', type: 'number', step: 'any' },
         { name: 'upperLimit', label: 'Üst Limit', type: 'number', step: 'any' },
-        { name: 'unit', label: 'Birim', type: 'text' }
+        { name: 'unit', label: 'Birim', type: 'select', options: withCurrent(MEASURE_UNIT_OPTIONS, row?.unit) }
       ],
       onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
       onSaved: async (saved) => { toast(editing ? 'Nokta güncellendi' : 'Nokta eklendi', 'success'); await table.reload(); table.flash(saved.id); },

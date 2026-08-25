@@ -48,6 +48,12 @@ export const UNIT_OPTIONS = [
   { value: 'kg', label: 'kg' }
 ];
 
+// Ölçüm birimi (kalite noktaları) — gerçek veride yalnızca mm (+ boş). Backend VARCHAR.
+export const MEASURE_UNIT_OPTIONS = [
+  { value: '', label: '— Birim —' },
+  { value: 'mm', label: 'mm' }
+];
+
 // Durum seçenekleri (backend VARCHAR; kısıt yalnızca arayüzde). Gerçek veriden.
 export const ORDER_STATUS_OPTIONS = [
   { value: 'Aktif', label: 'Aktif' },
