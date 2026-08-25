@@ -6,7 +6,7 @@
 // bool (Evet/Hayir), fk ({fk: FkSelect ornegi}).
 
 import { ValidationError, ConflictError, ApiError } from './api.js';
-import { confirmDialog, esc } from './states.js';
+import { choiceDialog, esc } from './states.js';
 
 /**
  * @param {{
@@ -114,16 +114,28 @@ export function openDrawer(opts) {
 
   function showBanner(msg) { banner.textContent = msg; banner.style.display = ''; }
 
-  async function tryClose() {
-    if (dirty) {
-      const ok = await confirmDialog({
-        title: 'Kaydedilmemiş değişiklikler',
-        body: 'Bu paneli kapatırsanız girdikleriniz kaybolur. Kapatılsın mı?',
-        confirmLabel: 'Kapat', cancelLabel: 'Vazgeç', danger: true
-      });
-      if (!ok) return;
-    }
-    teardown();
+  // Kapatmanin TEK yolu. Dort kapatma tetikleyicisi de (X, Vazgeç, backdrop, Esc)
+  // buradan gecer; kaydedilmemis degisiklik varsa uc secenekli onay sorar.
+  let closing = false;
+  async function requestClose() {
+    if (closing) return;              // ust uste tetiklenmeyi engelle (or. Esc x2)
+    if (!dirty) { teardown(); return; }
+
+    closing = true;
+    const choice = await choiceDialog({
+      title: 'Kaydedilmemiş değişiklikler',
+      body: 'Bu panelde kaydedilmemiş değişiklikler var. Ne yapmak istersiniz?',
+      choices: [
+        { value: 'save', label: 'Kaydet', kind: 'primary' },
+        { value: 'discard', label: 'Kaydetme', kind: 'danger' },
+        { value: 'cancel', label: 'İptal' }
+      ]
+    });
+    closing = false;
+
+    if (choice === 'save') submit();          // basariliysa submit() kendisi kapatir
+    else if (choice === 'discard') teardown(); // degisiklikleri at, kapat
+    // 'cancel' / null -> panelde kal
   }
 
   function teardown() {
@@ -132,13 +144,13 @@ export function openDrawer(opts) {
     onClose && onClose();
   }
 
-  function onKey(e) { if (e.key === 'Escape') tryClose(); }
+  function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); requestClose(); } }
 
   saveBtn.addEventListener('click', (e) => { e.preventDefault(); submit(); });
   form.addEventListener('submit', (e) => { e.preventDefault(); submit(); });
-  cancelBtn.addEventListener('click', tryClose);
-  closeX.addEventListener('click', tryClose);
-  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) tryClose(); });
+  cancelBtn.addEventListener('click', requestClose);
+  closeX.addEventListener('click', requestClose);
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) requestClose(); });
   document.addEventListener('keydown', onKey);
 
   return { close: teardown, el: drawer };

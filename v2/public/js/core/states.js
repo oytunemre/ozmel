@@ -94,6 +94,39 @@ export function confirmDialog({ title = 'Emin misiniz?', body = '', confirmLabel
   });
 }
 
+/**
+ * Cok secenekli diyalog. Secilen degeri (ya da Esc/backdrop'ta null) doner.
+ * @param {{ title?:string, body?:string, choices: Array<{value:any,label:string,kind?:'primary'|'danger'|'secondary'}> }} opts
+ * @returns {Promise<any>}
+ */
+export function choiceDialog({ title = 'Emin misiniz?', body = '', choices = [] } = {}) {
+  return new Promise((resolve) => {
+    const backdrop = el('div', 'dialog-backdrop');
+    const dlg = el('div', 'dialog');
+    dlg.appendChild(el('div', 'dialog-title', esc(title)));
+    if (body) dlg.appendChild(el('div', 'dialog-body', esc(body)));
+    const actions = el('div', 'dialog-actions');
+
+    const done = (val) => { backdrop.remove(); document.removeEventListener('keydown', onKey); resolve(val); };
+    for (const ch of choices) {
+      const cls = ch.kind === 'primary' ? 'btn-primary' : 'btn-secondary';
+      const b = el('button', 'btn ' + cls, esc(ch.label));
+      if (ch.kind === 'danger') b.style.color = 'var(--color-danger)';
+      b.addEventListener('click', () => done(ch.value));
+      actions.appendChild(b);
+    }
+    dlg.appendChild(actions);
+    backdrop.appendChild(dlg);
+    document.body.appendChild(backdrop);
+
+    // Esc ve backdrop tiklamasi = iptal (null) — hicbir secim yapilmamis sayilir.
+    const onKey = (e) => { if (e.key === 'Escape') done(null); };
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) done(null); });
+    document.addEventListener('keydown', onKey);
+    (actions.querySelector('.btn-primary') || actions.firstElementChild)?.focus();
+  });
+}
+
 export function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
