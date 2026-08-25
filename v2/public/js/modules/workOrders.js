@@ -7,7 +7,7 @@ import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
+import { loadLookup, mapProduct, mapNamed, ORDER_STATUS_OPTIONS, withCurrent } from '../core/lookups.js';
 
 const api = resource('work-orders');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
@@ -66,7 +66,7 @@ export async function viewWorkOrders(container) {
     openDrawer({
       title: editing ? 'İş Emri Düzenle' : 'İş Emri Aç',
       submitLabel: editing ? 'Güncelle' : 'Aç',
-      values: editing ? { ...row } : {},
+      values: editing ? { ...row } : { status: 'Aktif' },
       fields: [
         { name: 'woNo', label: 'İş Emri No', type: 'text', required: true },
         { name: 'orderId', label: 'Sipariş', type: 'fk', fk: orderFk, required: true },
@@ -75,7 +75,7 @@ export async function viewWorkOrders(container) {
         { name: 'workCenterId', label: 'İş Merkezi', type: 'fk', fk: centerFk },
         { name: 'sequence', label: 'Sıra', type: 'number' },
         { name: 'targetQuantity', label: 'Hedef Miktar', type: 'number', step: 'any', required: true },
-        { name: 'status', label: 'Durum', type: 'text', required: true },
+        { name: 'status', label: 'Durum', type: 'select', required: true, options: withCurrent(ORDER_STATUS_OPTIONS, row?.status) },
         { name: 'splitLabel', label: 'Split Etiketi', type: 'text' }
       ],
       onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,

@@ -7,7 +7,7 @@ import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct } from '../core/lookups.js';
+import { loadLookup, mapProduct, ORDER_STATUS_OPTIONS, withCurrent } from '../core/lookups.js';
 
 const api = resource('orders');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
@@ -53,12 +53,12 @@ export async function viewOrders(container) {
     openDrawer({
       title: editing ? 'Sipariş Düzenle' : 'Yeni Sipariş',
       submitLabel: editing ? 'Güncelle' : 'Ekle',
-      values: editing ? { ...row } : { source: '' },
+      values: editing ? { ...row } : { source: '', status: 'Aktif' },
       fields: [
         { name: 'secId', type: 'section', label: 'Sipariş' },
         { name: 'orderNo', label: 'Sipariş No', type: 'text', required: true },
         { name: 'source', label: 'Kaynak', type: 'select', required: true, options: SOURCES },
-        { name: 'status', label: 'Durum', type: 'text', required: true },
+        { name: 'status', label: 'Durum', type: 'select', required: true, options: withCurrent(ORDER_STATUS_OPTIONS, row?.status) },
         { name: 'productCodeId', label: 'Ürün', type: 'fk', fk: productFk, required: true },
         { name: 'targetQuantity', label: 'Hedef Miktar', type: 'number', step: 'any', required: true },
         { name: 'secDates', type: 'section', label: 'Tarihler & Müşteri' },

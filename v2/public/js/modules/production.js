@@ -38,6 +38,10 @@ export async function viewProduction(container) {
     return m;
   };
 
+  // NOT: render()'dan ÖNCE tanımlanmalı — renderForm() bunu kullanıyor; const olduğu
+  // için sonra tanımlanırsa "temporal dead zone" ReferenceError'ı verir (panel boş kalır).
+  const woSource = async () => ({ rows: woRows, total: woRows.length });
+
   render();
 
   function render() {
@@ -144,8 +148,6 @@ export async function viewProduction(container) {
         <td class="mono">${e.actualQuantity}</td>
         <td class="mono">${e.scrapQuantity}</td></tr>`).join('')}</tbody></table>`;
   }
-
-  const woSource = async () => ({ rows: woRows, total: woRows.length });
 }
 
 // --- küçük DOM yardımcıları ---

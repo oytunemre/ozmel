@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Özmel</title>
   <!-- ?v: onbellek kirici. app.css/modul degisince artir (build/versiyonlama yok). -->
-  <link rel="stylesheet" href="css/app.css?v=11">
+  <link rel="stylesheet" href="css/app.css?v=12">
 </head>
 <body>
   <div class="app">
@@ -132,12 +132,17 @@
         a.setAttribute('aria-current', a.dataset.key === m.key ? 'page' : 'false'));
       crumb.textContent = `${m.group} / ${m.label}`;
       content.innerHTML = '<div class="loading">Yükleniyor…</div>';
-      try {
-        const mod = await import(`./js/modules/${m.file}?v=11`);
-        mod[m.fn](content);
-      } catch (err) {
+      const showErr = (err) => {
         content.innerHTML = `<div class="state error"><div class="state-title">Modül yüklenemedi</div>
-          <div class="state-msg">${err.message}</div></div>`;
+          <div class="state-msg">${err && err.message ? err.message : err}</div></div>`;
+      };
+      try {
+        const mod = await import(`./js/modules/${m.file}?v=12`);
+        // view fonksiyonu async — hatası sessiz kalmasın, ekranda göster.
+        const p = mod[m.fn](content);
+        if (p && p.catch) p.catch(showErr);
+      } catch (err) {
+        showErr(err);
       }
     }
 

@@ -47,3 +47,32 @@ export const UNIT_OPTIONS = [
   { value: 'adet', label: 'adet' },
   { value: 'kg', label: 'kg' }
 ];
+
+// Durum seçenekleri (backend VARCHAR; kısıt yalnızca arayüzde). Gerçek veriden.
+export const ORDER_STATUS_OPTIONS = [
+  { value: 'Aktif', label: 'Aktif' },
+  { value: 'Tamamlandı', label: 'Tamamlandı' },
+  { value: 'İptal', label: 'İptal' }
+];
+export const TASK_STATUS_OPTIONS = [
+  { value: 'Başlamadı', label: 'Başlamadı' },
+  { value: 'Devam Ediyor', label: 'Devam Ediyor' },
+  { value: 'Tamamlandı', label: 'Tamamlandı' }
+];
+export const INSPECTION_RESULT_OPTIONS = [
+  { value: '', label: '— Sonuç —' },
+  { value: 'Kabul', label: 'Kabul' },
+  { value: 'Red', label: 'Red' },
+  { value: 'Şartlı Kabul', label: 'Şartlı Kabul' }
+];
+
+/**
+ * Mevcut değer listede yoksa başa ekler — beklenmedik bir eski değer (or. ETL'den)
+ * select'te sessizce KAYBOLMASIN/DEĞİŞMESİN. Düzenlemede güvenli.
+ */
+export function withCurrent(options, current) {
+  if (current && !options.some(o => o.value === current)) {
+    return [{ value: current, label: current + ' (mevcut)' }, ...options];
+  }
+  return options;
+}
