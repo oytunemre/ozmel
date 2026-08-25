@@ -1,79 +1,55 @@
-// Gorev kisileri — v2 modulu.
-//
-// Bu modul VERI TUTMAZ. Global bir DB nesnesi yok, seed yok, blob yok.
-// Her render kendi verisini API'den ceker. Ekran metinleri Turkce,
-// kod ve API anahtarlari Ingilizce.
-//
-// v1'de gorevKisiler paylasimli kisi diziniydi (isim/eposta/telefon). Gorevler
-// (tasks) buna FK ile baglanir; gorevin cocuk tablosu DEGIL, bagimsiz kaynaktir.
+// Görev Kişileri — v2 modülü. Paylaşımlı kişi dizini (görevler buna atanır).
 
-const API = '../api/index.php';
+import { resource } from '../core/api.js';
+import { DataTable } from '../core/table.js';
+import { openDrawer } from '../core/drawer.js';
+import { toast } from '../core/toast.js';
+import { confirmDialog, esc } from '../core/states.js';
 
-async function request(path, { method = 'GET', body = null } = {}) {
-  const res = await fetch(API + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Session-Token': window.SESSION_TOKEN || ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
-
-  const json = await res.json().catch(() => ({}));
-
-  if (!json.ok) {
-    const message = json.errors?._ || Object.values(json.errors || {})[0] || 'Bilinmeyen hata';
-    throw Object.assign(new Error(message), { status: res.status, errors: json.errors || {} });
-  }
-  return json;
-}
-
-export const taskPeople = {
-  list:   (page = 1)   => request(`/task-people?page=${page}&limit=50`),
-  get:    (id)         => request(`/task-people/${id}`),
-  create: (data)       => request('/task-people', { method: 'POST', body: data }),
-  update: (id, data)   => request(`/task-people/${id}?op=guncelle`, { method: 'POST', body: data }),
-  remove: (id)         => request(`/task-people/${id}?op=sil`, { method: 'POST' })
-};
+const api = resource('task-people');
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewTaskPeople(container) {
-  container.innerHTML = '<div class="loading">Yukleniyor…</div>';
+  const table = new DataTable(container, {
+    title: 'Görev Kişileri',
+    subtitle: 'Görevlerin atanacağı kişiler',
+    canWrite,
+    addLabel: 'Yeni Kişi',
+    onAdd: () => openForm(null),
+    onEdit: (row) => openForm(row),
+    onDelete: (row) => remove(row),
+    load: () => api.list({ limit: 200 }).then(r => r.data),
+    searchText: (r) => [r.name, r.email, r.phone].join(' '),
+    emptyMessage: 'Henüz kişi yok. "Yeni Kişi" ile başlayın.',
+    columns: [
+      { label: 'İsim', key: 'name' },
+      { label: 'E-posta', render: (r) => esc(r.email || '—') },
+      { label: 'Telefon', render: (r) => esc(r.phone || '—') }
+    ]
+  });
 
-  try {
-    const { data, meta } = await taskPeople.list();
-
-    container.innerHTML = `
-      <div class="module-head">
-        <h2>Gorev Kisileri</h2>
-        <button id="tperson-add" class="btn">Yeni Kisi</button>
-      </div>
-      <table class="tbl">
-        <thead><tr><th>Isim</th><th>Eposta</th><th>Telefon</th><th></th></tr></thead>
-        <tbody>
-          ${data.map(p => `
-            <tr data-id="${p.id}" data-updated="${p.updatedAt}">
-              <td>${escapeHtml(p.name)}</td>
-              <td>${p.email ? escapeHtml(p.email) : '—'}</td>
-              <td>${p.phone ? escapeHtml(p.phone) : '—'}</td>
-              <td>
-                <button class="tperson-edit" data-id="${p.id}">Duzenle</button>
-                <button class="tperson-del"  data-id="${p.id}">Sil</button>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="meta">Toplam ${meta.total} kayit</p>`;
-
-    if (data.length === 0) {
-      container.querySelector('tbody').innerHTML =
-        '<tr><td colspan="4">Henuz kisi eklenmemis. "Yeni Kisi" ile baslayin.</td></tr>';
-    }
-  } catch (err) {
-    container.innerHTML = `<div class="error">Liste alinamadi: ${escapeHtml(err.message)}</div>`;
+  function openForm(row) {
+    const editing = !!row;
+    if (editing) table.markActive(row.id);
+    openDrawer({
+      title: editing ? 'Kişi Düzenle' : 'Yeni Kişi',
+      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      values: editing ? { ...row } : {},
+      fields: [
+        { name: 'name', label: 'İsim', type: 'text', required: true },
+        { name: 'email', label: 'E-posta', type: 'text' },
+        { name: 'phone', label: 'Telefon', type: 'text' }
+      ],
+      onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
+      onSaved: async (saved) => { toast(editing ? 'Kişi güncellendi' : 'Kişi eklendi', 'success'); await table.reload(); table.flash(saved.id); },
+      onClose: () => table.markActive(null)
+    });
   }
-}
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  async function remove(row) {
+    const ok = await confirmDialog({ title: 'Kişi silinsin mi?', body: `"${row.name}" silinecek.`, confirmLabel: 'Sil', danger: true });
+    if (!ok) return;
+    try { await api.remove(row.id); toast('Kişi silindi', 'success'); await table.reload(); }
+    catch (err) { toast(err.message, 'danger'); }
+  }
 }

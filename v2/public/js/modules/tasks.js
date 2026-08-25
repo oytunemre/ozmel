@@ -1,82 +1,77 @@
-// Gorevler — v2 modulu.
-//
-// Bu modul VERI TUTMAZ. Global bir DB nesnesi yok, seed yok, blob yok.
-// Her render kendi verisini API'den ceker. Ekran metinleri Turkce,
-// kod ve API anahtarlari Ingilizce.
-//
-// v1'de gorevler anaSorumlu/yardimci'yi ISIM olarak tutuyordu; API'de
-// primaryAssigneeId / secondaryAssigneeId FK olur (v2_task_people). Atama bagi
-// opsiyonel — eslesmeyen isim NULL kalir. completionRatio 0–1 kesir (1 = %100).
+// Görevler (Görev Takibi) — v2 modülü. Sorumlular v2_task_people'a FK.
 
-const API = '../api/index.php';
+import { resource } from '../core/api.js';
+import { DataTable } from '../core/table.js';
+import { openDrawer } from '../core/drawer.js';
+import { FkSelect } from '../core/fkselect.js';
+import { toast } from '../core/toast.js';
+import { confirmDialog, errorState, esc } from '../core/states.js';
+import { loadLookup, mapNamed, TASK_STATUS_OPTIONS, withCurrent } from '../core/lookups.js';
 
-async function request(path, { method = 'GET', body = null } = {}) {
-  const res = await fetch(API + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Session-Token': window.SESSION_TOKEN || ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
-
-  const json = await res.json().catch(() => ({}));
-
-  if (!json.ok) {
-    const message = json.errors?._ || Object.values(json.errors || {})[0] || 'Bilinmeyen hata';
-    throw Object.assign(new Error(message), { status: res.status, errors: json.errors || {} });
-  }
-  return json;
-}
-
-export const tasks = {
-  list:   (page = 1)   => request(`/tasks?page=${page}&limit=50`),
-  get:    (id)         => request(`/tasks/${id}`),
-  create: (data)       => request('/tasks', { method: 'POST', body: data }),
-  update: (id, data)   => request(`/tasks/${id}?op=guncelle`, { method: 'POST', body: data }),
-  remove: (id)         => request(`/tasks/${id}?op=sil`, { method: 'POST' })
-};
+const api = resource('tasks');
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewTasks(container) {
-  container.innerHTML = '<div class="loading">Yukleniyor…</div>';
+  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  let people;
+  try { people = await loadLookup('task-people', mapNamed); }
+  catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewTasks(container) })); return; }
 
-  try {
-    const { data, meta } = await tasks.list();
+  const table = new DataTable(container, {
+    title: 'Görev Takibi',
+    subtitle: 'Kalite bulgularından ve tedarikçi denetimlerinden açılan görevler',
+    canWrite,
+    addLabel: 'Yeni Görev',
+    onAdd: () => openForm(null),
+    onEdit: (row) => openForm(row),
+    onDelete: (row) => remove(row),
+    load: () => api.list({ limit: 200 }).then(r => r.data),
+    searchText: (r) => [r.description, r.department, people.label(r.primaryAssigneeId)].join(' '),
+    emptyMessage: 'Henüz görev yok. "Yeni Görev" ile başlayın.',
+    columns: [
+      { label: 'Sıra', render: (r) => r.sequence ?? '—', className: 'mono' },
+      { label: 'Konu', key: 'description' },
+      { label: 'Departman', render: (r) => esc(r.department || '—') },
+      { label: 'Atanan', render: (r) => r.primaryAssigneeId ? esc(people.label(r.primaryAssigneeId)) : '—' },
+      { label: 'Termin', render: (r) => esc(r.dueDate || '—') },
+      { label: 'Durum', render: (r) => esc(r.status || '—') },
+      { label: 'Tamamlanma', render: (r) => r.completionRatio != null ? Math.round(r.completionRatio * 100) + '%' : '—', className: 'mono' }
+    ]
+  });
 
-    container.innerHTML = `
-      <div class="module-head">
-        <h2>Gorevler</h2>
-        <button id="task-add" class="btn">Yeni Gorev</button>
-      </div>
-      <table class="tbl">
-        <thead><tr><th>Sira</th><th>Tanim</th><th>Departman</th><th>Durum</th><th>Tamamlanma</th><th></th></tr></thead>
-        <tbody>
-          ${data.map(t => `
-            <tr data-id="${t.id}" data-updated="${t.updatedAt}">
-              <td>${t.sequence ?? '—'}</td>
-              <td>${escapeHtml(t.description)}</td>
-              <td>${t.department ? escapeHtml(t.department) : '—'}</td>
-              <td>${t.status ? escapeHtml(t.status) : '—'}</td>
-              <td>${t.completionRatio !== null ? Math.round(t.completionRatio * 100) + '%' : '—'}</td>
-              <td>
-                <button class="task-edit" data-id="${t.id}">Duzenle</button>
-                <button class="task-del"  data-id="${t.id}">Sil</button>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="meta">Toplam ${meta.total} kayit</p>`;
-
-    if (data.length === 0) {
-      container.querySelector('tbody').innerHTML =
-        '<tr><td colspan="6">Henuz gorev eklenmemis. "Yeni Gorev" ile baslayin.</td></tr>';
-    }
-  } catch (err) {
-    container.innerHTML = `<div class="error">Liste alinamadi: ${escapeHtml(err.message)}</div>`;
+  function openForm(row) {
+    const editing = !!row;
+    if (editing) table.markActive(row.id);
+    const primaryFk = new FkSelect({ source: people.source, rows: people.rows, value: row?.primaryAssigneeId ?? null, placeholder: 'Kişi seçin…' });
+    const secondaryFk = new FkSelect({ source: people.source, rows: people.rows, value: row?.secondaryAssigneeId ?? null, placeholder: 'Kişi seçin…' });
+    openDrawer({
+      title: editing ? 'Görev Düzenle' : 'Yeni Görev',
+      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      values: editing ? { ...row } : { status: 'Başlamadı' },
+      fields: [
+        { name: 'secId', type: 'section', label: 'Görev' },
+        { name: 'sequence', label: 'Sıra', type: 'number' },
+        { name: 'description', label: 'Görev Tanımı', type: 'textarea', required: true },
+        { name: 'department', label: 'Departman', type: 'text' },
+        { name: 'priority', label: 'Öncelik', type: 'text' },
+        { name: 'secAssign', type: 'section', label: 'Atama & Durum' },
+        { name: 'primaryAssigneeId', label: 'Ana Sorumlu', type: 'fk', fk: primaryFk },
+        { name: 'secondaryAssigneeId', label: 'Yardımcı', type: 'fk', fk: secondaryFk },
+        { name: 'dueDate', label: 'Termin', type: 'date' },
+        { name: 'status', label: 'Durum', type: 'select', options: withCurrent(TASK_STATUS_OPTIONS, row?.status) },
+        { name: 'completionRatio', label: 'Tamamlanma (0–1)', type: 'number', step: 'any', help: '1 = %100' },
+        { name: 'notes', label: 'Notlar', type: 'textarea' }
+      ],
+      onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
+      onSaved: async (saved) => { toast(editing ? 'Görev güncellendi' : 'Görev eklendi', 'success'); await table.reload(); table.flash(saved.id); },
+      onClose: () => table.markActive(null)
+    });
   }
-}
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  async function remove(row) {
+    const ok = await confirmDialog({ title: 'Görev silinsin mi?', body: 'Bu görev silinecek.', confirmLabel: 'Sil', danger: true });
+    if (!ok) return;
+    try { await api.remove(row.id); toast('Görev silindi', 'success'); await table.reload(); }
+    catch (err) { toast(err.message, 'danger'); }
+  }
 }

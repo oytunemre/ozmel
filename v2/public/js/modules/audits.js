@@ -1,79 +1,58 @@
-// Denetim soru bankasi — v2 modulu.
-//
-// Bu modul VERI TUTMAZ. Global bir DB nesnesi yok, seed yok, blob yok.
-// Her render kendi verisini API'den ceker. Ekran metinleri Turkce,
-// kod ve API anahtarlari Ingilizce.
-//
-// v1'de audits bagimsiz denetim soru bankasiydi (parca/tedarikci baglantisi yok).
+// Denetim Soruları — v2 modülü. Bağımsız denetim soru bankası.
 
-const API = '../api/index.php';
+import { resource } from '../core/api.js';
+import { DataTable } from '../core/table.js';
+import { openDrawer } from '../core/drawer.js';
+import { toast } from '../core/toast.js';
+import { confirmDialog, esc } from '../core/states.js';
 
-async function request(path, { method = 'GET', body = null } = {}) {
-  const res = await fetch(API + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Session-Token': window.SESSION_TOKEN || ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
-
-  const json = await res.json().catch(() => ({}));
-
-  if (!json.ok) {
-    const message = json.errors?._ || Object.values(json.errors || {})[0] || 'Bilinmeyen hata';
-    throw Object.assign(new Error(message), { status: res.status, errors: json.errors || {} });
-  }
-  return json;
-}
-
-export const audits = {
-  list:   (page = 1)   => request(`/audits?page=${page}&limit=50`),
-  get:    (id)         => request(`/audits/${id}`),
-  create: (data)       => request('/audits', { method: 'POST', body: data }),
-  update: (id, data)   => request(`/audits/${id}?op=guncelle`, { method: 'POST', body: data }),
-  remove: (id)         => request(`/audits/${id}?op=sil`, { method: 'POST' })
-};
+const api = resource('audits');
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewAudits(container) {
-  container.innerHTML = '<div class="loading">Yukleniyor…</div>';
+  const table = new DataTable(container, {
+    title: 'Denetim Soruları',
+    subtitle: 'Denetim soru bankası',
+    canWrite,
+    addLabel: 'Yeni Soru',
+    onAdd: () => openForm(null),
+    onEdit: (row) => openForm(row),
+    onDelete: (row) => remove(row),
+    load: () => api.list({ limit: 200 }).then(r => r.data),
+    searchText: (r) => [r.form, r.section, r.question].join(' '),
+    emptyMessage: 'Henüz soru yok. "Yeni Soru" ile başlayın.',
+    columns: [
+      { label: 'Form', render: (r) => esc(r.form || '—') },
+      { label: 'Bölüm', key: 'section' },
+      { label: 'Soru', key: 'question' },
+      { label: 'Puan', render: (r) => r.score ?? '—', className: 'mono' }
+    ]
+  });
 
-  try {
-    const { data, meta } = await audits.list();
-
-    container.innerHTML = `
-      <div class="module-head">
-        <h2>Denetim Soru Bankasi</h2>
-        <button id="audit-add" class="btn">Yeni Soru</button>
-      </div>
-      <table class="tbl">
-        <thead><tr><th>Form</th><th>Bolum</th><th>Soru</th><th>Puan</th><th></th></tr></thead>
-        <tbody>
-          ${data.map(a => `
-            <tr data-id="${a.id}" data-updated="${a.updatedAt}">
-              <td>${escapeHtml(a.form)}</td>
-              <td>${escapeHtml(a.section)}</td>
-              <td>${escapeHtml(a.question)}</td>
-              <td>${a.score ?? '—'}</td>
-              <td>
-                <button class="audit-edit" data-id="${a.id}">Duzenle</button>
-                <button class="audit-del"  data-id="${a.id}">Sil</button>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="meta">Toplam ${meta.total} kayit</p>`;
-
-    if (data.length === 0) {
-      container.querySelector('tbody').innerHTML =
-        '<tr><td colspan="5">Henuz soru eklenmemis. "Yeni Soru" ile baslayin.</td></tr>';
-    }
-  } catch (err) {
-    container.innerHTML = `<div class="error">Liste alinamadi: ${escapeHtml(err.message)}</div>`;
+  function openForm(row) {
+    const editing = !!row;
+    if (editing) table.markActive(row.id);
+    openDrawer({
+      title: editing ? 'Soru Düzenle' : 'Yeni Soru',
+      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      values: editing ? { ...row } : { form: 'TQS' },
+      fields: [
+        { name: 'form', label: 'Form', type: 'text' },
+        { name: 'section', label: 'Bölüm', type: 'text', required: true },
+        { name: 'question', label: 'Soru', type: 'textarea', required: true },
+        { name: 'score', label: 'Puan', type: 'number', step: 'any' },
+        { name: 'evidence', label: 'Kanıt', type: 'textarea' }
+      ],
+      onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
+      onSaved: async (saved) => { toast(editing ? 'Soru güncellendi' : 'Soru eklendi', 'success'); await table.reload(); table.flash(saved.id); },
+      onClose: () => table.markActive(null)
+    });
   }
-}
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  async function remove(row) {
+    const ok = await confirmDialog({ title: 'Soru silinsin mi?', body: 'Bu denetim sorusu silinecek.', confirmLabel: 'Sil', danger: true });
+    if (!ok) return;
+    try { await api.remove(row.id); toast('Soru silindi', 'success'); await table.reload(); }
+    catch (err) { toast(err.message, 'danger'); }
+  }
 }
