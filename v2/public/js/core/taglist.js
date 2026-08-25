@@ -4,8 +4,14 @@
 import { esc } from './states.js';
 
 export class TagList {
-  constructor({ value = [], placeholder = 'Yaz ve Enter…' } = {}) {
-    this.tags = dedupe(value);
+  /**
+   * @param {{ value?: Array, placeholder?: string, unique?: boolean }} opts
+   * unique=true (varsayılan): tekrar eden değer eklenmez (varyantlar için doğru).
+   * unique=false: tekrarlara İZİN verilir, sıra korunur (ölçüm değerleri — 8.88, 8.88 normal).
+   */
+  constructor({ value = [], placeholder = 'Yaz ve Enter…', unique = true } = {}) {
+    this.unique = unique;
+    this.tags = clean(value, unique);
     this.placeholder = placeholder;
     this.cb = null;
 
@@ -30,12 +36,13 @@ export class TagList {
 
   onChange(cb) { this.cb = cb; return this; }
   getValue() { return this.tags.slice(); }
-  setValue(v) { this.tags = dedupe(v); this.render(); }
+  setValue(v) { this.tags = clean(v, this.unique); this.render(); }
   focus() { this.input.focus(); }
 
   add(raw) {
     const val = String(raw).trim();
-    if (!val || this.tags.includes(val)) return;
+    if (!val) return;
+    if (this.unique && this.tags.includes(val)) return;  // yalnızca unique modda tekrarı engelle
     this.tags.push(val);
     this.render();
     this.cb && this.cb(this.getValue());
@@ -60,11 +67,13 @@ export class TagList {
   }
 }
 
-function dedupe(v) {
+function clean(v, unique) {
   const out = [];
   for (const t of (Array.isArray(v) ? v : [])) {
     const s = String(t).trim();
-    if (s && !out.includes(s)) out.push(s);
+    if (!s) continue;
+    if (unique && out.includes(s)) continue;
+    out.push(s);
   }
   return out;
 }

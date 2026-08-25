@@ -119,7 +119,8 @@ class HourlyMeasurementsEditor {
     const line = el('div', 'row-line');
     line.style.gridTemplateColumns = '220px 1fr 24px';
     const fk = new FkSelect({ source: async () => ({ rows: this.pointRows, total: this.pointRows.length }), rows: this.pointRows, value: m.pointId ?? null, placeholder: 'Nokta…' });
-    const values = new TagList({ value: (m.values || []).map(String), placeholder: 'Değer yaz ve Enter…' });
+    // Ölçüm değerleri tekilleştirilMEZ — 8.88, 8.88, 8.9 gibi tekrarlar normaldir (sequence korur).
+    const values = new TagList({ value: (m.values || []).map(String), placeholder: 'Değer yaz ve Enter…', unique: false });
     const x = el('button', 'row-x', '×'); x.type = 'button';
     fk.onChange(() => this.emit()); values.onChange(() => this.emit());
     const entry = { fk, values, line };

@@ -130,7 +130,8 @@ class CharacteristicsEditor {
     const type = sel(CHAR_TYPES, c.type);
     const nominal = inp('number', c.nominal), lower = inp('number', c.lowerLimit), upper = inp('number', c.upperLimit);
     const unit = inp('text', c.unit);
-    const values = new TagList({ value: (c.values || []).map(v => v == null ? '' : String(v)).filter(Boolean), placeholder: 'Değer (sayı ya da Uygun)…' });
+    // Karakteristik değerleri tekilleştirilMEZ — 13.28, 13.28, 13.2 gibi tekrarlar normaldir.
+    const values = new TagList({ value: (c.values || []).map(v => v == null ? '' : String(v)).filter(Boolean), placeholder: 'Değer (sayı ya da Uygun)…', unique: false });
     body.append(
       fld('No', charNo), fld('Ad', name), fld('Spesifikasyon', specText), fld('Tip', type),
       fld('Nominal', nominal), fld('Alt Limit', lower), fld('Üst Limit', upper), fld('Birim', unit),
