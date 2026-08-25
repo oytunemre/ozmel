@@ -11,6 +11,7 @@ import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
+import { UNIT_OPTIONS } from '../core/lookups.js';
 
 const api = resource('product-codes');
 const operationsApi = resource('operations');
@@ -76,7 +77,7 @@ export async function viewProductCodes(container) {
         { name: 'code', label: 'Kod', type: 'text', required: true },
         { name: 'name', label: 'Ad', type: 'text', required: true },
         { name: 'type', label: 'Tip', type: 'select', required: true, options: TYPES },
-        { name: 'unit', label: 'Birim', type: 'text' },
+        { name: 'unit', label: 'Birim', type: 'select', options: UNIT_OPTIONS },
         { name: 'status', label: 'Durum', type: 'text' },
         { name: 'category', label: 'Kategori', type: 'text' },
 

@@ -27,3 +27,11 @@ export async function loadLookup(name, mapRow) {
 // Sık kullanılan eşlemeler
 export const mapProduct = (r) => ({ id: r.id, code: r.code, name: r.name });
 export const mapNamed = (r) => ({ id: r.id, name: r.name });
+
+// Birim seçenekleri — gerçek veride yalnızca adet/kg kullanılıyor. Kısıt SADECE
+// arayüzde; backend VARCHAR kalır, ileride yeni birim migration'sız eklenebilir.
+export const UNIT_OPTIONS = [
+  { value: '', label: '— Birim —' },
+  { value: 'adet', label: 'adet' },
+  { value: 'kg', label: 'kg' }
+];
