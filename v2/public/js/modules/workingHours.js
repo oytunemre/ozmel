@@ -33,6 +33,7 @@ export async function viewWorkingHours(container) {
 
   function render(data) {
     container.innerHTML = `
+      <div class="wh-view">
       <div class="module-head">
         <div>
           <h2>Çalışma Saatleri</h2>
@@ -44,7 +45,8 @@ export async function viewWorkingHours(container) {
         </div>
       </div>
 
-      <div class="table-wrap" style="padding:20px; max-width:820px;">
+      <div class="wh-center">
+      <div class="table-wrap wh-card">
         <div class="drawer-error" id="wh-banner" style="display:none"></div>
         <div class="wh-summary" id="wh-summary"></div>
         <div class="wh-cols" id="wh-cols"></div>
@@ -53,6 +55,8 @@ export async function viewWorkingHours(container) {
           vardiyanın dışına taşamaz — kaydetmede kontrol edilir. Bu ekranın liste görünümü yoktur;
           kayıt her zaman vardır, silinemez.
         </div>
+      </div>
+      </div>
       </div>`;
 
     const inputs = {};
