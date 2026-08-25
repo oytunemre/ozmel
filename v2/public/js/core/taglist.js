@@ -23,12 +23,16 @@ export class TagList {
     this.input.className = 'taginput';
     this.input.placeholder = placeholder;
     this.el.appendChild(this.control);
+    this.control.appendChild(this.input);   // input HEP DOM'da kalsın (render onu çıkarmaz)
 
+    // Değeri ADD'den ÖNCE temizle: render sırasında (ya da başka nedenle) olası bir
+    // blur olayı aynı değeri İKİNCİ kez eklemesin.
+    const commit = () => { const v = this.input.value; this.input.value = ''; this.add(v); };
     this.input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); this.add(this.input.value); this.input.value = ''; }
+      if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); commit(); }
       else if (e.key === 'Backspace' && this.input.value === '' && this.tags.length) { this.remove(this.tags.length - 1); }
     });
-    this.input.addEventListener('blur', () => { if (this.input.value.trim()) { this.add(this.input.value); this.input.value = ''; } });
+    this.input.addEventListener('blur', () => { if (this.input.value.trim()) commit(); });
     this.control.addEventListener('click', () => this.input.focus());
 
     this.render();
@@ -54,16 +58,17 @@ export class TagList {
   }
 
   render() {
-    this.control.innerHTML = '';
+    // Yalnızca çipleri yenile. Input DOM'dan ÇIKARILMAZ — çıkarılırsa (innerHTML='')
+    // odaklı input blur olur, blur handler değeri ikinci kez ekler (çift ekleme bug'ı).
+    this.control.querySelectorAll('.fk-chip').forEach(c => c.remove());
     this.tags.forEach((t, i) => {
       const chip = node('span', 'fk-chip', esc(t));
       const x = node('button', '', '×');
       x.type = 'button';
       x.addEventListener('click', (e) => { e.stopPropagation(); this.remove(i); });
       chip.appendChild(x);
-      this.control.appendChild(chip);
+      this.control.insertBefore(chip, this.input);   // çipler input'tan önce
     });
-    this.control.appendChild(this.input);
   }
 }
 
