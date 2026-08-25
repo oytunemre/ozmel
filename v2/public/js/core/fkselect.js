@@ -45,6 +45,21 @@ export class FkSelect {
   setValue(v) { this.selected = new Set(toArray(v)); this.renderControl(); }
   focus() { this.control.focus(); }
 
+  /**
+   * Satırları yükler (yüklüyse hemen döner). EŞZAMANLI çağrılar tek promise'i paylaşır
+   * (art arda açma ya da drawer ön-yüklemesi tekrar istek atmaz). Etiketler çözülür.
+   */
+  ensureLoaded() {
+    if (this.rows !== null) return Promise.resolve();
+    if (!this._loading) {
+      this._loading = Promise.resolve(this.source())
+        .then(({ rows, total }) => { this.rows = rows || []; this.total = total ?? this.rows.length; })
+        .catch(() => { this.rows = []; })
+        .finally(() => { this._loading = null; this.renderControl(); });
+    }
+    return this._loading;
+  }
+
   // --- secili ozet ---
   renderControl() {
     this.control.innerHTML = '';
@@ -94,17 +109,12 @@ export class FkSelect {
     this.search.addEventListener('keydown', (e) => this.onKey(e));
     document.addEventListener('click', this._onDocClick);
 
+    // Yüklenene kadar "Yükleniyor…" göster; BOŞ liste gösterme. Yükleme bitince
+    // otomatik doldur — kullanıcının tekrar tıklaması gerekmesin.
     if (this.rows === null) {
       this.listEl.innerHTML = '<div class="fk-empty">Yükleniyor…</div>';
-      try {
-        const { rows, total } = await this.source();
-        this.rows = rows || [];
-        this.total = total ?? this.rows.length;
-      } catch {
-        this.rows = [];
-        this.listEl.innerHTML = '<div class="fk-empty">Liste alınamadı.</div>';
-        return;
-      }
+      await this.ensureLoaded();
+      if (!this.pop) return;   // bu arada kapatıldıysa çık
     }
     this.renderControl();  // etiketler artik cozulebilir
     this.renderList();

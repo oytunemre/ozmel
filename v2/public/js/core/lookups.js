@@ -3,13 +3,25 @@
 
 import { resource } from './api.js';
 
+// In-flight deduplication: aynı kaynağa EŞZAMANLI istekler tek fetch'i paylaşır.
+// (Kalıcı cache değil — çözülünce silinir, düzenleme sonrası taze veri gelir.)
+const inflight = new Map();
+function fetchList(name) {
+  if (inflight.has(name)) return inflight.get(name);
+  const p = resource(name).list({ limit: 200 })
+    .then(r => r.data)
+    .finally(() => inflight.delete(name));
+  inflight.set(name, p);
+  return p;
+}
+
 /**
  * @param {string} name kaynak adı (or. 'product-codes')
  * @param {(row)=>{id:any, code?:string, name?:string}} mapRow
  * @returns {Promise<{rows:Array, source:Function, byId:Map, label:(id)=>string}>}
  */
 export async function loadLookup(name, mapRow) {
-  const { data } = await resource(name).list({ limit: 200 });
+  const data = await fetchList(name);
   const rows = data.map(mapRow);
   const byId = new Map(rows.map(r => [r.id, r]));
   return {

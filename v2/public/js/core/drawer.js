@@ -54,6 +54,10 @@ export function openDrawer(opts) {
   drawer.appendChild(bodyEl);
   applyVisibility();  // tipe bagli (showIf) alanlarin ilk gorunurlugu
 
+  // Panel açılır açılmaz tüm FK kaynaklarını ön-yükle: kullanıcı seçiciyi açtığında
+  // liste dolu olsun (yarış durumu yok). ensureLoaded dedup'lı — tekrar istek atmaz.
+  for (const f of fields) if (f.type === 'fk') f.fk?.ensureLoaded?.();
+
   // --- aksiyonlar ---
   const actions = h('div', 'drawer-actions');
   const cancelBtn = h('button', 'btn btn-secondary', 'Vazgeç');
