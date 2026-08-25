@@ -7,7 +7,7 @@
 import { skeleton, emptyState, errorState, esc } from './states.js';
 import { flashRow } from './toast.js';
 
-const READONLY_HINT = 'Salt okuma yetkiniz var — degisiklik yapamazsiniz';
+const READONLY_HINT = 'Salt okuma yetkiniz var — değişiklik yapamazsınız';
 
 export class DataTable {
   /**
@@ -112,12 +112,12 @@ export class DataTable {
     if (rows.length === 0) {
       this.body.appendChild(this.all.length === 0
         ? emptyState({
-            title: 'Kayit yok',
-            message: this.o.emptyMessage || 'Henuz kayit eklenmemis.',
+            title: 'Kayıt yok',
+            message: this.o.emptyMessage || 'Henüz kayıt eklenmemiş.',
             actionLabel: this.o.canWrite ? this.o.addLabel : '',
             onAction: this.o.canWrite ? this.o.onAdd : null
           })
-        : emptyState({ title: 'Sonuc yok', message: `"${this.search}" ile eslesen kayit yok.` }));
+        : emptyState({ title: 'Sonuç yok', message: `"${this.search}" ile eşleşen kayıt yok.` }));
       return;
     }
 
@@ -158,7 +158,7 @@ export class DataTable {
 
   actionsCell(row) {
     const td = el('td', 'actions');
-    if (this.o.onEdit) td.appendChild(this.actionBtn('Duzenle', 'btn-ghost', () => this.o.onEdit(row)));
+    if (this.o.onEdit) td.appendChild(this.actionBtn('Düzenle', 'btn-ghost', () => this.o.onEdit(row)));
     if (this.o.onDelete) td.appendChild(this.actionBtn('Sil', 'btn-danger', () => this.o.onDelete(row)));
     return td;
   }
@@ -175,7 +175,7 @@ export class DataTable {
     p.appendChild(el('span', 'text-muted',
       total ? `${start + 1}–${start + shown} / ${total}` : '0'));
     p.appendChild(el('span', 'grow'));
-    const prev = el('button', 'btn btn-secondary btn-sm', '‹ Onceki');
+    const prev = el('button', 'btn btn-secondary btn-sm', '‹ Önceki');
     const next = el('button', 'btn btn-secondary btn-sm', 'Sonraki ›');
     prev.disabled = this.page <= 1;
     next.disabled = this.page >= pages;

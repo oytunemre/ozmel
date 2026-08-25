@@ -44,13 +44,17 @@ export function openDrawer(opts) {
 
   const controls = {};   // name -> { read(), setError(msg), clearError(), fieldEl }
   const form = h('form');
-  for (const f of fields) controls[f.name] = buildField(f, values[f.name], markDirty, form);
+  for (const f of fields) {
+    const ctl = buildField(f, values[f.name], markDirty, form);
+    controls[f.name] = ctl;
+    form.appendChild(ctl.fieldEl);   // alanı forma ekle (yoksa panel boş açılır)
+  }
   bodyEl.appendChild(form);
   drawer.appendChild(bodyEl);
 
   // --- aksiyonlar ---
   const actions = h('div', 'drawer-actions');
-  const cancelBtn = h('button', 'btn btn-secondary', 'Vazgec');
+  const cancelBtn = h('button', 'btn btn-secondary', 'Vazgeç');
   const saveBtn = h('button', 'btn btn-primary', esc(submitLabel));
   actions.append(cancelBtn, saveBtn);
   drawer.appendChild(actions);
@@ -101,7 +105,7 @@ export function openDrawer(opts) {
         if (bannerMsg) showBanner(bannerMsg);
         firstBad?.focus?.();
       } else if (err instanceof ConflictError) {
-        showBanner(err.message + ' — panjuru kapatip listeyi yenileyin.');
+        showBanner(err.message + ' — paneli kapatıp listeyi yenileyin.');
       } else {
         showBanner((err instanceof ApiError ? err.message : 'Beklenmeyen hata') || 'Kaydedilemedi');
       }
@@ -113,9 +117,9 @@ export function openDrawer(opts) {
   async function tryClose() {
     if (dirty) {
       const ok = await confirmDialog({
-        title: 'Kaydedilmemis degisiklikler',
-        body: 'Bu paneli kapatirsaniz girdikleriniz kaybolur. Kapatilsin mi?',
-        confirmLabel: 'Kapat', cancelLabel: 'Vazgec', danger: true
+        title: 'Kaydedilmemiş değişiklikler',
+        body: 'Bu paneli kapatırsanız girdikleriniz kaybolur. Kapatılsın mı?',
+        confirmLabel: 'Kapat', cancelLabel: 'Vazgeç', danger: true
       });
       if (!ok) return;
     }
@@ -157,7 +161,7 @@ function buildField(f, value, markDirty, form) {
   } else if (f.type === 'bool') {
     const seg = h('div', 'seg');
     const cur = value ? '1' : '0';
-    for (const [v, lbl] of [['1', 'Evet'], ['0', 'Hayir']]) {
+    for (const [v, lbl] of [['1', 'Evet'], ['0', 'Hayır']]) {
       const opt = h('label', 'seg-opt', esc(lbl));
       opt.insertAdjacentHTML('afterbegin',
         `<input type="radio" name="${esc(f.name)}" value="${v}"${v === cur ? ' checked' : ''}>`);

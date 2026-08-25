@@ -18,7 +18,7 @@ const operationsApi = resource('operations');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewOperators(container) {
-  container.innerHTML = '<div class="loading">Yukleniyor…</div>';
+  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
 
   // Operasyonlar bir kez cekilir: hem yetkinlik adlarini gostermek hem FK secici icin.
   let operations;
@@ -36,16 +36,16 @@ export async function viewOperators(container) {
   });
 
   const table = new DataTable(container, {
-    title: 'Operatorler',
+    title: 'Operatörler',
     canWrite,
-    addLabel: 'Yeni Operator',
+    addLabel: 'Yeni Operatör',
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
     load: () => operatorsApi.list({ limit: 200 }).then(r => r.data),
     rowId: (r) => r.id,
     searchText: (r) => [r.fullName, r.badgeNo, r.skills.map(id => opName.get(id) || '').join(' ')].join(' '),
-    emptyMessage: 'Henuz operator eklenmemis. "Yeni Operator" ile baslayin.',
+    emptyMessage: 'Henüz operatör eklenmemiş. "Yeni Operatör" ile başlayın.',
     columns: [
       { label: 'Ad Soyad', key: 'fullName' },
       { label: 'Sicil No', key: 'badgeNo' },
@@ -74,15 +74,15 @@ export async function viewOperators(container) {
     });
 
     openDrawer({
-      title: editing ? 'Operator Duzenle' : 'Yeni Operator',
-      submitLabel: editing ? 'Guncelle' : 'Ekle',
+      title: editing ? 'Operatör Düzenle' : 'Yeni Operatör',
+      submitLabel: editing ? 'Güncelle' : 'Ekle',
       values: editing ? { ...row } : { isActive: 1 },
       fields: [
         { name: 'fullName', label: 'Ad Soyad', type: 'text', required: true },
         { name: 'badgeNo', label: 'Sicil No', type: 'text', required: true },
         { name: 'isActive', label: 'Durum', type: 'bool' },
         { name: 'skills', label: 'Yetkin Operasyonlar', type: 'fk', fk: skillsFk,
-          help: 'Bu operatorun yetkin oldugu operasyonlar (coklu secim).' }
+          help: 'Bu operatörün yetkin olduğu operasyonlar (çoklu seçim).' }
       ],
       onSubmit: async (v) => {
         const payload = { fullName: v.fullName, badgeNo: v.badgeNo, isActive: v.isActive, skills: v.skills };
@@ -92,7 +92,7 @@ export async function viewOperators(container) {
         return data;
       },
       onSaved: async (saved) => {
-        toast(editing ? 'Operator guncellendi' : 'Operator eklendi', 'success');
+        toast(editing ? 'Operatör güncellendi' : 'Operatör eklendi', 'success');
         await table.reload();
         table.flash(saved.id);
       },
@@ -102,14 +102,14 @@ export async function viewOperators(container) {
 
   async function remove(row) {
     const ok = await confirmDialog({
-      title: 'Operator silinsin mi?',
-      body: `"${row.fullName}" ve yetkinlikleri kalici olarak silinecek.`,
+      title: 'Operatör silinsin mi?',
+      body: `"${row.fullName}" ve yetkinlikleri kalıcı olarak silinecek.`,
       confirmLabel: 'Sil', danger: true
     });
     if (!ok) return;
     try {
       await operatorsApi.remove(row.id);
-      toast('Operator silindi', 'success');
+      toast('Operatör silindi', 'success');
       await table.reload();
     } catch (err) {
       toast(err.message, 'danger');

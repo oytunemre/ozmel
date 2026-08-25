@@ -16,7 +16,7 @@ export function skeleton(rows = 8) {
 }
 
 /** Bos liste — cikis yolu sunar (or. "Yeni ekle"). */
-export function emptyState({ title = 'Kayit yok', message = '', actionLabel = '', onAction = null } = {}) {
+export function emptyState({ title = 'Kayıt yok', message = '', actionLabel = '', onAction = null } = {}) {
   const n = el('div', 'state');
   n.appendChild(el('div', 'state-title', esc(title)));
   if (message) n.appendChild(el('div', 'state-msg', esc(message)));
@@ -29,7 +29,7 @@ export function emptyState({ title = 'Kayit yok', message = '', actionLabel = ''
 }
 
 /** Hata karti — "Tekrar dene". */
-export function errorState({ message = 'Bir seyler ters gitti', onRetry = null } = {}) {
+export function errorState({ message = 'Bir şeyler ters gitti', onRetry = null } = {}) {
   const n = el('div', 'state error');
   n.appendChild(el('div', 'state-title', 'Hata'));
   n.appendChild(el('div', 'state-msg', esc(message)));
@@ -47,17 +47,17 @@ export function errorState({ message = 'Bir seyler ters gitti', onRetry = null }
  */
 export function conflictState({ message = '', onReload = null, onDiff = null } = {}) {
   const n = el('div', 'state conflict');
-  n.appendChild(el('div', 'state-title', 'Cakisma'));
+  n.appendChild(el('div', 'state-title', 'Çakışma'));
   n.appendChild(el('div', 'state-msg',
-    esc(message || 'Bu kayit siz acdiktan sonra baskasi tarafindan degistirildi.')));
+    esc(message || 'Bu kayıt siz açtıktan sonra başkası tarafından değiştirildi.')));
   const row = el('div', 'dialog-actions');
   if (onDiff) {
-    const d = el('button', 'btn btn-secondary', 'Farki goster');
+    const d = el('button', 'btn btn-secondary', 'Farkı göster');
     d.addEventListener('click', onDiff);
     row.appendChild(d);
   }
   if (onReload) {
-    const r = el('button', 'btn btn-primary', 'Yeniden yukle');
+    const r = el('button', 'btn btn-primary', 'Yeniden yükle');
     r.addEventListener('click', onReload);
     row.appendChild(r);
   }
@@ -69,7 +69,7 @@ export function conflictState({ message = '', onReload = null, onDiff = null } =
  * Onay diyalogu (silme, kaydedilmemis degisiklik...). Promise<boolean> doner.
  * @returns {Promise<boolean>}
  */
-export function confirmDialog({ title = 'Emin misiniz?', body = '', confirmLabel = 'Onayla', cancelLabel = 'Vazgec', danger = false } = {}) {
+export function confirmDialog({ title = 'Emin misiniz?', body = '', confirmLabel = 'Onayla', cancelLabel = 'Vazgeç', danger = false } = {}) {
   return new Promise((resolve) => {
     const backdrop = el('div', 'dialog-backdrop');
     const dlg = el('div', 'dialog');

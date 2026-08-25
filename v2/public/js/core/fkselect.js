@@ -13,7 +13,7 @@ export class FkSelect {
    * source: async () => ({rows, total}) — ilk acilista yuklenir. rows onceden
    * verilirse (cagiranda zaten varsa) etiketler hemen cozulur, source cagrilmaz.
    */
-  constructor({ source, multiple = false, value = null, placeholder = 'Secin…', warnAt = 200, rows = null, total = 0 }) {
+  constructor({ source, multiple = false, value = null, placeholder = 'Seçin…', warnAt = 200, rows = null, total = 0 }) {
     this.source = source;
     this.multiple = multiple;
     this.placeholder = placeholder;
@@ -95,14 +95,14 @@ export class FkSelect {
     document.addEventListener('click', this._onDocClick);
 
     if (this.rows === null) {
-      this.listEl.innerHTML = '<div class="fk-empty">Yukleniyor…</div>';
+      this.listEl.innerHTML = '<div class="fk-empty">Yükleniyor…</div>';
       try {
         const { rows, total } = await this.source();
         this.rows = rows || [];
         this.total = total ?? this.rows.length;
       } catch {
         this.rows = [];
-        this.listEl.innerHTML = '<div class="fk-empty">Liste alinamadi.</div>';
+        this.listEl.innerHTML = '<div class="fk-empty">Liste alınamadı.</div>';
         return;
       }
     }
@@ -133,13 +133,13 @@ export class FkSelect {
     // 200+ uyarisi: yuklenen satirdan fazlasi varsa (sunucu-tarafi arama yok).
     if (this.total > this.rows.length && this.total > this.warnAt) {
       this.warnEl.style.display = '';
-      this.warnEl.textContent = `${this.total} kayittan ilk ${this.rows.length} gosteriliyor — aramayi daraltin.`;
+      this.warnEl.textContent = `${this.total} kayıttan ilk ${this.rows.length} gösteriliyor — aramayı daraltın.`;
     } else {
       this.warnEl.style.display = 'none';
     }
     if (this.active >= rows.length) this.active = rows.length - 1;
 
-    if (rows.length === 0) { this.listEl.innerHTML = '<div class="fk-empty">Sonuc yok.</div>'; return; }
+    if (rows.length === 0) { this.listEl.innerHTML = '<div class="fk-empty">Sonuç yok.</div>'; return; }
     this.listEl.innerHTML = '';
     rows.forEach((r, i) => {
       const opt = node('div', 'fk-opt' + (i === this.active ? ' active' : '') +
