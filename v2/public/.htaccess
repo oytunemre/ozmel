@@ -8,4 +8,11 @@ Options -Indexes
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Gelistirme: JS/CSS/HTML her yuklemede yeniden dogrulansin — build/versiyonlama
+  # yok, tarayici eski app.css/modul dosyalarini onbellekten sunuyordu (kabuk kirik
+  # gorunuyor, eski panjur diyalogu cikiyordu). Prod'da versiyonlama gelince kaldirilir.
+  <FilesMatch "\.(js|mjs|css|html)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
 </IfModule>

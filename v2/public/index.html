@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Özmel</title>
-  <link rel="stylesheet" href="css/app.css">
+  <!-- ?v: onbellek kirici. app.css/modul degisince artir (build/versiyonlama yok). -->
+  <link rel="stylesheet" href="css/app.css?v=3">
 </head>
 <body>
   <div class="app">
@@ -132,7 +133,7 @@
       crumb.textContent = `${m.group} / ${m.label}`;
       content.innerHTML = '<div class="loading">Yükleniyor…</div>';
       try {
-        const mod = await import(`./js/modules/${m.file}`);
+        const mod = await import(`./js/modules/${m.file}?v=3`);
         mod[m.fn](content);
       } catch (err) {
         content.innerHTML = `<div class="state error"><div class="state-title">Modül yüklenemedi</div>
