@@ -71,7 +71,14 @@ export class DataTable {
   // --- parcalar ---
   head() {
     const head = el('div', 'module-head');
-    head.appendChild(el('h2', '', esc(this.o.title)));
+    const left = el('div');
+    left.appendChild(el('h2', '', esc(this.o.title)));
+    if (this.o.subtitle) {
+      const sub = el('div', 'text-muted', esc(this.o.subtitle));
+      sub.style.cssText = 'font-size:13.5px; margin-top:6px;';
+      left.appendChild(sub);
+    }
+    head.appendChild(left);
     if (this.o.addLabel && this.o.onAdd) {
       const b = el('button', 'btn btn-primary', esc(this.o.addLabel));
       if (!this.o.canWrite) { b.disabled = true; b.title = READONLY_HINT; }

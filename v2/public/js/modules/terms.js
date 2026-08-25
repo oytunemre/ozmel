@@ -14,6 +14,7 @@ const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 export async function viewTerms(container) {
   const table = new DataTable(container, {
     title: 'Çeviri Sözlüğü',
+    subtitle: 'Arayüz terimlerinin İngilizce karşılıkları · gizli terimler EN görünümünde yazılmaz',
     canWrite,
     addLabel: 'Yeni Terim',
     onAdd: () => openForm(null),

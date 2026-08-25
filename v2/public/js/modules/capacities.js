@@ -26,7 +26,8 @@ export async function viewCapacities(container) {
   }
 
   const table = new DataTable(container, {
-    title: 'Kapasiteler',
+    title: 'Kapasite Yönetimi',
+    subtitle: 'İş merkezi başına vardiya kapasitesi',
     canWrite,
     addLabel: 'Yeni Kapasite',
     onAdd: () => openForm(null),
@@ -36,9 +37,9 @@ export async function viewCapacities(container) {
     searchText: (r) => [products.label(r.productCodeId), centers.label(r.workCenterId)].join(' '),
     emptyMessage: 'Henüz kapasite eklenmemiş. "Yeni Kapasite" ile başlayın.',
     columns: [
-      { label: 'Ürün', render: (r) => esc(products.label(r.productCodeId)) },
       { label: 'İş Merkezi', render: (r) => esc(centers.label(r.workCenterId)) },
-      { label: 'Kapasite (vardiya)', key: 'capacityPerShift', className: 'mono' },
+      { label: 'Ürün / Parça', render: (r) => esc(products.label(r.productCodeId)) },
+      { label: 'Adet / vardiya', key: 'capacityPerShift', className: 'mono' },
       { label: 'Dakika', render: (r) => r.minutes ?? '—' }
     ]
   });
