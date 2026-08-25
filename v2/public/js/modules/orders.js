@@ -1,83 +1,87 @@
-// Siparisler — v2 modulu.
-//
-// Bu modul VERI TUTMAZ. Global bir DB nesnesi yok, seed yok, blob yok.
-// Her render kendi verisini API'den ceker. Ekran metinleri Turkce,
-// kod ve API anahtarlari Ingilizce.
-//
-// v1'de order urun serbest metindi; API'de productCodeId FK olur. kaynak
-// ('satis'/'stok') sabit deger kumesidir. Siparis silinince is emirleri ve
-// uretim kayitlari da gider (sunucuda kaskad, transaction icinde).
+// Siparişler (Üretim Siparişleri) — v2 modülü. Tasarım: Uretim-Siparisleri.dc.html.
+// Standart tablo + drawer. Kaynak: satış / üretim / stok.
 
-const API = '../api/index.php';
+import { resource } from '../core/api.js';
+import { DataTable } from '../core/table.js';
+import { openDrawer } from '../core/drawer.js';
+import { FkSelect } from '../core/fkselect.js';
+import { toast } from '../core/toast.js';
+import { confirmDialog, errorState, esc } from '../core/states.js';
+import { loadLookup, mapProduct } from '../core/lookups.js';
 
-async function request(path, { method = 'GET', body = null } = {}) {
-  const res = await fetch(API + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Session-Token': window.SESSION_TOKEN || ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
-
-  const json = await res.json().catch(() => ({}));
-
-  if (!json.ok) {
-    const message = json.errors?._ || Object.values(json.errors || {})[0] || 'Bilinmeyen hata';
-    throw Object.assign(new Error(message), { status: res.status, errors: json.errors || {} });
-  }
-  return json;
-}
-
-export const orders = {
-  list:   (page = 1)   => request(`/orders?page=${page}&limit=50`),
-  get:    (id)         => request(`/orders/${id}`),
-  create: (data)       => request('/orders', { method: 'POST', body: data }),
-  update: (id, data)   => request(`/orders/${id}?op=guncelle`, { method: 'POST', body: data }),
-  remove: (id)         => request(`/orders/${id}?op=sil`, { method: 'POST' })
-};
+const api = resource('orders');
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
+const SOURCES = [
+  { value: '', label: '— Kaynak seçin —' },
+  { value: 'satis', label: 'Satış' },
+  { value: 'uretim', label: 'Üretim' },
+  { value: 'stok', label: 'Stok' }
+];
+const SRC_LABEL = { satis: 'Satış', uretim: 'Üretim', stok: 'Stok' };
 
 export async function viewOrders(container) {
-  container.innerHTML = '<div class="loading">Yukleniyor…</div>';
+  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  let products;
+  try { products = await loadLookup('product-codes', mapProduct); }
+  catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewOrders(container) })); return; }
 
-  try {
-    const { data, meta } = await orders.list();
+  const table = new DataTable(container, {
+    title: 'Üretim Siparişleri',
+    subtitle: 'Satış siparişinden ya da stok tamamlamadan açılan üretim talepleri',
+    canWrite,
+    addLabel: 'Yeni Sipariş',
+    onAdd: () => openForm(null),
+    onEdit: (row) => openForm(row),
+    onDelete: (row) => remove(row),
+    load: () => api.list({ limit: 200 }).then(r => r.data),
+    searchText: (r) => [r.orderNo, products.label(r.productCodeId), r.customer].join(' '),
+    emptyMessage: 'Henüz sipariş yok. "Yeni Sipariş" ile başlayın.',
+    columns: [
+      { label: 'Sipariş No', key: 'orderNo', className: 'mono' },
+      { label: 'Ürün / Parça', render: (r) => esc(products.label(r.productCodeId)) },
+      { label: 'Miktar', render: (r) => r.targetQuantity, className: 'mono' },
+      { label: 'Termin', render: (r) => esc(r.requestedDeliveryDate || '—') },
+      { label: 'Kaynak', render: (r) => `<span class="tag tag-neutral">${esc(SRC_LABEL[r.source] || r.source)}</span>` },
+      { label: 'Durum', render: (r) => esc(r.status || '—') }
+    ]
+  });
 
-    container.innerHTML = `
-      <div class="module-head">
-        <h2>Siparisler</h2>
-        <button id="order-add" class="btn">Yeni Siparis</button>
-      </div>
-      <table class="tbl">
-        <thead><tr><th>Siparis No</th><th>Kaynak</th><th>Urun</th><th>Hedef</th><th>Durum</th><th>Musteri</th><th></th></tr></thead>
-        <tbody>
-          ${data.map(o => `
-            <tr data-id="${o.id}" data-updated="${o.updatedAt}">
-              <td>${escapeHtml(o.orderNo)}</td>
-              <td>${o.source === 'satis' ? 'Satis' : 'Stok'}</td>
-              <td>${o.productCodeId}</td>
-              <td>${o.targetQuantity}</td>
-              <td>${escapeHtml(o.status)}</td>
-              <td>${o.customer ? escapeHtml(o.customer) : '—'}</td>
-              <td>
-                <button class="order-edit" data-id="${o.id}">Duzenle</button>
-                <button class="order-del"  data-id="${o.id}">Sil</button>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="meta">Toplam ${meta.total} kayit</p>`;
-
-    if (data.length === 0) {
-      container.querySelector('tbody').innerHTML =
-        '<tr><td colspan="7">Henuz siparis eklenmemis. "Yeni Siparis" ile baslayin.</td></tr>';
-    }
-  } catch (err) {
-    container.innerHTML = `<div class="error">Liste alinamadi: ${escapeHtml(err.message)}</div>`;
+  function openForm(row) {
+    const editing = !!row;
+    if (editing) table.markActive(row.id);
+    const productFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.productCodeId ?? null, placeholder: 'Ürün seçin…' });
+    openDrawer({
+      title: editing ? 'Sipariş Düzenle' : 'Yeni Sipariş',
+      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      values: editing ? { ...row } : { source: '' },
+      fields: [
+        { name: 'secId', type: 'section', label: 'Sipariş' },
+        { name: 'orderNo', label: 'Sipariş No', type: 'text', required: true },
+        { name: 'source', label: 'Kaynak', type: 'select', required: true, options: SOURCES },
+        { name: 'status', label: 'Durum', type: 'text', required: true },
+        { name: 'productCodeId', label: 'Ürün', type: 'fk', fk: productFk, required: true },
+        { name: 'targetQuantity', label: 'Hedef Miktar', type: 'number', step: 'any', required: true },
+        { name: 'secDates', type: 'section', label: 'Tarihler & Müşteri' },
+        { name: 'startDate', label: 'Başlangıç Tarihi', type: 'date' },
+        { name: 'requestedDeliveryDate', label: 'İstenen Teslim (Termin)', type: 'date' },
+        { name: 'customer', label: 'Müşteri', type: 'text' },
+        { name: 'salesOrderNo', label: 'Satış Sipariş No', type: 'text' },
+        { name: 'note', label: 'Not', type: 'textarea' }
+      ],
+      onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
+      onSaved: async (saved) => { toast(editing ? 'Sipariş güncellendi' : 'Sipariş eklendi', 'success'); await table.reload(); table.flash(saved.id); },
+      onClose: () => table.markActive(null)
+    });
   }
-}
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  async function remove(row) {
+    const ok = await confirmDialog({
+      title: 'Sipariş silinsin mi?',
+      body: `"${row.orderNo}" ve BAĞLI iş emirleri + üretim kayıtları silinecek.`,
+      confirmLabel: 'Sil', danger: true
+    });
+    if (!ok) return;
+    try { await api.remove(row.id); toast('Sipariş silindi', 'success'); await table.reload(); }
+    catch (err) { toast(err.message, 'danger'); }
+  }
 }

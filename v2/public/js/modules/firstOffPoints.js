@@ -1,82 +1,82 @@
-// Ilk parca (first-off) noktalari — v2 modulu.
-//
-// Bu modul VERI TUTMAZ. Global bir DB nesnesi yok, seed yok, blob yok.
-// Her render kendi verisini API'den ceker. Ekran metinleri Turkce,
-// kod ve API anahtarlari Ingilizce.
-//
-// v1'de firstOffNoktalari urun/operasyon serbest metindi; API'de FK olur.
-// first-off kayitlari bu noktalarin id'sine olcum baglar.
+// First-Off Noktaları — v2 modülü. Standart tablo + drawer.
+// Ürün + operasyon FK; ölçüsel/nitel tip; nominal/alt/üst limit.
 
-const API = '../api/index.php';
+import { resource } from '../core/api.js';
+import { DataTable } from '../core/table.js';
+import { openDrawer } from '../core/drawer.js';
+import { FkSelect } from '../core/fkselect.js';
+import { toast } from '../core/toast.js';
+import { confirmDialog, errorState, esc } from '../core/states.js';
+import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
 
-async function request(path, { method = 'GET', body = null } = {}) {
-  const res = await fetch(API + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Session-Token': window.SESSION_TOKEN || ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
-
-  const json = await res.json().catch(() => ({}));
-
-  if (!json.ok) {
-    const message = json.errors?._ || Object.values(json.errors || {})[0] || 'Bilinmeyen hata';
-    throw Object.assign(new Error(message), { status: res.status, errors: json.errors || {} });
-  }
-  return json;
-}
-
-export const firstOffPoints = {
-  list:   (page = 1)   => request(`/first-off-points?page=${page}&limit=50`),
-  get:    (id)         => request(`/first-off-points/${id}`),
-  create: (data)       => request('/first-off-points', { method: 'POST', body: data }),
-  update: (id, data)   => request(`/first-off-points/${id}?op=guncelle`, { method: 'POST', body: data }),
-  remove: (id)         => request(`/first-off-points/${id}?op=sil`, { method: 'POST' })
-};
+const api = resource('first-off-points');
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
+const TYPES = [
+  { value: '', label: '— Tip seçin —' },
+  { value: 'olcusel', label: 'Ölçüsel' },
+  { value: 'nitel', label: 'Nitel' }
+];
 
 export async function viewFirstOffPoints(container) {
-  container.innerHTML = '<div class="loading">Yukleniyor…</div>';
-
+  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  let products, ops;
   try {
-    const { data, meta } = await firstOffPoints.list();
+    products = await loadLookup('product-codes', mapProduct);
+    ops = await loadLookup('operations', mapNamed);
+  } catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewFirstOffPoints(container) })); return; }
 
-    container.innerHTML = `
-      <div class="module-head">
-        <h2>First-Off Noktalari</h2>
-        <button id="fop-add" class="btn">Yeni Nokta</button>
-      </div>
-      <table class="tbl">
-        <thead><tr><th>Urun</th><th>Operasyon</th><th>No</th><th>Karakteristik</th><th>Tip</th><th>Birim</th><th></th></tr></thead>
-        <tbody>
-          ${data.map(p => `
-            <tr data-id="${p.id}" data-updated="${p.updatedAt}">
-              <td>${p.productCodeId}</td>
-              <td>${p.operationId}</td>
-              <td>${p.pointNo}</td>
-              <td>${escapeHtml(p.characteristic)}</td>
-              <td>${escapeHtml(p.type)}</td>
-              <td>${p.unit ? escapeHtml(p.unit) : '—'}</td>
-              <td>
-                <button class="fop-edit" data-id="${p.id}">Duzenle</button>
-                <button class="fop-del"  data-id="${p.id}">Sil</button>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="meta">Toplam ${meta.total} kayit</p>`;
+  const table = new DataTable(container, {
+    title: 'First-Off Noktaları',
+    subtitle: 'İlk parça kontrolünde ölçülecek noktalar',
+    canWrite,
+    addLabel: 'Yeni Nokta',
+    onAdd: () => openForm(null),
+    onEdit: (row) => openForm(row),
+    onDelete: (row) => remove(row),
+    load: () => api.list({ limit: 200 }).then(r => r.data),
+    searchText: (r) => [products.label(r.productCodeId), ops.label(r.operationId), r.characteristic].join(' '),
+    emptyMessage: 'Henüz nokta yok. "Yeni Nokta" ile başlayın.',
+    columns: [
+      { label: 'Ürün', render: (r) => esc(products.label(r.productCodeId)) },
+      { label: 'Operasyon', render: (r) => esc(ops.label(r.operationId)) },
+      { label: 'No', key: 'pointNo', className: 'mono' },
+      { label: 'Karakteristik', key: 'characteristic' },
+      { label: 'Tip', render: (r) => esc(r.type) },
+      { label: 'Nominal', render: (r) => r.nominal ?? '—', className: 'mono' },
+      { label: 'Birim', render: (r) => esc(r.unit || '—') }
+    ]
+  });
 
-    if (data.length === 0) {
-      container.querySelector('tbody').innerHTML =
-        '<tr><td colspan="7">Henuz nokta eklenmemis. "Yeni Nokta" ile baslayin.</td></tr>';
-    }
-  } catch (err) {
-    container.innerHTML = `<div class="error">Liste alinamadi: ${escapeHtml(err.message)}</div>`;
+  function openForm(row) {
+    const editing = !!row;
+    if (editing) table.markActive(row.id);
+    const productFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.productCodeId ?? null, placeholder: 'Ürün seçin…' });
+    const opFk = new FkSelect({ source: ops.source, rows: ops.rows, value: row?.operationId ?? null, placeholder: 'Operasyon seçin…' });
+    openDrawer({
+      title: editing ? 'Nokta Düzenle' : 'Yeni Nokta',
+      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      values: editing ? { ...row } : { type: '' },
+      fields: [
+        { name: 'productCodeId', label: 'Ürün', type: 'fk', fk: productFk, required: true },
+        { name: 'operationId', label: 'Operasyon', type: 'fk', fk: opFk, required: true },
+        { name: 'pointNo', label: 'Nokta No', type: 'number', required: true },
+        { name: 'characteristic', label: 'Karakteristik', type: 'text', required: true },
+        { name: 'type', label: 'Tip', type: 'select', required: true, options: TYPES },
+        { name: 'nominal', label: 'Nominal', type: 'number', step: 'any' },
+        { name: 'lowerLimit', label: 'Alt Limit', type: 'number', step: 'any' },
+        { name: 'upperLimit', label: 'Üst Limit', type: 'number', step: 'any' },
+        { name: 'unit', label: 'Birim', type: 'text' }
+      ],
+      onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
+      onSaved: async (saved) => { toast(editing ? 'Nokta güncellendi' : 'Nokta eklendi', 'success'); await table.reload(); table.flash(saved.id); },
+      onClose: () => table.markActive(null)
+    });
   }
-}
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  async function remove(row) {
+    const ok = await confirmDialog({ title: 'Nokta silinsin mi?', body: `"${row.characteristic}" noktası silinecek.`, confirmLabel: 'Sil', danger: true });
+    if (!ok) return;
+    try { await api.remove(row.id); toast('Nokta silindi', 'success'); await table.reload(); }
+    catch (err) { toast(err.message, 'danger'); }
+  }
 }

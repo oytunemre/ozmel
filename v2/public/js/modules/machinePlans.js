@@ -1,81 +1,166 @@
-// Makine planlari — v2 modulu.
-//
-// Bu modul VERI TUTMAZ. Global bir DB nesnesi yok, seed yok, blob yok.
-// Her render kendi verisini API'den ceker. Ekran metinleri Turkce,
-// kod ve API anahtarlari Ingilizce.
-//
-// v1'de makinePlani isMerkezi/urun/workOrderId serbest metindi; API'de FK olur.
-// Is emri silinince plan kalir, yalnizca workOrderId bagi kopar (SET NULL).
+// Üretim Planı (Haftalık) — v2 modülü. Tasarım: Uretim-Plani.dc.html.
+// Gün × iş merkezi ızgarası; hücre = o gün/iş merkezi için planlanan toplam miktar.
+// Hücreye tıklayınca o hücrenin planları (ekle/düzenle/sil). Haftalar arası gezinme.
 
-const API = '../api/index.php';
+import { resource } from '../core/api.js';
+import { openDrawer } from '../core/drawer.js';
+import { FkSelect } from '../core/fkselect.js';
+import { toast } from '../core/toast.js';
+import { confirmDialog, errorState, esc } from '../core/states.js';
+import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
 
-async function request(path, { method = 'GET', body = null } = {}) {
-  const res = await fetch(API + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Session-Token': window.SESSION_TOKEN || ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
-
-  const json = await res.json().catch(() => ({}));
-
-  if (!json.ok) {
-    const message = json.errors?._ || Object.values(json.errors || {})[0] || 'Bilinmeyen hata';
-    throw Object.assign(new Error(message), { status: res.status, errors: json.errors || {} });
-  }
-  return json;
-}
-
-export const machinePlans = {
-  list:   (page = 1)   => request(`/machine-plans?page=${page}&limit=50`),
-  get:    (id)         => request(`/machine-plans/${id}`),
-  create: (data)       => request('/machine-plans', { method: 'POST', body: data }),
-  update: (id, data)   => request(`/machine-plans/${id}?op=guncelle`, { method: 'POST', body: data }),
-  remove: (id)         => request(`/machine-plans/${id}?op=sil`, { method: 'POST' })
-};
+const api = resource('machine-plans');
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
+const DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 
 export async function viewMachinePlans(container) {
-  container.innerHTML = '<div class="loading">Yukleniyor…</div>';
-
+  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  let products, centers, workOrders, plans;
   try {
-    const { data, meta } = await machinePlans.list();
+    products = await loadLookup('product-codes', mapProduct);
+    centers = await loadLookup('work-centers', mapNamed);
+    workOrders = await loadLookup('work-orders', (w) => ({ id: w.id, code: w.woNo, name: products.label(w.productCodeId) }));
+    plans = (await api.list({ limit: 200 })).data;
+  } catch (err) {
+    container.innerHTML = '';
+    container.appendChild(errorState({ message: err.message, onRetry: () => viewMachinePlans(container) }));
+    return;
+  }
+
+  let weekStart = mondayOf(new Date());
+
+  render();
+
+  function weekDates() { return Array.from({ length: 7 }, (_, i) => fmtISO(addDays(weekStart, i))); }
+  function plansIn(wcId, date) { return plans.filter(p => p.workCenterId === wcId && p.date === date); }
+
+  function render() {
+    const dates = weekDates();
+    const label = `${fmtTR(weekStart)} – ${fmtTR(addDays(weekStart, 6))}`;
+    // Bu haftada plan olan iş merkezleri; yoksa hepsi.
+    const inWeek = new Set(plans.filter(p => dates.includes(p.date)).map(p => p.workCenterId));
+    const wcRows = centers.rows.filter(c => inWeek.has(c.id));
+    const showRows = wcRows.length ? wcRows : centers.rows;
 
     container.innerHTML = `
       <div class="module-head">
-        <h2>Makine Planlari</h2>
-        <button id="mplan-add" class="btn">Yeni Plan</button>
+        <div>
+          <h2>Üretim Planı</h2>
+          <div class="text-muted" style="font-size:13.5px; margin-top:6px;">Haftalık · gün × iş merkezi · bir hücreye tıklayarak planları açın</div>
+        </div>
+        <div class="week-nav">
+          <button class="btn btn-secondary btn-sm" id="mp-prev">‹</button>
+          <span class="mono">${esc(label)}</span>
+          <button class="btn btn-secondary btn-sm" id="mp-next">›</button>
+          <button class="btn btn-primary" id="mp-add"${canWrite ? '' : ' disabled'}>Yeni Plan</button>
+        </div>
       </div>
-      <table class="tbl">
-        <thead><tr><th>Tarih</th><th>Is Merkezi</th><th>Urun</th><th>Is Emri</th><th>Hedef</th><th></th></tr></thead>
-        <tbody>
-          ${data.map(m => `
-            <tr data-id="${m.id}" data-updated="${m.updatedAt}">
-              <td>${escapeHtml(m.date)}</td>
-              <td>${m.workCenterId}</td>
-              <td>${m.productCodeId}</td>
-              <td>${m.workOrderId ?? '—'}</td>
-              <td>${m.targetQuantity ?? '—'}</td>
-              <td>
-                <button class="mplan-edit" data-id="${m.id}">Duzenle</button>
-                <button class="mplan-del"  data-id="${m.id}">Sil</button>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="meta">Toplam ${meta.total} kayit</p>`;
+      <div class="wgrid">
+        <table>
+          <thead><tr><th style="text-align:left">İş Merkezi</th>${
+            dates.map((d, i) => `<th>${DAYS[i]}<span class="date">${d.slice(8)}.${d.slice(5, 7)}</span></th>`).join('')
+          }</tr></thead>
+          <tbody id="mp-body"></tbody>
+        </table>
+      </div>`;
 
-    if (data.length === 0) {
-      container.querySelector('tbody').innerHTML =
-        '<tr><td colspan="6">Henuz makine plani eklenmemis. "Yeni Plan" ile baslayin.</td></tr>';
+    const body = container.querySelector('#mp-body');
+    for (const wc of showRows) {
+      const tr = document.createElement('tr');
+      tr.appendChild(cellTd('wc', `${esc(wc.name)}`));
+      for (const d of dates) {
+        const list = plansIn(wc.id, d);
+        const sum = list.reduce((a, p) => a + (Number(p.targetQuantity) || 0), 0);
+        const td = cellTd('cell' + (list.length ? ' has' : ''), list.length ? String(sum) : '—');
+        td.addEventListener('click', () => cellDetail(wc, d, plansIn(wc.id, d)));
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
     }
-  } catch (err) {
-    container.innerHTML = `<div class="error">Liste alinamadi: ${escapeHtml(err.message)}</div>`;
+
+    container.querySelector('#mp-prev').addEventListener('click', () => { weekStart = addDays(weekStart, -7); render(); });
+    container.querySelector('#mp-next').addEventListener('click', () => { weekStart = addDays(weekStart, 7); render(); });
+    const add = container.querySelector('#mp-add');
+    if (canWrite) add.addEventListener('click', () => openForm(null, null, null));
+  }
+
+  // Hücre detayı: o gün/iş merkezinin planları
+  function cellDetail(wc, date, list) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'dialog-backdrop';
+    const dlg = document.createElement('div');
+    dlg.className = 'dialog';
+    dlg.style.width = 'min(560px, 100%)';
+    dlg.innerHTML = `<div class="dialog-title">${esc(wc.name)} · ${esc(date)}</div>`;
+    const bodyEl = document.createElement('div');
+    if (list.length === 0) bodyEl.innerHTML = '<div class="text-muted" style="padding:6px 0">Bu hücrede plan yok.</div>';
+    else {
+      const table = document.createElement('table'); table.className = 'table';
+      table.innerHTML = `<thead><tr><th>Ürün</th><th>İş Emri</th><th>Hedef</th><th></th></tr></thead>`;
+      const tb = document.createElement('tbody');
+      for (const p of list) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${esc(products.label(p.productCodeId))}</td>
+          <td>${p.workOrderId ? esc(workOrders.label(p.workOrderId)) : '—'}</td>
+          <td class="mono">${p.targetQuantity ?? '—'}</td>`;
+        const act = document.createElement('td'); act.className = 'actions';
+        if (canWrite) {
+          act.append(
+            mini('Düzenle', 'btn-ghost', () => { close(); openForm(p, null, null); }),
+            mini('Sil', 'btn-danger', async () => { if (await del(p)) { close(); render(); } })
+          );
+        }
+        tr.appendChild(act); tb.appendChild(tr);
+      }
+      table.appendChild(tb); bodyEl.appendChild(table);
+    }
+    dlg.appendChild(bodyEl);
+    const actions = document.createElement('div'); actions.className = 'dialog-actions';
+    if (canWrite) actions.appendChild(mini('+ Plan Ekle', 'btn-secondary', () => { close(); openForm(null, wc.id, date); }));
+    actions.appendChild(mini('Kapat', 'btn-primary', close));
+    dlg.appendChild(actions);
+    backdrop.appendChild(dlg); document.body.appendChild(backdrop);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    function close() { backdrop.remove(); }
+  }
+
+  function openForm(row, presetWc, presetDate) {
+    const editing = !!row;
+    const wcFk = new FkSelect({ source: centers.source, rows: centers.rows, value: editing ? row.workCenterId : (presetWc ?? null), placeholder: 'İş merkezi seçin…' });
+    const productFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.productCodeId ?? null, placeholder: 'Ürün seçin…' });
+    const woFk = new FkSelect({ source: workOrders.source, rows: workOrders.rows, value: row?.workOrderId ?? null, placeholder: 'İş emri (opsiyonel)…' });
+    openDrawer({
+      title: editing ? 'Plan Düzenle' : 'Yeni Plan',
+      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      values: editing ? { ...row } : { date: presetDate ?? '', workCenterId: presetWc ?? null },
+      fields: [
+        { name: 'date', label: 'Tarih', type: 'date', required: true },
+        { name: 'workCenterId', label: 'İş Merkezi', type: 'fk', fk: wcFk, required: true },
+        { name: 'productCodeId', label: 'Ürün', type: 'fk', fk: productFk, required: true },
+        { name: 'workOrderId', label: 'İş Emri', type: 'fk', fk: woFk },
+        { name: 'targetQuantity', label: 'Hedef Miktar', type: 'number', step: 'any' },
+        { name: 'note', label: 'Not', type: 'textarea' }
+      ],
+      onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
+      onSaved: async () => { toast(editing ? 'Plan güncellendi' : 'Plan eklendi', 'success'); await reload(); },
+      onClose: () => {}
+    });
+  }
+
+  async function reload() { plans = (await api.list({ limit: 200 })).data; render(); }
+
+  async function del(p) {
+    const ok = await confirmDialog({ title: 'Plan silinsin mi?', body: `${products.label(p.productCodeId)} planı silinecek.`, confirmLabel: 'Sil', danger: true });
+    if (!ok) return false;
+    try { await api.remove(p.id); plans = plans.filter(x => x.id !== p.id); toast('Plan silindi', 'success'); return true; }
+    catch (err) { toast(err.message, 'danger'); return false; }
   }
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
+// --- yardımcılar ---
+function mondayOf(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const off = (x.getDay() + 6) % 7; x.setDate(x.getDate() - off); return x; }
+function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function fmtISO(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function fmtTR(d) { return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`; }
+function cellTd(cls, html) { const td = document.createElement('td'); td.className = cls; td.innerHTML = html; return td; }
+function mini(label, kind, on) { const b = document.createElement('button'); b.className = `btn ${kind} btn-sm`; b.textContent = label; b.addEventListener('click', on); return b; }
