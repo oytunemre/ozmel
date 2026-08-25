@@ -9,17 +9,27 @@ import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
 import { loadLookup, mapProduct, UNIT_OPTIONS } from '../core/lookups.js';
+import { childTable } from './_childDetail.js';
 
 const api = resource('purchase-requests');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewPurchaseRequests(container) {
   container.innerHTML = '<div class="loading">Yükleniyor…</div>';
-  let products, orders;
+  let products, orders, receiptsByReq;
   try {
     products = await loadLookup('product-codes', mapProduct);
     orders = await loadLookup('orders', (o) => ({ id: o.id, code: o.orderNo, name: products.label(o.productCodeId) }));
+    receiptsByReq = await loadReceipts();
   } catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewPurchaseRequests(container) })); return; }
+
+  // Satınalma girişleri istek bazında gruplanır (genişleyen satır için).
+  async function loadReceipts() {
+    const { data } = await resource('purchase-receipts').list({ limit: 200 });
+    const m = new Map();
+    for (const g of data) { if (!m.has(g.purchaseRequestId)) m.set(g.purchaseRequestId, []); m.get(g.purchaseRequestId).push(g); }
+    return m;
+  }
 
   const table = new DataTable(container, {
     title: 'Satınalma İstekleri',
@@ -32,6 +42,10 @@ export async function viewPurchaseRequests(container) {
     load: () => api.list({ limit: 200 }).then(r => r.data),
     searchText: (r) => [products.label(r.materialCodeId), r.supplier].join(' '),
     emptyMessage: 'Henüz istek yok. "Yeni İstek" ile başlayın.',
+    // Genişleyen satır: bu isteğe bağlı satınalma girişleri (tarih, miktar).
+    expand: (r) => childTable(
+      [{ label: 'Tarih', key: 'date' }, { label: 'Miktar', render: (g) => esc(String(g.quantity ?? '—')), mono: true }, { label: 'Not', render: (g) => esc(g.note || '—') }],
+      receiptsByReq.get(r.id) || [], 'Henüz giriş yapılmadı.'),
     columns: [
       { label: 'Malzeme', render: (r) => esc(products.label(r.materialCodeId)) },
       { label: 'Miktar', render: (r) => r.quantity ?? '—', className: 'mono' },

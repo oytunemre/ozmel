@@ -12,6 +12,7 @@ import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
 import { UNIT_OPTIONS } from '../core/lookups.js';
+import { childFields } from './_childDetail.js';
 
 const api = resource('product-codes');
 const operationsApi = resource('operations');
@@ -38,6 +39,7 @@ export async function viewProductCodes(container) {
     return;
   }
   const opsRows = operations.map(o => ({ id: o.id, name: o.name }));
+  const opName = new Map(operations.map(o => [o.id, o.name]));
   const opsSource = async () => ({ rows: opsRows, total: opsRows.length });
 
   const table = new DataTable(container, {
@@ -50,6 +52,24 @@ export async function viewProductCodes(container) {
     load: () => api.list({ limit: 200 }).then(r => r.data),
     searchText: (r) => [r.code, r.name, r.type, r.unit].join(' '),
     emptyMessage: 'Henüz kod tanımı eklenmemiş. "Yeni Kod" ile başlayın.',
+    // Genişleyen satır: tabloda görünmeyen alanlar (ölçüler, stok, tedarik, çizim…).
+    expand: (r) => childFields([
+      { label: 'Çizim No', value: r.drawingNo, mono: true },
+      { label: 'Revizyon', value: r.revision },
+      { label: 'Dış Çap', value: r.outerDiameter, mono: true },
+      { label: 'İç Çap', value: r.innerDiameter, mono: true },
+      { label: 'Malzeme Uzunluğu', value: r.materialLength, mono: true },
+      { label: 'Malzeme Ağırlığı', value: r.materialWeight, mono: true },
+      { label: 'Min. Stok', value: r.minStockLevel, mono: true },
+      { label: 'Tedarik Süresi (gün)', value: r.supplyDays, mono: true },
+      { label: 'Koli Adedi', value: r.boxQuantity, mono: true },
+      { label: 'Kategori', value: r.category },
+      { label: 'Tedarikçiler', value: r.suppliers },
+      { label: 'Müşteri', value: r.customer },
+      { label: 'Çıkan Operasyon', value: r.outgoingOperationId ? opName.get(r.outgoingOperationId) : null },
+      { label: 'Ana Ürün Kodu', value: r.parentProductCode, mono: true },
+      { label: 'Not', value: r.note }
+    ], 'Ek bilgi girilmemiş.'),
     columns: [
       { label: 'Kod', key: 'code', className: 'mono' },
       { label: 'Ad', key: 'name' },

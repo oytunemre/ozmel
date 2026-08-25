@@ -7,7 +7,8 @@ import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, ORDER_STATUS_OPTIONS, withCurrent } from '../core/lookups.js';
+import { loadLookup, mapProduct, mapNamed, ORDER_STATUS_OPTIONS, withCurrent } from '../core/lookups.js';
+import { childTable } from './_childDetail.js';
 
 const api = resource('orders');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
@@ -21,9 +22,26 @@ const SRC_LABEL = { satis: 'Satış', uretim: 'Üretim', stok: 'Stok' };
 
 export async function viewOrders(container) {
   container.innerHTML = '<div class="loading">Yükleniyor…</div>';
-  let products;
-  try { products = await loadLookup('product-codes', mapProduct); }
-  catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewOrders(container) })); return; }
+  let products, ops, centers, woByOrder, producedByWo;
+  try {
+    products = await loadLookup('product-codes', mapProduct);
+    ops = await loadLookup('operations', mapNamed);
+    centers = await loadLookup('work-centers', mapNamed);
+    ({ woByOrder, producedByWo } = await loadWorkOrders());
+  } catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewOrders(container) })); return; }
+
+  // Bağlı iş emirleri sipariş bazında gruplanır; üretilen adet üretim kayıtlarından toplanır.
+  async function loadWorkOrders() {
+    const [{ data: wos }, { data: prod }] = await Promise.all([
+      resource('work-orders').list({ limit: 200 }),
+      resource('production').list({ limit: 200 })
+    ]);
+    const producedByWo = new Map();
+    for (const p of prod) producedByWo.set(p.workOrderId, (producedByWo.get(p.workOrderId) || 0) + (p.actualQuantity || 0));
+    const woByOrder = new Map();
+    for (const w of wos) { if (!woByOrder.has(w.orderId)) woByOrder.set(w.orderId, []); woByOrder.get(w.orderId).push(w); }
+    return { woByOrder, producedByWo };
+  }
 
   const table = new DataTable(container, {
     title: 'Üretim Siparişleri',
@@ -36,6 +54,13 @@ export async function viewOrders(container) {
     load: () => api.list({ limit: 200 }).then(r => r.data),
     searchText: (r) => [r.orderNo, products.label(r.productCodeId), r.customer].join(' '),
     emptyMessage: 'Henüz sipariş yok. "Yeni Sipariş" ile başlayın.',
+    // Genişleyen satır: bu siparişe bağlı iş emirleri (no, operasyon, iş merkezi, üretilen/hedef).
+    expand: (r) => childTable([
+      { label: 'İş Emri', key: 'woNo', mono: true },
+      { label: 'Operasyon', render: (w) => esc(w.operationId ? ops.label(w.operationId) : '—') },
+      { label: 'İş Merkezi', render: (w) => esc(w.workCenterId ? centers.label(w.workCenterId) : '—') },
+      { label: 'Üretilen / Hedef', render: (w) => `${producedByWo.get(w.id) || 0} / ${esc(String(w.targetQuantity ?? '—'))}`, mono: true }
+    ], woByOrder.get(r.id) || [], 'Bağlı iş emri yok.'),
     columns: [
       { label: 'Sipariş No', key: 'orderNo', className: 'mono' },
       { label: 'Ürün / Parça', render: (r) => esc(products.label(r.productCodeId)) },

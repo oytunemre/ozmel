@@ -8,30 +8,38 @@ import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
 import { loadLookup, mapProduct, mapNamed, ORDER_STATUS_OPTIONS, withCurrent } from '../core/lookups.js';
+import { childTable } from './_childDetail.js';
 
 const api = resource('work-orders');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
+const SHIFT_LABEL = { Sabah: 'Sabah', Aksam: 'Akşam', Gece: 'Gece' };
 
 export async function viewWorkOrders(container) {
   container.innerHTML = '<div class="loading">Yükleniyor…</div>';
-  let products, ops, centers, orders, producedByWo;
+  let products, ops, centers, orders, producedByWo, prodByWo;
   try {
     products = await loadLookup('product-codes', mapProduct);
     ops = await loadLookup('operations', mapNamed);
     centers = await loadLookup('work-centers', mapNamed);
     orders = await loadLookup('orders', (o) => ({ id: o.id, code: o.orderNo, name: products.label(o.productCodeId) }));
-    producedByWo = await sumProduction();
+    ({ producedByWo, prodByWo } = await loadProduction());
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewWorkOrders(container) }));
     return;
   }
 
-  async function sumProduction() {
+  // Üretim kayıtları bir kez çekilir: hem üretilen adet toplamı hem iş emri bazında liste.
+  async function loadProduction() {
     const { data } = await resource('production').list({ limit: 200 });
-    const m = new Map();
-    for (const p of data) m.set(p.workOrderId, (m.get(p.workOrderId) || 0) + (p.actualQuantity || 0));
-    return m;
+    const producedByWo = new Map();
+    const prodByWo = new Map();
+    for (const p of data) {
+      producedByWo.set(p.workOrderId, (producedByWo.get(p.workOrderId) || 0) + (p.actualQuantity || 0));
+      if (!prodByWo.has(p.workOrderId)) prodByWo.set(p.workOrderId, []);
+      prodByWo.get(p.workOrderId).push(p);
+    }
+    return { producedByWo, prodByWo };
   }
 
   const table = new DataTable(container, {
@@ -45,6 +53,13 @@ export async function viewWorkOrders(container) {
     load: () => api.list({ limit: 200 }).then(r => r.data),
     searchText: (r) => [r.woNo, products.label(r.productCodeId), centers.label(r.workCenterId)].join(' '),
     emptyMessage: 'Henüz iş emri yok. "İş Emri Aç" ile başlayın.',
+    // Genişleyen satır: bu iş emrine ait üretim kayıtları (tarih, vardiya, gerçek adet, fire).
+    expand: (r) => childTable([
+      { label: 'Tarih', key: 'date' },
+      { label: 'Vardiya', render: (p) => esc(SHIFT_LABEL[p.shift] || p.shift || '—') },
+      { label: 'Gerçek Adet', render: (p) => esc(String(p.actualQuantity ?? '—')), mono: true },
+      { label: 'Fire', render: (p) => esc(String(p.scrapQuantity ?? '—')), mono: true }
+    ], prodByWo.get(r.id) || [], 'Üretim kaydı yok.'),
     columns: [
       { label: 'İş Emri', key: 'woNo', className: 'mono' },
       { label: 'Ürün / Parça', render: (r) => esc(products.label(r.productCodeId)) },
@@ -79,7 +94,7 @@ export async function viewWorkOrders(container) {
         { name: 'splitLabel', label: 'Split Etiketi', type: 'text' }
       ],
       onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
-      onSaved: async (saved) => { toast(editing ? 'İş emri güncellendi' : 'İş emri açıldı', 'success'); producedByWo = await sumProduction(); await table.reload(); table.flash(saved.id); },
+      onSaved: async (saved) => { toast(editing ? 'İş emri güncellendi' : 'İş emri açıldı', 'success'); ({ producedByWo, prodByWo } = await loadProduction()); await table.reload(); table.flash(saved.id); },
       onClose: () => table.markActive(null)
     });
   }
@@ -91,7 +106,7 @@ export async function viewWorkOrders(container) {
       confirmLabel: 'Sil', danger: true
     });
     if (!ok) return;
-    try { await api.remove(row.id); toast('İş emri silindi', 'success'); producedByWo = await sumProduction(); await table.reload(); }
+    try { await api.remove(row.id); toast('İş emri silindi', 'success'); ({ producedByWo, prodByWo } = await loadProduction()); await table.reload(); }
     catch (err) { toast(err.message, 'danger'); }
   }
 }

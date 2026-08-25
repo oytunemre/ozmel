@@ -10,6 +10,7 @@ import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
+import { childChips } from './_childDetail.js';
 
 const operatorsApi = resource('operators');
 const operationsApi = resource('operations');
@@ -46,13 +47,15 @@ export async function viewOperators(container) {
     rowId: (r) => r.id,
     searchText: (r) => [r.fullName, r.badgeNo, r.skills.map(id => opName.get(id) || '').join(' ')].join(' '),
     emptyMessage: 'Henüz operatör eklenmemiş. "Yeni Operatör" ile başlayın.',
+    // Genişleyen satır: operatörün yetkin olduğu operasyonlar (satırda yalnız sayısı).
+    expand: (r) => childChips(r.skills.map(id => opName.get(id) || ('#' + id)), 'Yetkin operasyon tanımlı değil.'),
     columns: [
       { label: 'Ad Soyad', key: 'fullName' },
       { label: 'Sicil No', key: 'badgeNo' },
       {
         label: 'Yetkin Operasyonlar',
         render: (r) => r.skills.length
-          ? r.skills.map(id => `<span class="tag tag-accent">${esc(opName.get(id) || ('#' + id))}</span>`).join('')
+          ? `<span class="mono">${r.skills.length}</span> operasyon`
           : '<span class="text-muted">—</span>'
       },
       {

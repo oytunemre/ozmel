@@ -349,3 +349,18 @@ textarea.input { min-height: 84px; resize: vertical; }
 .meas-detail .mstat.ok { color: var(--color-success); }
 .meas-detail .mstat.bad { color: var(--color-danger); }
 .meas-detail .empty { font-size: 13px; color: var(--color-neutral-600); }
+
+/* Çocuk-kayıt detayı (genişleyen satır): mini tablo / alan ızgarası / etiketler */
+.child-detail { padding: 10px 16px; }
+.child-detail .cd-empty { font-size: 13px; color: var(--color-neutral-600); }
+.cd-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cd-table th { text-align: left; font-weight: 600; color: var(--color-neutral-600);
+  font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 3px 14px 5px 0; }
+.cd-table td { padding: 4px 14px 4px 0; border-top: 1px solid var(--color-divider); }
+.cd-table .mono { font-family: var(--font-mono); }
+.cd-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 9px 22px; }
+.cd-field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cd-field .cd-k { font-size: 11px; color: var(--color-neutral-600); text-transform: uppercase; letter-spacing: .04em; }
+.cd-field .cd-v { font-size: 13.5px; }
+.cd-field .cd-v.mono { font-family: var(--font-mono); }
+.cd-chips { display: flex; flex-wrap: wrap; gap: 6px; }

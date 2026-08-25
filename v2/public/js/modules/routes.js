@@ -11,6 +11,7 @@ import { TagList } from '../core/taglist.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
 import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
+import { childChips } from './_childDetail.js';
 
 const api = resource('routes');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
@@ -30,6 +31,7 @@ export async function viewRoutes(container) {
   }
 
   const collapsed = new Set();
+  const expanded = new Set();   // varyantları açık rota id'leri
   let search = '';
 
   const rowMatches = (r) => {
@@ -103,16 +105,25 @@ export async function viewRoutes(container) {
     const table = document.createElement('table');
     table.className = 'table';
     table.innerHTML = `<thead><tr>
-      <th>Sıra</th><th>Operasyon</th><th>İş Merkezi</th><th>Varyantlar</th><th>Aktif</th><th></th></tr></thead>`;
+      <th class="expander"></th><th>Sıra</th><th>Operasyon</th><th>İş Merkezi</th><th>Varyantlar</th><th>Aktif</th><th></th></tr></thead>`;
     const tb = document.createElement('tbody');
     for (const r of list) {
+      const isOpen = expanded.has(r.id);
       const tr = document.createElement('tr');
-      tr.innerHTML = `
+      const exp = document.createElement('td');
+      exp.className = 'expander';
+      const tog = document.createElement('button');
+      tog.className = 'tree-toggle';
+      tog.textContent = isOpen ? '▾' : '▸';
+      tog.addEventListener('click', () => { if (isOpen) expanded.delete(r.id); else expanded.add(r.id); render(); });
+      exp.appendChild(tog);
+      tr.appendChild(exp);
+      tr.insertAdjacentHTML('beforeend', `
         <td class="mono">${r.sequence}</td>
         <td>${esc(ops.label(r.operationId))}</td>
         <td>${esc(centers.label(r.workCenterId))}</td>
-        <td>${r.variants.length ? esc(r.variants.join(', ')) : '—'}</td>
-        <td>${r.isActive ? '<span class="tag tag-success">Aktif</span>' : '<span class="tag tag-neutral">Pasif</span>'}</td>`;
+        <td>${r.variants.length ? `<span class="mono">${r.variants.length}</span> varyant` : '—'}</td>
+        <td>${r.isActive ? '<span class="tag tag-success">Aktif</span>' : '<span class="tag tag-neutral">Pasif</span>'}</td>`);
       const act = document.createElement('td');
       act.className = 'actions';
       if (canWrite) {
@@ -123,6 +134,16 @@ export async function viewRoutes(container) {
       }
       tr.appendChild(act);
       tb.appendChild(tr);
+      if (isOpen) {
+        const dr = document.createElement('tr');
+        dr.className = 'detail-row';
+        const dc = document.createElement('td');
+        dc.className = 'detail-cell';
+        dc.colSpan = 7;
+        dc.appendChild(childChips(r.variants, 'Varyant seçeneği tanımlı değil.'));
+        dr.appendChild(dc);
+        tb.appendChild(dr);
+      }
     }
     table.appendChild(tb);
     g.appendChild(table);
