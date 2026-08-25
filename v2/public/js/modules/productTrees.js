@@ -7,7 +7,11 @@ import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast, flashRow } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct } from '../core/lookups.js';
+import { loadLookup } from '../core/lookups.js';
+
+// Ağaç tablosunda Birim/Tip ürün kodundan gelir; lookup satırına unit+type de eklenir
+// (varsayılan mapProduct yalnızca id/code/name taşır).
+const mapProductFull = (r) => ({ id: r.id, code: r.code, name: r.name, unit: r.unit, type: r.type });
 
 const api = resource('product-trees');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
@@ -16,7 +20,7 @@ export async function viewProductTrees(container) {
   container.innerHTML = '<div class="loading">Yükleniyor…</div>';
   let products, nodes;
   try {
-    products = await loadLookup('product-codes', mapProduct);
+    products = await loadLookup('product-codes', mapProductFull);
     nodes = (await api.list({ limit: 200 })).data;
   } catch (err) {
     container.innerHTML = '';

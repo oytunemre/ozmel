@@ -249,7 +249,7 @@ textarea.input { min-height: 84px; resize: vertical; }
 
 /* — ürün ağacı: açılır/kapanır hiyerarşi — */
 .tree-wrap { border: 1px solid var(--color-divider); background: var(--color-surface); }
-.tree-head, .tree-row { display: grid; grid-template-columns: minmax(0,1fr) 90px 90px 120px 128px; align-items: center; }
+.tree-head, .tree-row { display: grid; grid-template-columns: minmax(0,1fr) 80px 80px 100px max-content; align-items: center; }
 .tree-head { border-bottom: 1px solid var(--color-divider); }
 .tree-head > div { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
   color: color-mix(in srgb, var(--color-text) 60%, transparent); padding: var(--space-2) var(--space-3); }
