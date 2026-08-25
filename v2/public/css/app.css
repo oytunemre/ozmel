@@ -190,6 +190,9 @@ textarea.input { min-height: 84px; resize: vertical; }
   padding: 4px 8px; background: var(--color-surface); border: 1px solid var(--color-divider);
   border-radius: var(--radius); cursor: text; }
 .fk-control.open { border-color: var(--color-accent); }
+/* Metin (placeholder + tekil değer) tıklamayı yutmasın; tıklama alttaki kontrole
+   geçsin (kontrolün TAMAMI tıklanabilir). Çipler hariç — onların × butonu var. */
+.fk-placeholder, .fk-single { pointer-events: none; }
 .fk-placeholder { color: color-mix(in srgb, var(--color-text) 45%, transparent); font-size: 14px; }
 .fk-single { font-size: 14px; }
 .fk-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px;
