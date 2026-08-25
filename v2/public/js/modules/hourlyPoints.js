@@ -7,15 +7,10 @@ import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, mapNamed, MEASURE_UNIT_OPTIONS, withCurrent } from '../core/lookups.js';
+import { loadLookup, mapProduct, mapNamed, MEASURE_UNIT_OPTIONS, POINT_TYPE_OPTIONS, optionLabel, fmtMeasure, withCurrent } from '../core/lookups.js';
 
 const api = resource('hourly-points');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
-const TYPES = [
-  { value: '', label: '— Tip seçin —' },
-  { value: 'olcusel', label: 'Ölçüsel' },
-  { value: 'nitel', label: 'Nitel' }
-];
 
 export async function viewHourlyPoints(container) {
   container.innerHTML = '<div class="loading">Yükleniyor…</div>';
@@ -40,8 +35,8 @@ export async function viewHourlyPoints(container) {
       { label: 'Ürün', render: (r) => esc(products.label(r.productCodeId)) },
       { label: 'Operasyon', render: (r) => esc(ops.label(r.operationId)) },
       { label: 'Ölçüm Yeri', key: 'measureLocation' },
-      { label: 'Tip', render: (r) => esc(r.type) },
-      { label: 'Nominal', render: (r) => r.nominal ?? '—', className: 'mono' },
+      { label: 'Tip', render: (r) => esc(optionLabel(POINT_TYPE_OPTIONS, r.type)) },
+      { label: 'Nominal', render: (r) => fmtMeasure(r.nominal), className: 'mono' },
       { label: 'Birim', render: (r) => esc(r.unit || '—') }
     ]
   });
@@ -59,7 +54,7 @@ export async function viewHourlyPoints(container) {
         { name: 'productCodeId', label: 'Ürün', type: 'fk', fk: productFk, required: true },
         { name: 'operationId', label: 'Operasyon', type: 'fk', fk: opFk, required: true },
         { name: 'measureLocation', label: 'Ölçüm Yeri', type: 'text', required: true },
-        { name: 'type', label: 'Tip', type: 'select', required: true, options: TYPES },
+        { name: 'type', label: 'Tip', type: 'select', required: true, options: withCurrent(POINT_TYPE_OPTIONS, row?.type) },
         { name: 'nominal', label: 'Nominal', type: 'number', step: 'any' },
         { name: 'lowerLimit', label: 'Alt Limit', type: 'number', step: 'any' },
         { name: 'upperLimit', label: 'Üst Limit', type: 'number', step: 'any' },

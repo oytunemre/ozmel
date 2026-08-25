@@ -7,15 +7,10 @@ import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, mapNamed, MEASURE_UNIT_OPTIONS, withCurrent } from '../core/lookups.js';
+import { loadLookup, mapProduct, mapNamed, MEASURE_UNIT_OPTIONS, POINT_TYPE_OPTIONS, optionLabel, fmtMeasure, withCurrent } from '../core/lookups.js';
 
 const api = resource('first-off-points');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
-const TYPES = [
-  { value: '', label: '— Tip seçin —' },
-  { value: 'olcusel', label: 'Ölçüsel' },
-  { value: 'nitel', label: 'Nitel' }
-];
 
 export async function viewFirstOffPoints(container) {
   container.innerHTML = '<div class="loading">Yükleniyor…</div>';
@@ -41,8 +36,8 @@ export async function viewFirstOffPoints(container) {
       { label: 'Operasyon', render: (r) => esc(ops.label(r.operationId)) },
       { label: 'No', key: 'pointNo', className: 'mono' },
       { label: 'Karakteristik', key: 'characteristic' },
-      { label: 'Tip', render: (r) => esc(r.type) },
-      { label: 'Nominal', render: (r) => r.nominal ?? '—', className: 'mono' },
+      { label: 'Tip', render: (r) => esc(optionLabel(POINT_TYPE_OPTIONS, r.type)) },
+      { label: 'Nominal', render: (r) => fmtMeasure(r.nominal), className: 'mono' },
       { label: 'Birim', render: (r) => esc(r.unit || '—') }
     ]
   });
@@ -61,7 +56,7 @@ export async function viewFirstOffPoints(container) {
         { name: 'operationId', label: 'Operasyon', type: 'fk', fk: opFk, required: true },
         { name: 'pointNo', label: 'Nokta No', type: 'number', required: true },
         { name: 'characteristic', label: 'Karakteristik', type: 'text', required: true },
-        { name: 'type', label: 'Tip', type: 'select', required: true, options: TYPES },
+        { name: 'type', label: 'Tip', type: 'select', required: true, options: withCurrent(POINT_TYPE_OPTIONS, row?.type) },
         { name: 'nominal', label: 'Nominal', type: 'number', step: 'any' },
         { name: 'lowerLimit', label: 'Alt Limit', type: 'number', step: 'any' },
         { name: 'upperLimit', label: 'Üst Limit', type: 'number', step: 'any' },

@@ -54,6 +54,32 @@ export const MEASURE_UNIT_OPTIONS = [
   { value: 'mm', label: 'mm' }
 ];
 
+// Nokta/karakteristik tipi — backend değeri olcusel/nitel, ekranda Türkçe etiket.
+export const POINT_TYPE_OPTIONS = [
+  { value: 'olcusel', label: 'Ölçüsel' },
+  { value: 'nitel', label: 'Nitel' }
+];
+
+/** Bir değerin listedeki etiketi (yoksa ham değer). Tabloda ham ENUM göstermemek için. */
+export function optionLabel(options, value) {
+  const o = options.find(x => x.value === value);
+  return o ? o.label : (value ?? '');
+}
+
+/**
+ * Ölçüm sayısı biçimi: en az bir ondalık, sondaki gereksiz sıfırlar kırpılır.
+ *   183 -> 183.0 · 13.2800 -> 13.28 · 8.9 -> 8.9 · boş/null -> '—'
+ * Sadece ölçüm alanları için (nominal/limitler) — miktar/adet DEĞİL.
+ */
+export function fmtMeasure(v) {
+  if (v == null || v === '') return '—';
+  const n = Number(v);
+  if (!isFinite(n)) return '—';
+  let s = n.toFixed(4).replace(/(\.\d*?)0+$/, '$1');
+  if (s.endsWith('.')) s += '0';
+  return s;
+}
+
 // Durum seçenekleri (backend VARCHAR; kısıt yalnızca arayüzde). Gerçek veriden.
 export const ORDER_STATUS_OPTIONS = [
   { value: 'Aktif', label: 'Aktif' },
