@@ -58,9 +58,13 @@ final class DashboardRepository
                JOIN orders o ON o.id = wo.order_id AND o.tenant_id = wo.tenant_id
               WHERE wo.tenant_id = :t AND wo.status <> 'Tamamlandı' AND o.start_date = CURDATE()"
         );
+        // Detay metni DEĞİL, çeviri KODU döner — FE t() ile dile göre gösterir
+        // (BE ham TR metin basmaz; sözlük anahtarları public/js/core/i18n.js'te).
         return [
             'value'  => $open,
-            'detail' => $todayStart > 0 ? "{$todayStart}'i bugun baslamali" : 'bugun baslayacak yok',
+            'detail' => $todayStart > 0
+                ? ['code' => 'db.detailOpenToday', 'params' => ['n' => $todayStart]]
+                : ['code' => 'db.detailOpenNone'],
         ];
     }
 
@@ -111,9 +115,10 @@ final class DashboardRepository
         }
         $count = count($products);
         $parts = count(array_unique($products));
+        // Çeviri kodu + parametre (FE t() ile dile göre biçimlenir).
         return [
             'value'  => $count,
-            'detail' => "son 24 saat · {$parts} parca",
+            'detail' => ['code' => 'db.detailOutParts', 'params' => ['n' => $parts]],
         ];
     }
 

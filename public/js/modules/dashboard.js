@@ -2,8 +2,8 @@
 // Tasarım: Genel-Bakis.dc.html. Tek GET /dashboard çağrısı üç bölüm döner:
 //   cards (3 özet kart) · workCenterLoad (doluluk çubukları) · recentQuality (son ölçümler)
 // i18n: dil değişince VERİ ÇEKMEDEN yeniden çizilir (bindLang; veri closure'da).
-// NOT: kartların BE'den gelen `detail` alt metinleri (açık iş emri / tolerans dışı)
-// veri kaynaklıdır ve burada çevrilmez — bugünkü üretim detayı FE'de kurulur.
+// Kart alt metinleri BE'den ÇEVİRİ KODU olarak gelir ({code, params}); FE t() ile
+// dile göre gösterir (bugünkü üretim detayı FE'de kurulur).
 
 import { request } from '../core/api.js';
 import { errorState, esc } from '../core/states.js';
@@ -11,6 +11,8 @@ import { t, bindLang } from '../core/i18n.js';
 
 const nf = new Intl.NumberFormat('tr-TR');
 const fmt = (n) => nf.format(n ?? 0);
+// BE'den gelen {code, params} alt metnini çevir (geriye dönük: düz metinse aynen).
+const detailText = (d) => !d ? '' : (typeof d === 'string' ? d : (d.code ? t(d.code, d.params || {}) : ''));
 
 export async function viewDashboard(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
@@ -37,9 +39,9 @@ export async function viewDashboard(container) {
       </div>
 
       <div class="kpis">
-        ${kpi(t('db.openWo'), fmt(c.openWorkOrders.value), c.openWorkOrders.detail)}
+        ${kpi(t('db.openWo'), fmt(c.openWorkOrders.value), detailText(c.openWorkOrders.detail))}
         ${kpi(t('db.todayProd'), fmt(tp.value), t('db.targetDetail', { n: fmt(tp.target) }))}
-        ${kpi(t('db.outOfTol'), fmt(c.outOfTolerance.value), c.outOfTolerance.detail, c.outOfTolerance.value > 0)}
+        ${kpi(t('db.outOfTol'), fmt(c.outOfTolerance.value), detailText(c.outOfTolerance.detail), c.outOfTolerance.value > 0)}
       </div>
 
       <div class="panels">

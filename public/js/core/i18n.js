@@ -304,6 +304,8 @@ const DICT = {
     'db.targetDetail': 'hedef {n} adet', 'db.wcLoad': 'İş Merkezi Doluluğu',
     'db.wcLoadSub': 'bu hafta · planlanan / kapasite', 'db.recentQuality': 'Son Kalite Kayıtları',
     'db.noPlan': 'Bu hafta plan yok.', 'db.noQuality': 'Henüz ölçüm yok.',
+    'db.detailOpenToday': "{n}'i bugün başlamalı", 'db.detailOpenNone': 'bugün başlayacak yok',
+    'db.detailOutParts': 'son 24 saat · {n} parça',
     'field.password': 'Şifre',
     // Denetim Soruları
     'aud.subtitle': 'Denetim soru bankası', 'aud.new': 'Yeni Soru',
@@ -622,6 +624,8 @@ const DICT = {
     'db.targetDetail': 'target {n} pcs', 'db.wcLoad': 'Work Center Load',
     'db.wcLoadSub': 'this week · planned / capacity', 'db.recentQuality': 'Recent Quality Records',
     'db.noPlan': 'No plans this week.', 'db.noQuality': 'No measurements yet.',
+    'db.detailOpenToday': '{n} due to start today', 'db.detailOpenNone': 'none starting today',
+    'db.detailOutParts': 'last 24h · {n} parts',
     'field.password': 'Password',
     // Audit Questions
     'aud.subtitle': 'Audit question bank', 'aud.new': 'New Question',

@@ -536,3 +536,14 @@ Tümü `public/js/core/i18n.js` DICT'te birebir mevcuttur.
 - `us.*` Kullanıcı Yönetimi (özel liste; silme yok, pasife alma). bindLang ile canlı; arama korunur. Kullanıcı adı / ad soyad veri, çevrilmez. `field.password` eklendi.
 
 Tüm 26 modül artık i18n.js kullanıyor. Sözlük i18n.js DICT ile birebir.
+
+### Ek: Giriş ekranı + Dashboard alt metinleri
+
+- **login.html** (oturum öncesi, kabuk dışı bağımsız sayfa): tüm metinler için küçük gömülü sözlük + sağ üstte TR/EN düğmesi. Tercih uygulamayla **aynı `localStorage 'lang'` anahtarında** → giriş sonrası korunur. Hata mesajları BE'nin TR metni yerine duruma göre çevrilir (4xx → kimlik hatası, 5xx → genel).
+- **Dashboard kart alt metinleri**: `DashboardRepository` artık ham TR metin yerine `{code, params}` döndürür (`db.detailOpenToday`/`db.detailOpenNone`/`db.detailOutParts`); FE `t()` ile çevirir. Yeni anahtarlar:
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| db.detailOpenToday | {n}'i bugün başlamalı | {n} due to start today |
+| db.detailOpenNone | bugün başlayacak yok | none starting today |
+| db.detailOutParts | son 24 saat · {n} parça | last 24h · {n} parts |
