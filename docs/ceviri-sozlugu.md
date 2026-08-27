@@ -282,3 +282,32 @@ baktığında tanıdık kelimeleri görmeli.
 | pr.selectOrderOpt | Sipariş (opsiyonel)… | Order (optional)… |
 | pr.deleteTitle | İstek silinsin mi? | Delete this request? |
 | pr.deleteBody | {name} isteği silinecek. | The request for {name} will be deleted. |
+
+### Ortak alan ekleri + Parti A (İş Merkezleri / Operasyonlar / Terimler)
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| field.name | Ad | Name |
+| field.status | Durum | Status |
+| field.original | Orijinal | Original |
+| field.translation | Çeviri | Translation |
+| field.hidden | Gizli | Hidden |
+| common.active | Aktif | Active |
+| common.inactive | Pasif | Inactive |
+| common.deleteBody | "{name}" kalıcı olarak silinecek. | "{name}" will be permanently deleted. |
+| toast.saved | Kaydedildi | Saved |
+| toast.deleted | Silindi | Deleted |
+| wc.new | Yeni İş Merkezi | New Work Center |
+| wc.empty | Henüz iş merkezi eklenmemiş. "Yeni İş Merkezi" ile başlayın. | No work centers yet. Start with "New Work Center". |
+| wc.newTitle / wc.editTitle | Yeni İş Merkezi / İş Merkezi Düzenle | New Work Center / Edit Work Center |
+| wc.deleteTitle | İş merkezi silinsin mi? | Delete this work center? |
+| op.new | Yeni Operasyon | New Operation |
+| op.empty | Henüz operasyon eklenmemiş. "Yeni Operasyon" ile başlayın. | No operations yet. Start with "New Operation". |
+| op.newTitle / op.editTitle | Yeni Operasyon / Operasyon Düzenle | New Operation / Edit Operation |
+| op.deleteTitle | Operasyon silinsin mi? | Delete this operation? |
+| tm.subtitle | Arayüz terimlerinin İngilizce karşılıkları · gizli terimler EN görünümünde yazılmaz | English equivalents of interface terms · hidden terms are omitted in EN view |
+| tm.new | Yeni Terim | New Term |
+| tm.empty | Henüz terim eklenmemiş. "Yeni Terim" ile başlayın. | No terms yet. Start with "New Term". |
+| tm.newTitle / tm.editTitle | Yeni Terim / Terim Düzenle | New Term / Edit Term |
+| tm.deleteTitle | Terim silinsin mi? | Delete this term? |
+| tm.hiddenTag | Gizli | Hidden |

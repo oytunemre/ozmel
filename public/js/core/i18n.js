@@ -82,6 +82,18 @@ const DICT = {
     'pr.selectMaterial': 'Malzeme seçin…', 'pr.selectProduct': 'Ürün seçin…',
     'pr.selectOrderOpt': 'Sipariş (opsiyonel)…',
     'pr.deleteTitle': 'İstek silinsin mi?', 'pr.deleteBody': '{name} isteği silinecek.',
+    // — ortak alan ekleri + Parti A (İş Merkezleri / Operasyonlar / Terimler) —
+    'field.name': 'Ad', 'field.status': 'Durum', 'field.original': 'Orijinal',
+    'field.translation': 'Çeviri', 'field.hidden': 'Gizli',
+    'common.deleteBody': '"{name}" kalıcı olarak silinecek.',
+    'wc.new': 'Yeni İş Merkezi', 'wc.empty': 'Henüz iş merkezi eklenmemiş. "Yeni İş Merkezi" ile başlayın.',
+    'wc.newTitle': 'Yeni İş Merkezi', 'wc.editTitle': 'İş Merkezi Düzenle', 'wc.deleteTitle': 'İş merkezi silinsin mi?',
+    'op.new': 'Yeni Operasyon', 'op.empty': 'Henüz operasyon eklenmemiş. "Yeni Operasyon" ile başlayın.',
+    'op.newTitle': 'Yeni Operasyon', 'op.editTitle': 'Operasyon Düzenle', 'op.deleteTitle': 'Operasyon silinsin mi?',
+    'tm.subtitle': 'Arayüz terimlerinin İngilizce karşılıkları · gizli terimler EN görünümünde yazılmaz',
+    'tm.new': 'Yeni Terim', 'tm.empty': 'Henüz terim eklenmemiş. "Yeni Terim" ile başlayın.',
+    'tm.newTitle': 'Yeni Terim', 'tm.editTitle': 'Terim Düzenle', 'tm.deleteTitle': 'Terim silinsin mi?',
+    'tm.hiddenTag': 'Gizli',
   },
   en: {
     // — menu groups —
@@ -157,6 +169,18 @@ const DICT = {
     'pr.selectMaterial': 'Select material…', 'pr.selectProduct': 'Select product…',
     'pr.selectOrderOpt': 'Order (optional)…',
     'pr.deleteTitle': 'Delete this request?', 'pr.deleteBody': 'The request for {name} will be deleted.',
+    // — shared field additions + Group A (Work Centers / Operations / Terms) —
+    'field.name': 'Name', 'field.status': 'Status', 'field.original': 'Original',
+    'field.translation': 'Translation', 'field.hidden': 'Hidden',
+    'common.deleteBody': '"{name}" will be permanently deleted.',
+    'wc.new': 'New Work Center', 'wc.empty': 'No work centers yet. Start with "New Work Center".',
+    'wc.newTitle': 'New Work Center', 'wc.editTitle': 'Edit Work Center', 'wc.deleteTitle': 'Delete this work center?',
+    'op.new': 'New Operation', 'op.empty': 'No operations yet. Start with "New Operation".',
+    'op.newTitle': 'New Operation', 'op.editTitle': 'Edit Operation', 'op.deleteTitle': 'Delete this operation?',
+    'tm.subtitle': 'English equivalents of interface terms · hidden terms are omitted in EN view',
+    'tm.new': 'New Term', 'tm.empty': 'No terms yet. Start with "New Term".',
+    'tm.newTitle': 'New Term', 'tm.editTitle': 'Edit Term', 'tm.deleteTitle': 'Delete this term?',
+    'tm.hiddenTag': 'Hidden',
   }
 };
 
@@ -192,4 +216,20 @@ export function onLangChange(cb) {
   const h = (e) => cb(e.detail?.lang || getLang());
   window.addEventListener('langchange', h);
   return () => window.removeEventListener('langchange', h);
+}
+
+/**
+ * Özel görünüm (DataTable kullanmayan modül) için: dil değişince render()'ı VERİ ÇEKMEDEN
+ * yeniden çağırır (veri modülün closure'ında). Başka modüle geçilince (container içeriği
+ * değişip işaretçi DOM'dan düşünce) aboneliği otomatik bırakır — leak/çakışma yok.
+ * KULLANIM: modül ilk render()'ını yaptıktan SONRA çağrılır.
+ */
+export function bindLang(container, render) {
+  let marker = container.firstElementChild;   // bu modülün kök öğesi
+  const unsub = onLangChange(() => {
+    if (marker && !container.contains(marker)) { unsub(); return; }  // modül değişti -> bırak
+    render();
+    marker = container.firstElementChild;      // yeniden çizimden sonra işaretçiyi tazele
+  });
+  return unsub;
 }

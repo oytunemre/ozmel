@@ -1,35 +1,36 @@
 // İş Merkezleri — v2 modülü. Ortak FE katmanı (core/) üzerine.
 //
-// Bu modül VERİ TUTMAZ. Her render veriyi API'den çeker. Ekran metinleri Türkçe,
-// API anahtarları İngilizce (name/isActive).
+// Bu modül VERİ TUTMAZ. Her render veriyi API'den çeker. i18n: kullanıcı metinleri t();
+// etiketler () => t(...) (canlı dil değişiminde DataTable yeniden çizer, veri çekmeden).
 
 import { resource } from '../core/api.js';
 import { DataTable } from '../core/table.js';
 import { openDrawer } from '../core/drawer.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog } from '../core/states.js';
+import { t } from '../core/i18n.js';
 
 const api = resource('work-centers');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewWorkCenters(container) {
   const table = new DataTable(container, {
-    title: 'İş Merkezleri',
+    title: () => t('menu.work-centers'),
     canWrite,
-    addLabel: 'Yeni İş Merkezi',
+    addLabel: () => t('wc.new'),
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
     load: () => api.listAll().then(r => r.data),
     searchText: (r) => r.name,
-    emptyMessage: 'Henüz iş merkezi eklenmemiş. "Yeni İş Merkezi" ile başlayın.',
+    emptyMessage: () => t('wc.empty'),
     columns: [
-      { label: 'Ad', key: 'name' },
+      { label: () => t('field.name'), key: 'name' },
       {
-        label: 'Durum',
+        label: () => t('field.status'),
         render: (r) => r.isActive
-          ? '<span class="tag tag-success">Aktif</span>'
-          : '<span class="tag tag-neutral">Pasif</span>'
+          ? `<span class="tag tag-success">${t('common.active')}</span>`
+          : `<span class="tag tag-neutral">${t('common.inactive')}</span>`
       }
     ]
   });
@@ -38,12 +39,12 @@ export async function viewWorkCenters(container) {
     const editing = !!row;
     if (editing) table.markActive(row.id);
     openDrawer({
-      title: editing ? 'İş Merkezi Düzenle' : 'Yeni İş Merkezi',
-      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      title: () => t(editing ? 'wc.editTitle' : 'wc.newTitle'),
+      submitLabel: () => t(editing ? 'action.update' : 'action.add'),
       values: editing ? { ...row } : { isActive: 1 },
       fields: [
-        { name: 'name', label: 'Ad', type: 'text', required: true },
-        { name: 'isActive', label: 'Durum', type: 'bool' }
+        { name: 'name', label: () => t('field.name'), type: 'text', required: true },
+        { name: 'isActive', label: () => t('field.status'), type: 'bool' }
       ],
       onSubmit: async (v) => {
         const payload = { name: v.name, isActive: v.isActive };
@@ -53,7 +54,7 @@ export async function viewWorkCenters(container) {
         return data;
       },
       onSaved: async (saved) => {
-        toast(editing ? 'İş merkezi güncellendi' : 'İş merkezi eklendi', 'success');
+        toast(t('toast.saved'), 'success');
         await table.reload();
         table.flash(saved.id);
       },
@@ -63,14 +64,14 @@ export async function viewWorkCenters(container) {
 
   async function remove(row) {
     const ok = await confirmDialog({
-      title: 'İş merkezi silinsin mi?',
-      body: `"${row.name}" kalıcı olarak silinecek.`,
-      confirmLabel: 'Sil', danger: true
+      title: t('wc.deleteTitle'),
+      body: t('common.deleteBody', { name: row.name }),
+      confirmLabel: t('action.delete'), danger: true
     });
     if (!ok) return;
     try {
       await api.remove(row.id);
-      toast('İş merkezi silindi', 'success');
+      toast(t('toast.deleted'), 'success');
       await table.reload();
     } catch (err) {
       toast(err.message, 'danger');
