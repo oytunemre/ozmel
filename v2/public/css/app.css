@@ -77,6 +77,12 @@ h3 { font-size: 20px; margin: var(--space-6) 0 var(--space-3); }
 .input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
 .input:focus-visible { border-color: var(--color-accent); }
 textarea.input { min-height: 84px; resize: vertical; }
+/* Şifre alanı: sağda göster/gizle göz düğmesi */
+.pw-wrap { position: relative; display: block; }
+.pw-wrap .input { width: 100%; padding-right: 40px; }
+.pw-toggle { position: absolute; top: 1px; right: 1px; bottom: 1px; width: 36px; padding: 0;
+  display: grid; place-items: center; background: none; border: 0; cursor: pointer; color: var(--color-neutral-600); }
+.pw-toggle:hover { color: var(--color-neutral-800); }
 .field.has-error .input, .field.has-error .fk { border-color: var(--color-danger); }
 .field-error { display: block; margin-top: 4px; font-size: 12px; color: var(--color-danger); }
 .seg { display: inline-flex; overflow: hidden; border: 1px solid var(--color-divider); border-radius: var(--radius); }

@@ -3,10 +3,15 @@
 // calisilirsa onay sorar.
 //
 // Alan tipleri: text, number, date, time, textarea, select ({options:[{value,label}]}),
-// bool (Evet/Hayir), fk ({fk: FkSelect ornegi}).
+// bool (Evet/Hayir), fk ({fk: FkSelect ornegi}), password (goster/gizle dugmeli;
+// varsayilan gizli, panel kapaninca temizlenir).
 
 import { ValidationError, ConflictError, ApiError } from './api.js';
 import { choiceDialog, esc } from './states.js';
+
+// Lucide eye / eye-off — sifre goster/gizle dugmesi (tasarim sisteminde mevcut ikonlar).
+const EYE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>';
 
 /**
  * @param {{
@@ -172,6 +177,8 @@ export function openDrawer(opts) {
 
   function teardown() {
     document.removeEventListener('keydown', onKey);
+    // Hassas alanları (şifre) kapanışta temizle — DOM kalkacak olsa da değer sızmasın.
+    for (const name in controls) controls[name].clear?.();
     backdrop.remove();
     onClose && onClose();
   }
@@ -203,7 +210,7 @@ function buildField(f, value, markDirty, form) {
   if (f.required) label.insertAdjacentHTML('beforeend', ' <span class="req">*</span>');
   wrap.appendChild(label);
 
-  let read;
+  let read, clear;
   if (f.type === 'fk') {
     const fk = f.fk;
     if (value != null) fk.setValue(value);
@@ -252,6 +259,34 @@ function buildField(f, value, markDirty, form) {
     ta.addEventListener('input', markDirty);
     wrap.appendChild(ta);
     read = () => ta.value.trim();   // baştaki/sondaki boşlukları kırp
+  } else if (f.type === 'password') {
+    // Göster/gizle düğmeli şifre alanı. Varsayılan gizli; panel kapanınca temizlenir.
+    const pw = h('div', 'pw-wrap');
+    const inp = document.createElement('input');
+    inp.className = 'input';
+    inp.type = 'password';
+    inp.autocomplete = f.autocomplete || 'new-password';
+    if (f.placeholder) inp.placeholder = f.placeholder;
+    inp.value = value ?? '';
+    inp.addEventListener('input', markDirty);
+    const toggle = h('button', 'pw-toggle');
+    toggle.type = 'button';
+    const paint = () => {
+      const shown = inp.type === 'text';
+      toggle.innerHTML = shown ? EYE_OFF_SVG : EYE_SVG;
+      toggle.setAttribute('aria-label', shown ? 'Şifreyi gizle' : 'Şifreyi göster');
+      toggle.title = shown ? 'Gizle' : 'Göster';
+    };
+    toggle.addEventListener('click', () => {
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      paint();
+      inp.focus();
+    });
+    paint();
+    pw.append(inp, toggle);
+    wrap.appendChild(pw);
+    read = () => inp.value;   // şifre KIRPILMAZ — boşluk anlamlı olabilir
+    clear = () => { inp.value = ''; inp.type = 'password'; paint(); };
   } else {
     const inp = document.createElement('input');
     inp.className = 'input';
@@ -271,6 +306,7 @@ function buildField(f, value, markDirty, form) {
 
   return {
     read,
+    clear,   // yalnızca password alanında tanımlı; panel kapanınca çağrılır
     fieldEl: wrap,
     focus: () => wrap.querySelector('input, textarea, select, .fk-control')?.focus(),
     setError: (msg) => { wrap.classList.add('has-error'); errEl.textContent = msg; errEl.style.display = ''; },
