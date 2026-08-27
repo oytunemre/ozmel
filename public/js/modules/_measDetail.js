@@ -4,10 +4,11 @@
 
 import { fmtMeasure, outOfTolerance } from '../core/lookups.js';
 import { esc } from '../core/states.js';
+import { t } from '../core/i18n.js';
 
 export function measurementDetail(items) {
   const box = el('div', 'meas-detail');
-  if (!items || items.length === 0) { box.innerHTML = '<div class="empty">Ölçüm kaydı yok.</div>'; return box; }
+  if (!items || items.length === 0) { box.innerHTML = `<div class="empty">${esc(t('meas.empty'))}</div>`; return box; }
 
   for (const it of items) {
     const lo = it.lower, hi = it.upper;
@@ -29,7 +30,7 @@ export function measurementDetail(items) {
     }
     if (list.length === 0) vals.innerHTML = '<span class="v">—</span>';
 
-    const stat = el('div', 'mstat ' + (out ? 'bad' : 'ok'), out ? `${out} dışarıda` : 'Tolerans içinde');
+    const stat = el('div', 'mstat ' + (out ? 'bad' : 'ok'), out ? esc(t('meas.out', { n: out })) : esc(t('meas.in')));
     mrow.append(loc, vals, stat);
     box.appendChild(mrow);
   }

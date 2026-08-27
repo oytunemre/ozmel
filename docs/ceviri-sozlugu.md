@@ -402,3 +402,86 @@ baktığında tanıdık kelimeleri görmeli.
 | tree.partLength / tree.cutLoss / tree.supplierCutLength | Parça Boyu / Kesim Kaybı / Tedarikçi Kesim Uzunluğu | Part Length / Cut Loss / Supplier Cut Length |
 | tree.deleteTitle | Düğüm silinsin mi? | Delete this node? |
 | tree.deleteBody | "{name}" ve ALT düğümleri kalıcı olarak silinecek. | "{name}" and its CHILD nodes will be permanently deleted. |
+
+### Parti D (Kalite: Giriş Kontrolleri / First-Off Noktaları & Kayıtları) — paylaşılan + modül metinleri
+
+Paylaşılan alan/enum anahtarları (kalite modülleri + ölçüm detayı):
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| field.productShort | Ürün | Product |
+| field.no | No | No |
+| field.characteristic | Karakteristik | Characteristic |
+| field.nominal / field.lowerLimit / field.upperLimit | Nominal / Alt Limit / Üst Limit | Nominal / Lower Limit / Upper Limit |
+| field.pointNo | Nokta No | Point No |
+| field.result / field.decision | Sonuç / Karar | Result / Decision |
+| field.value / field.point / field.measurement | Değer / Nokta / Ölçüm | Value / Point / Measurements |
+| qc.olcusel / qc.nitel | Ölçüsel / Nitel | Measured / Qualitative |
+| qc.selectType / qc.unitPlaceholder / qc.selectResult | — Tip — / — Birim — / — Sonuç — | — Type — / — Unit — / — Result — |
+| qc.Kabul / qc.Red / qc.Şartlı Kabul | Kabul / Red / Şartlı Kabul | Accepted / Rejected / Conditional Accept |
+| meas.empty | Ölçüm kaydı yok. | No measurements recorded. |
+| meas.out / meas.in | {n} dışarıda / Tolerans içinde | {n} out of tolerance / Within tolerance |
+
+**Not — enum/gerekçe değerleri:** `qc.*` (tip, sonuç) ve `reason.*` (gerekçeler) değerleri veritabanında TR saklanır; yalnızca GÖSTERİM çevrilir, kayıtlı değer TR kalır.
+
+Gerekçeler (resmi formdaki yedi sabit seçenek — `reason.<TR değer>`):
+
+| Türkçe (kayıtlı değer) | English (gösterim) |
+|---|---|
+| Yeni iş emri / seri başlangıcı | New work order / batch start |
+| Setup / kurulum sonrası | After setup / installation |
+| Vardiya değişimi | Shift change |
+| Uzun duruş sonrası | After long stoppage |
+| Ayar / parametre değişimi | Setting / parameter change |
+| Malzeme / lot değişimi | Material / lot change |
+| Düzeltici faaliyet sonrası | After corrective action |
+
+First-Off Noktaları (`fp.*`):
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| fp.subtitle | İlk parça kontrolünde ölçülecek noktalar | Points to measure during first-off control |
+| fp.new / fp.newTitle | Yeni Nokta | New Point |
+| fp.editTitle | Nokta Düzenle | Edit Point |
+| fp.empty | Henüz nokta yok. "Yeni Nokta" ile başlayın. | No points yet. Start with "New Point". |
+| fp.deleteTitle | Nokta silinsin mi? | Delete this point? |
+| fp.deleteBody | "{name}" noktası silinecek. | The point "{name}" will be deleted. |
+| fp.added / fp.updated / fp.deleted | Nokta eklendi / güncellendi / silindi | Point added / updated / deleted |
+
+First-Off Kayıtları (`fr.*`):
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| fr.subtitle | İlk parça kontrol kayıtları — ölçümler ve gerekçeler | First-off inspection records — measurements and reasons |
+| fr.new / fr.newTitle | Yeni Kayıt | New Record |
+| fr.editTitle | Kayıt Düzenle | Edit Record |
+| fr.empty | Henüz kayıt yok. "Yeni Kayıt" ile başlayın. | No records yet. Start with "New Record". |
+| fr.secRecord / fr.secMeas / fr.secReasons | Kayıt / Ölçümler / Gerekçeler | Record / Measurements / Reasons |
+| fr.operatorName / fr.woNo | Operatör (isim) / İş Emri No | Operator (name) / Work Order No |
+| fr.sampleCount / fr.checkTime / fr.overallResult | Numune Adedi / Kontrol Saati / Genel Karar | Sample Count / Check Time / Overall Decision |
+| fr.reasonsHelp | Resmi formdaki gerekçeleri işaretleyin; listede yoksa serbest metin ekleyin. | Check the reasons from the official form; add free text if not listed. |
+| fr.addMeas / fr.noMeas / fr.selectPoint | + Ölçüm ekle / Ölçüm eklenmedi. / Nokta… | + Add measurement / No measurements added. / Point… |
+| fr.reasonCustom | Listede yok — gerekçe yaz… | Not listed — type a reason… |
+| fr.added / fr.updated / fr.deleted | Kayıt eklendi / güncellendi / silindi | Record added / updated / deleted |
+| fr.deleteTitle | Kayıt silinsin mi? | Delete this record? |
+| fr.deleteBody | Bu first-off kaydı ve ölçümleri silinecek. | This first-off record and its measurements will be deleted. |
+
+Giriş Kalite Kontrolleri (`ii.*`):
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| ii.subtitle | Gelen malzeme kontrolü — karakteristikler ve ölçüm değerleri | Incoming material control — characteristics and measurement values |
+| ii.new / ii.newTitle | Yeni Kontrol / Yeni Kontrol | New Inspection |
+| ii.editTitle | Kontrol Düzenle | Edit Inspection |
+| ii.empty | Henüz kontrol yok. "Yeni Kontrol" ile başlayın. | No inspections yet. Start with "New Inspection". |
+| ii.secControl / ii.secDateQty / ii.secChars | Kontrol / Tarih & Adet / Karakteristikler | Inspection / Dates & Quantity / Characteristics |
+| ii.purchaseReceipt / ii.selectReceipt | Satınalma Girişi / Satınalma girişi (opsiyonel)… | Purchase Receipt / Purchase receipt (optional)… |
+| ii.drawingNo / ii.reason | Çizim No / Gözlem Nedeni | Drawing No / Observation Reason |
+| ii.arrivalDate / ii.inspectionDate | Malzeme Geliş Tarihi / Kontrol Tarihi | Material Arrival Date / Inspection Date |
+| ii.receivedQty / ii.sampleQty / ii.inspectorName | Gelen Adet / Örnek Adedi / Kontrol Eden | Received Quantity / Sample Quantity / Inspected By |
+| ii.overallResult | Genel Sonuç | Overall Result |
+| ii.addChar / ii.noChar | + Karakteristik ekle / Karakteristik eklenmedi. | + Add characteristic / No characteristics added. |
+| ii.spec / ii.values / ii.valuePlaceholder | Spesifikasyon / Değerler / Değer (sayı ya da Uygun)… | Specification / Values / Value (number or text)… |
+| ii.added / ii.updated / ii.deleted | Kontrol eklendi / güncellendi / silindi | Inspection added / updated / deleted |
+| ii.deleteTitle | Kontrol silinsin mi? | Delete this inspection? |
+| ii.deleteBody | Bu giriş kontrolü, karakteristikleri ve değerleri silinecek. | This incoming inspection, its characteristics and values will be deleted. |

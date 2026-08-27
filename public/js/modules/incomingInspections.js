@@ -1,6 +1,8 @@
 // Giriş Kalite Kontrolleri — v2 modülü. İKİ SEVİYE iç içe: kayıt -> karakteristik[]
 // -> değer[]. Karakteristik editörü: her karakteristik bir blok, kendi değerleri
 // (TagList; sayı ya da 'Uygun'/'Uygun Değil'). Genel sonuç açılır liste.
+// i18n: etiketler () => t(...). Tip (olcusel/nitel) ve genel sonuç (Kabul/Red/Şartlı
+// Kabul) BE'de TR saklanır; yalnızca GÖSTERİM t() ile çevrilir.
 
 import { resource } from '../core/api.js';
 import { DataTable } from '../core/table.js';
@@ -9,19 +11,30 @@ import { FkSelect } from '../core/fkselect.js';
 import { TagList } from '../core/taglist.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, INSPECTION_RESULT_OPTIONS, withCurrent } from '../core/lookups.js';
+import { loadLookup, mapProduct, withCurrent } from '../core/lookups.js';
 import { measurementDetail } from './_measDetail.js';
+import { t } from '../core/i18n.js';
 
 const api = resource('incoming-inspections');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
-const CHAR_TYPES = [
-  { value: '', label: '— Tip —' },
-  { value: 'olcusel', label: 'Ölçüsel' },
-  { value: 'nitel', label: 'Nitel' }
+
+// Karakteristik tipi ve genel sonuç: seçenekler dile göre kurulur (değer BE'de TR).
+const charTypeOptions = () => [
+  { value: '', label: t('qc.selectType') },
+  { value: 'olcusel', label: t('qc.olcusel') },
+  { value: 'nitel', label: t('qc.nitel') }
 ];
+const resultOptions = () => [
+  { value: '', label: t('qc.selectResult') },
+  { value: 'Kabul', label: t('qc.Kabul') },
+  { value: 'Red', label: t('qc.Red') },
+  { value: 'Şartlı Kabul', label: t('qc.Şartlı Kabul') }
+];
+// Genel sonucun tablo etiketi (değer TR kalır). Anahtar yoksa ham değer.
+const resultLabel = (v) => { if (!v) return '—'; const k = 'qc.' + v; const s = t(k); return s === k ? v : s; };
 
 export async function viewIncomingInspections(container) {
-  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, receipts;
   try {
     products = await loadLookup('product-codes', mapProduct);
@@ -29,10 +42,10 @@ export async function viewIncomingInspections(container) {
   } catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewIncomingInspections(container) })); return; }
 
   const table = new DataTable(container, {
-    title: 'Giriş Kalite Kontrolleri',
-    subtitle: 'Gelen malzeme kontrolü — karakteristikler ve ölçüm değerleri',
+    title: () => t('menu.incoming-inspections'),
+    subtitle: () => t('ii.subtitle'),
     canWrite,
-    addLabel: 'Yeni Kontrol',
+    addLabel: () => t('ii.new'),
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
@@ -42,54 +55,54 @@ export async function viewIncomingInspections(container) {
     }))),
     load: () => api.listAll().then(r => r.data),
     searchText: (r) => [r.supplier, products.label(r.materialCodeId), r.inspectorName].join(' '),
-    emptyMessage: 'Henüz kontrol yok. "Yeni Kontrol" ile başlayın.',
+    emptyMessage: () => t('ii.empty'),
     columns: [
-      { label: 'Tedarikçi', render: (r) => esc(r.supplier || '—') },
-      { label: 'Malzeme', render: (r) => r.materialCodeId ? esc(products.label(r.materialCodeId)) : '—' },
-      { label: 'Kontrol Tarihi', render: (r) => esc(r.inspectionDate || '—') },
-      { label: 'Karakteristik', render: (r) => r.characteristics.length, className: 'mono' },
-      { label: 'Sonuç', render: (r) => esc(r.overallResult || '—') }
+      { label: () => t('field.supplier'), render: (r) => esc(r.supplier || '—') },
+      { label: () => t('field.material'), render: (r) => r.materialCodeId ? esc(products.label(r.materialCodeId)) : '—' },
+      { label: () => t('ii.inspectionDate'), render: (r) => esc(r.inspectionDate || '—') },
+      { label: () => t('field.characteristic'), render: (r) => r.characteristics.length, className: 'mono' },
+      { label: () => t('field.result'), render: (r) => esc(resultLabel(r.overallResult)) }
     ]
   });
 
   function openForm(row) {
     const editing = !!row;
     if (editing) table.markActive(row.id);
-    const materialFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.materialCodeId ?? null, placeholder: 'Malzeme seçin…' });
-    const receiptFk = new FkSelect({ source: receipts.source, rows: receipts.rows, value: row?.purchaseReceiptId ?? null, placeholder: 'Satınalma girişi (opsiyonel)…' });
+    const materialFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.materialCodeId ?? null, placeholder: t('pr.selectMaterial') });
+    const receiptFk = new FkSelect({ source: receipts.source, rows: receipts.rows, value: row?.purchaseReceiptId ?? null, placeholder: t('ii.selectReceipt') });
     const chars = new CharacteristicsEditor();
 
     openDrawer({
-      title: editing ? 'Kontrol Düzenle' : 'Yeni Kontrol',
-      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      title: () => t(editing ? 'ii.editTitle' : 'ii.newTitle'),
+      submitLabel: () => t(editing ? 'action.update' : 'action.add'),
       values: editing ? { ...row } : { overallResult: '' },
       fields: [
-        { name: 'secId', type: 'section', label: 'Kontrol' },
-        { name: 'supplier', label: 'Tedarikçi', type: 'text' },
-        { name: 'materialCodeId', label: 'Malzeme', type: 'fk', fk: materialFk },
-        { name: 'purchaseReceiptId', label: 'Satınalma Girişi', type: 'fk', fk: receiptFk },
-        { name: 'drawingNo', label: 'Çizim No', type: 'text' },
-        { name: 'reason', label: 'Gözlem Nedeni', type: 'text' },
-        { name: 'secQty', type: 'section', label: 'Tarih & Adet' },
-        { name: 'arrivalDate', label: 'Malzeme Geliş Tarihi', type: 'date' },
-        { name: 'inspectionDate', label: 'Kontrol Tarihi', type: 'date' },
-        { name: 'receivedQty', label: 'Gelen Adet', type: 'number', step: 'any' },
-        { name: 'sampleQty', label: 'Örnek Adedi', type: 'number' },
-        { name: 'inspectorName', label: 'Kontrol Eden', type: 'text' },
-        { name: 'overallResult', label: 'Genel Sonuç', type: 'select', options: withCurrent(INSPECTION_RESULT_OPTIONS, row?.overallResult) },
-        { name: 'secChars', type: 'section', label: 'Karakteristikler' },
+        { name: 'secId', type: 'section', label: () => t('ii.secControl') },
+        { name: 'supplier', label: () => t('field.supplier'), type: 'text' },
+        { name: 'materialCodeId', label: () => t('field.material'), type: 'fk', fk: materialFk },
+        { name: 'purchaseReceiptId', label: () => t('ii.purchaseReceipt'), type: 'fk', fk: receiptFk },
+        { name: 'drawingNo', label: () => t('ii.drawingNo'), type: 'text' },
+        { name: 'reason', label: () => t('ii.reason'), type: 'text' },
+        { name: 'secQty', type: 'section', label: () => t('ii.secDateQty') },
+        { name: 'arrivalDate', label: () => t('ii.arrivalDate'), type: 'date' },
+        { name: 'inspectionDate', label: () => t('ii.inspectionDate'), type: 'date' },
+        { name: 'receivedQty', label: () => t('ii.receivedQty'), type: 'number', step: 'any' },
+        { name: 'sampleQty', label: () => t('ii.sampleQty'), type: 'number' },
+        { name: 'inspectorName', label: () => t('ii.inspectorName'), type: 'text' },
+        { name: 'overallResult', label: () => t('ii.overallResult'), type: 'select', options: withCurrent(resultOptions(), row?.overallResult) },
+        { name: 'secChars', type: 'section', label: () => t('ii.secChars') },
         { name: 'characteristics', type: 'component', component: chars }
       ],
       onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
-      onSaved: async (saved) => { toast(editing ? 'Kontrol güncellendi' : 'Kontrol eklendi', 'success'); await table.reload(); table.flash(saved.id); },
+      onSaved: async (saved) => { toast(t(editing ? 'ii.updated' : 'ii.added'), 'success'); await table.reload(); table.flash(saved.id); },
       onClose: () => table.markActive(null)
     });
   }
 
   async function remove(row) {
-    const ok = await confirmDialog({ title: 'Kontrol silinsin mi?', body: 'Bu giriş kontrolü, karakteristikleri ve değerleri silinecek.', confirmLabel: 'Sil', danger: true });
+    const ok = await confirmDialog({ title: t('ii.deleteTitle'), body: t('ii.deleteBody'), confirmLabel: t('action.delete'), danger: true });
     if (!ok) return;
-    try { await api.remove(row.id); toast('Kontrol silindi', 'success'); await table.reload(); }
+    try { await api.remove(row.id); toast(t('ii.deleted'), 'success'); await table.reload(); }
     catch (err) { toast(err.message, 'danger'); }
   }
 }
@@ -102,7 +115,7 @@ class CharacteristicsEditor {
     this.el = document.createElement('div');
     this.body = el('div', '');
     this.el.appendChild(this.body);
-    const add = el('button', 'btn btn-secondary btn-sm rows-ed-add', '+ Karakteristik ekle');
+    const add = el('button', 'btn btn-secondary btn-sm rows-ed-add', esc(t('ii.addChar')));
     add.type = 'button';
     add.addEventListener('click', () => { this.addBlock({}); this.emit(); });
     this.el.appendChild(add);
@@ -125,22 +138,22 @@ class CharacteristicsEditor {
   }
   addBlock(c) {
     const block = el('div', 'char-block');
-    const head = el('div', 'char-head', '<b>Karakteristik</b>');
+    const head = el('div', 'char-head', `<b>${esc(t('field.characteristic'))}</b>`);
     const x = el('button', 'row-x', '×'); x.type = 'button';
     head.appendChild(x);
     const body = el('div', 'char-body');
     const charNo = inp('number', c.charNo);
     const name = inp('text', c.name);
     const specText = inp('text', c.specText);
-    const type = sel(CHAR_TYPES, c.type);
+    const type = sel(charTypeOptions(), c.type);
     const nominal = inp('number', c.nominal), lower = inp('number', c.lowerLimit), upper = inp('number', c.upperLimit);
     const unit = inp('text', c.unit);
     // Karakteristik değerleri tekilleştirilMEZ — 13.28, 13.28, 13.2 gibi tekrarlar normaldir.
-    const values = new TagList({ value: (c.values || []).map(v => v == null ? '' : String(v)).filter(Boolean), placeholder: 'Değer (sayı ya da Uygun)…', unique: false });
+    const values = new TagList({ value: (c.values || []).map(v => v == null ? '' : String(v)).filter(Boolean), placeholder: t('ii.valuePlaceholder'), unique: false });
     body.append(
-      fld('No', charNo), fld('Ad', name), fld('Spesifikasyon', specText), fld('Tip', type),
-      fld('Nominal', nominal), fld('Alt Limit', lower), fld('Üst Limit', upper), fld('Birim', unit),
-      fld('Değerler', values.el, 'char-values')
+      fld(t('field.no'), charNo), fld(t('field.name'), name), fld(t('ii.spec'), specText), fld(t('field.type'), type),
+      fld(t('field.nominal'), nominal), fld(t('field.lowerLimit'), lower), fld(t('field.upperLimit'), upper), fld(t('field.unit'), unit),
+      fld(t('ii.values'), values.el, 'char-values')
     );
     block.append(head, body);
     const entry = { el: block, charNo, name, specText, type, nominal, lower, upper, unit, values };
@@ -154,7 +167,7 @@ class CharacteristicsEditor {
   }
   paintEmpty() {
     let e = this.body.querySelector('.rows-empty');
-    if (this.blocks.length === 0) { if (!e) { e = el('div', 'rows-empty', 'Karakteristik eklenmedi.'); this.body.appendChild(e); } }
+    if (this.blocks.length === 0) { if (!e) { e = el('div', 'rows-empty', esc(t('ii.noChar'))); this.body.appendChild(e); } }
     else if (e) e.remove();
   }
 }
