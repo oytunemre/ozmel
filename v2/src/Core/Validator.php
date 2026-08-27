@@ -29,6 +29,16 @@ class Validator
         return $this;
     }
 
+    /** Bos gecerlidir — zorunluluk ayri kontrol edilir. Aksi halde en az $min karakter. */
+    public function minLength(array $data, string $field, int $min, string $label): static
+    {
+        if (isset($data[$field]) && trim((string) $data[$field]) !== ''
+            && mb_strlen((string) $data[$field]) < $min) {
+            $this->errors[$field] = "$label en az $min karakter olmali";
+        }
+        return $this;
+    }
+
     public function boolean(array $data, string $field, string $label): static
     {
         if (isset($data[$field]) && !is_bool($data[$field]) && !in_array($data[$field], [0, 1, '0', '1'], true)) {

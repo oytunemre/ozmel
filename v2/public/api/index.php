@@ -78,6 +78,8 @@ $routes = [
     // Salt okunur toplu rapor uc noktalari (CRUD degil; yalnizca GET index).
     'dashboard'     => App\Controller\DashboardController::class,
     'sales-reports' => App\Controller\SalesReportController::class,
+    // Kullanici Yonetimi — paylasilan v1 users tablosu (op=sifre ozel islemi var).
+    'users'         => App\Controller\UserController::class,
 ];
 
 // Tek-satir konfig kaynaklari: id yok. GET tek nesne doner, POST ?op=guncelle gunceller.
@@ -121,6 +123,14 @@ try {
         }
         if ($op === 'guncelle' && $id !== null) {
             $controller->update($id, $input);
+        }
+        // Kaynaga ozgu ek islemler (or. users ?op=sifre). Yalnizca ilgili controller
+        // metodu tanimliysa cagrilir; degilse net hata.
+        if ($op === 'sifre' && $id !== null) {
+            if (!method_exists($controller, 'resetPassword')) {
+                Response::fail(400, 'Bu kaynak sifre islemini desteklemiyor');
+            }
+            $controller->resetPassword($id, $input);
         }
         if ($op === '' && $id === null) {
             $controller->store($input);

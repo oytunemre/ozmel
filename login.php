@@ -67,6 +67,14 @@ if (!$user || !$passwordOk) {
     exit;
 }
 
+// Pasife alınmış hesaplar giriş yapamaz (v2 Kullanıcı Yönetimi'nin is_active alanı).
+// Sütun yoksa (migrasyon öncesi eski kurulum) hesap aktif kabul edilir.
+if (array_key_exists('is_active', $user) && (int)$user['is_active'] === 0) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Hesabınız pasif durumda. Yöneticinize başvurun.']);
+    exit;
+}
+
 // Süresi dolmuş eski oturumları arada bir temizle (basit bakım)
 $pdo->exec('DELETE FROM sessions WHERE expires_at < NOW()');
 
