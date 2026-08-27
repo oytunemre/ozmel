@@ -1,5 +1,10 @@
 // states.js — yukleniyor iskeleti, bos liste, hata karti, cakisma uyarisi, onay diyalogu.
 // Hepsi DOM elemani doner (olay baglamak icin); caller yerlestirir.
+//
+// Varsayilan metinler t() ile — cagri aninda (guncel dile gore) cozulur. Bunlar tekil
+// DOM'lardir; dil degisince ureten bilesen (or. table.js) yeniden cizerek gunceller.
+
+import { t } from './i18n.js';
 
 function el(tag, cls, html) {
   const n = document.createElement(tag);
@@ -16,7 +21,7 @@ export function skeleton(rows = 8) {
 }
 
 /** Bos liste — cikis yolu sunar (or. "Yeni ekle"). */
-export function emptyState({ title = 'Kayıt yok', message = '', actionLabel = '', onAction = null } = {}) {
+export function emptyState({ title = t('common.noRecords'), message = '', actionLabel = '', onAction = null } = {}) {
   const n = el('div', 'state');
   n.appendChild(el('div', 'state-title', esc(title)));
   if (message) n.appendChild(el('div', 'state-msg', esc(message)));
@@ -29,12 +34,12 @@ export function emptyState({ title = 'Kayıt yok', message = '', actionLabel = '
 }
 
 /** Hata karti — "Tekrar dene". */
-export function errorState({ message = 'Bir şeyler ters gitti', onRetry = null } = {}) {
+export function errorState({ message = t('err.GENERIC'), onRetry = null } = {}) {
   const n = el('div', 'state error');
-  n.appendChild(el('div', 'state-title', 'Hata'));
+  n.appendChild(el('div', 'state-title', esc(t('state.error'))));
   n.appendChild(el('div', 'state-msg', esc(message)));
   if (onRetry) {
-    const b = el('button', 'btn btn-secondary', 'Tekrar dene');
+    const b = el('button', 'btn btn-secondary', esc(t('action.retry')));
     b.addEventListener('click', onRetry);
     n.appendChild(b);
   }
@@ -47,17 +52,16 @@ export function errorState({ message = 'Bir şeyler ters gitti', onRetry = null 
  */
 export function conflictState({ message = '', onReload = null, onDiff = null } = {}) {
   const n = el('div', 'state conflict');
-  n.appendChild(el('div', 'state-title', 'Çakışma'));
-  n.appendChild(el('div', 'state-msg',
-    esc(message || 'Bu kayıt siz açtıktan sonra başkası tarafından değiştirildi.')));
+  n.appendChild(el('div', 'state-title', esc(t('state.conflict'))));
+  n.appendChild(el('div', 'state-msg', esc(message || t('state.conflictMsg'))));
   const row = el('div', 'dialog-actions');
   if (onDiff) {
-    const d = el('button', 'btn btn-secondary', 'Farkı göster');
+    const d = el('button', 'btn btn-secondary', esc(t('action.showDiff')));
     d.addEventListener('click', onDiff);
     row.appendChild(d);
   }
   if (onReload) {
-    const r = el('button', 'btn btn-primary', 'Yeniden yükle');
+    const r = el('button', 'btn btn-primary', esc(t('action.reload')));
     r.addEventListener('click', onReload);
     row.appendChild(r);
   }
@@ -69,7 +73,7 @@ export function conflictState({ message = '', onReload = null, onDiff = null } =
  * Onay diyalogu (silme, kaydedilmemis degisiklik...). Promise<boolean> doner.
  * @returns {Promise<boolean>}
  */
-export function confirmDialog({ title = 'Emin misiniz?', body = '', confirmLabel = 'Onayla', cancelLabel = 'Vazgeç', danger = false } = {}) {
+export function confirmDialog({ title = t('confirm.title'), body = '', confirmLabel = t('action.confirm'), cancelLabel = t('action.cancel'), danger = false } = {}) {
   return new Promise((resolve) => {
     const backdrop = el('div', 'dialog-backdrop');
     const dlg = el('div', 'dialog');
@@ -99,7 +103,7 @@ export function confirmDialog({ title = 'Emin misiniz?', body = '', confirmLabel
  * @param {{ title?:string, body?:string, choices: Array<{value:any,label:string,kind?:'primary'|'danger'|'secondary'}> }} opts
  * @returns {Promise<any>}
  */
-export function choiceDialog({ title = 'Emin misiniz?', body = '', choices = [] } = {}) {
+export function choiceDialog({ title = t('confirm.title'), body = '', choices = [] } = {}) {
   return new Promise((resolve) => {
     const backdrop = el('div', 'dialog-backdrop');
     const dlg = el('div', 'dialog');

@@ -37,6 +37,7 @@ const DICT = {
     'common.yes': 'Evet', 'common.no': 'Hayır', 'common.active': 'Aktif', 'common.inactive': 'Pasif',
     'common.loading': 'Yükleniyor…', 'common.noRecords': 'Kayıt yok', 'common.noResults': 'Sonuç yok',
     'common.emptyHint': 'Henüz kayıt eklenmemiş.', 'common.notSelected': 'seçilmedi',
+    'common.noResultsFor': '"{q}" ile eşleşen kayıt yok.',
     'common.readonlyHint': 'Salt okuma yetkiniz var — değişiklik yapamazsınız',
     'common.dash': '—',
     // — sipariş durumları (Excel) —
@@ -56,7 +57,12 @@ const DICT = {
     'err.NETWORK': 'Sunucuya ulaşılamadı — bağlantınızı kontrol edin',
     'err.GENERIC': 'Bir hata oluştu',
     'toast.saved': 'Kaydedildi', 'toast.deleted': 'Silindi',
-    'confirm.deleteTitle': 'Silmek istediğinize emin misiniz?',
+    'confirm.deleteTitle': 'Silmek istediğinize emin misiniz?', 'confirm.title': 'Emin misiniz?',
+    'state.error': 'Hata', 'state.conflict': 'Çakışma',
+    'state.conflictMsg': 'Bu kayıt siz açtıktan sonra başkası tarafından değiştirildi.',
+    'state.moduleError': 'Modül yüklenemedi',
+    'action.showDiff': 'Farkı göster', 'action.reload': 'Yeniden yükle',
+    'table.range': '{start}–{end} / {total}', 'table.page': '{page} / {pages}',
   },
   en: {
     // — menu groups —
@@ -87,6 +93,7 @@ const DICT = {
     'common.yes': 'Yes', 'common.no': 'No', 'common.active': 'Active', 'common.inactive': 'Inactive',
     'common.loading': 'Loading…', 'common.noRecords': 'No records found', 'common.noResults': 'No results',
     'common.emptyHint': 'No records yet.', 'common.notSelected': 'Not selected',
+    'common.noResultsFor': 'No records match "{q}".',
     'common.readonlyHint': 'You have read-only access — changes are disabled',
     'common.dash': '—',
     // — order statuses (Excel) —
@@ -106,7 +113,12 @@ const DICT = {
     'err.NETWORK': 'Cannot reach the server — check your connection',
     'err.GENERIC': 'An error occurred',
     'toast.saved': 'Saved', 'toast.deleted': 'Deleted',
-    'confirm.deleteTitle': 'Are you sure you want to delete this?',
+    'confirm.deleteTitle': 'Are you sure you want to delete this?', 'confirm.title': 'Are you sure?',
+    'state.error': 'Error', 'state.conflict': 'Conflict',
+    'state.conflictMsg': 'This record was modified after you opened it.',
+    'state.moduleError': 'Failed to load module',
+    'action.showDiff': 'Show differences', 'action.reload': 'Reload',
+    'table.range': '{start}–{end} / {total}', 'table.page': '{page} / {pages}',
   }
 };
 

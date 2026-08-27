@@ -6,8 +6,10 @@
 
 import { skeleton, emptyState, errorState, esc } from './states.js';
 import { flashRow } from './toast.js';
+import { t, onLangChange } from './i18n.js';
 
-const READONLY_HINT = 'Salt okuma yetkiniz var — değişiklik yapamazsınız';
+// Etiketler string ya da () => string olabilir — modüller t()'yi geçirip dile göre çevirir.
+const lbl = (v) => (typeof v === 'function' ? v() : (v ?? ''));
 
 export class DataTable {
   /**
@@ -40,12 +42,22 @@ export class DataTable {
     this.expanded = new Set();   // genişletilmiş satır id'leri (opts.expand verilmişse)
     this.flagActive = false;     // flagFilter sayacı açık mı (yalnızca işaretli satırlar)
     this.facetActive = new Set();// facetFilter'da seçili değerler (boşsa: hepsi)
+    // Dil değişince yalnızca ETİKETLER yeniden çizilir (veri + sayfa/arama/filtre korunur).
+    this._unsub = onLangChange(() => this.relabel());
     this.render();
+  }
+
+  /** Dil değişimi: bu tablo hâlâ ekrandaysa yeniden çiz (this.all dolu -> load atlanır,
+   *  durum korunur); başka modüle geçilmişse aboneliği bırak. */
+  relabel() {
+    if (this._headEl && this.c.contains(this._headEl)) this.render();
+    else this._unsub?.();
   }
 
   async render() {
     this.c.innerHTML = '';
-    this.c.appendChild(this.head());
+    this._headEl = this.head();
+    this.c.appendChild(this._headEl);
     if (this.o.searchable) this.c.appendChild(this.toolbar());
     if (this.o.facetFilter) { this.facetHost = el('div', 'facet-bar'); this.c.appendChild(this.facetHost); }
     this.body = document.createElement('div');
@@ -81,17 +93,17 @@ export class DataTable {
   head() {
     const head = el('div', 'module-head');
     const left = el('div');
-    left.appendChild(el('h2', '', esc(this.o.title)));
+    left.appendChild(el('h2', '', esc(lbl(this.o.title))));
     if (this.o.subtitle) {
-      const sub = el('div', 'text-muted', esc(this.o.subtitle));
+      const sub = el('div', 'text-muted', esc(lbl(this.o.subtitle)));
       sub.style.cssText = 'font-size:13.5px; margin-top:6px;';
       left.appendChild(sub);
     }
     head.appendChild(left);
     this.addBtn = null;
     if (this.o.addLabel && this.o.onAdd) {
-      const b = el('button', 'btn btn-primary', esc(this.o.addLabel));
-      if (!this.o.canWrite) { b.disabled = true; b.title = READONLY_HINT; }
+      const b = el('button', 'btn btn-primary', esc(lbl(this.o.addLabel)));
+      if (!this.o.canWrite) { b.disabled = true; b.title = t('common.readonlyHint'); }
       else b.addEventListener('click', () => this.o.onAdd());
       head.appendChild(b);
       this.addBtn = b;
@@ -105,12 +117,12 @@ export class DataTable {
     const inp = document.createElement('input');
     inp.className = 'input';
     inp.type = 'search';
-    inp.placeholder = 'Ara…';
+    inp.placeholder = t('action.search');
     inp.value = this.search;
-    let t;
+    let deb;
     inp.addEventListener('input', () => {
-      clearTimeout(t);
-      t = setTimeout(() => { this.search = inp.value; this.page = 1; this.paint(); }, 180);
+      clearTimeout(deb);
+      deb = setTimeout(() => { this.search = inp.value; this.page = 1; this.paint(); }, 180);
     });
     wrap.appendChild(inp);
     bar.appendChild(wrap);
@@ -148,7 +160,7 @@ export class DataTable {
       this.facetHost.appendChild(chip);
     }
     if (this.facetActive.size) {
-      const clear = el('button', 'facet-clear', 'Temizle');
+      const clear = el('button', 'facet-clear', esc(t('action.clear')));
       clear.type = 'button';
       clear.addEventListener('click', () => { this.facetActive.clear(); this.page = 1; this.paint(); });
       this.facetHost.appendChild(clear);
@@ -180,12 +192,12 @@ export class DataTable {
     if (rows.length === 0) {
       this.body.appendChild(this.all.length === 0
         ? emptyState({
-            title: 'Kayıt yok',
-            message: this.o.emptyMessage || 'Henüz kayıt eklenmemiş.',
-            actionLabel: this.o.canWrite ? this.o.addLabel : '',
+            title: t('common.noRecords'),
+            message: lbl(this.o.emptyMessage) || t('common.emptyHint'),
+            actionLabel: this.o.canWrite ? lbl(this.o.addLabel) : '',
             onAction: this.o.canWrite ? this.o.onAdd : null
           })
-        : emptyState({ title: 'Sonuç yok', message: `"${this.search}" ile eşleşen kayıt yok.` }));
+        : emptyState({ title: t('common.noResults'), message: t('common.noResultsFor', { q: this.search }) }));
       return;
     }
 
@@ -202,7 +214,7 @@ export class DataTable {
     const table = document.createElement('table');
     table.className = 'table';
     table.innerHTML = `<thead><tr>${hasExpand ? '<th class="expander"></th>' : ''}${
-      this.o.columns.map(c => `<th>${esc(c.label)}</th>`).join('')
+      this.o.columns.map(c => `<th>${esc(lbl(c.label))}</th>`).join('')
     }${hasActions ? '<th></th>' : ''}</tr></thead>`;
 
     const tbody = document.createElement('tbody');
@@ -255,14 +267,14 @@ export class DataTable {
 
   actionsCell(row) {
     const td = el('td', 'actions');
-    if (this.o.onEdit) td.appendChild(this.actionBtn('Düzenle', 'btn-ghost', () => this.o.onEdit(row)));
-    if (this.o.onDelete) td.appendChild(this.actionBtn('Sil', 'btn-danger', () => this.o.onDelete(row)));
+    if (this.o.onEdit) td.appendChild(this.actionBtn(t('action.edit'), 'btn-ghost', () => this.o.onEdit(row)));
+    if (this.o.onDelete) td.appendChild(this.actionBtn(t('action.delete'), 'btn-danger', () => this.o.onDelete(row)));
     return td;
   }
 
   actionBtn(label, kind, on) {
     const b = el('button', `btn ${kind} btn-sm`, esc(label));
-    if (!this.o.canWrite) { b.disabled = true; b.title = READONLY_HINT; }
+    if (!this.o.canWrite) { b.disabled = true; b.title = t('common.readonlyHint'); }
     else b.addEventListener('click', on);
     return b;
   }
@@ -270,15 +282,15 @@ export class DataTable {
   pager(total, start, shown, pages) {
     const p = el('div', 'pager');
     p.appendChild(el('span', 'text-muted',
-      total ? `${start + 1}–${start + shown} / ${total}` : '0'));
+      total ? t('table.range', { start: start + 1, end: start + shown, total }) : '0'));
     p.appendChild(el('span', 'grow'));
-    const prev = el('button', 'btn btn-secondary btn-sm', '‹ Önceki');
-    const next = el('button', 'btn btn-secondary btn-sm', 'Sonraki ›');
+    const prev = el('button', 'btn btn-secondary btn-sm', t('action.prev'));
+    const next = el('button', 'btn btn-secondary btn-sm', t('action.next'));
     prev.disabled = this.page <= 1;
     next.disabled = this.page >= pages;
     prev.addEventListener('click', () => { this.page--; this.paint(); });
     next.addEventListener('click', () => { this.page++; this.paint(); });
-    p.append(prev, el('span', 'text-muted', ` ${this.page} / ${pages} `), next);
+    p.append(prev, el('span', 'text-muted', ' ' + t('table.page', { page: this.page, pages }) + ' '), next);
     return p;
   }
 }
