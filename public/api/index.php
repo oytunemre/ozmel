@@ -78,6 +78,7 @@ $routes = [
     // Salt okunur toplu rapor uc noktalari (CRUD degil; yalnizca GET index).
     'dashboard'     => App\Controller\DashboardController::class,
     'sales-reports' => App\Controller\SalesReportController::class,
+    'order-statuses' => App\Controller\OrderStatusController::class,
     // Kullanici Yonetimi — paylasilan v1 users tablosu (op=sifre ozel islemi var).
     'users'         => App\Controller\UserController::class,
     // Oturum sahibi — GET api/me -> {displayName, role, username}.

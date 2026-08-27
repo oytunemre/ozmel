@@ -21,8 +21,10 @@ export class DataTable {
    *   addLabel?: string, onAdd?: Function, onEdit?: Function, onDelete?: Function,
    *   emptyMessage?: string,
    *   rowClass?: (row)=>string,   // <tr>'e eklenecek sinif (or. uyari seridi)
-   *   flagFilter?: { test:(row)=>boolean, label:(n:number)=>string }
+   *   flagFilter?: { test:(row)=>boolean, label:(n:number)=>string },
    *                               // toolbar'da tiklanabilir sayac; yalnizca isaretli satirlar
+   *   facetFilter?: { values:string[], get:(row)=>string, label?:(v)=>string }
+   *                               // tablo ustunde coklu-secim cipleri; secili degerler suzer
    * }} opts
    */
   constructor(container, opts) {
@@ -37,6 +39,7 @@ export class DataTable {
     this.activeId = null;
     this.expanded = new Set();   // genişletilmiş satır id'leri (opts.expand verilmişse)
     this.flagActive = false;     // flagFilter sayacı açık mı (yalnızca işaretli satırlar)
+    this.facetActive = new Set();// facetFilter'da seçili değerler (boşsa: hepsi)
     this.render();
   }
 
@@ -44,6 +47,7 @@ export class DataTable {
     this.c.innerHTML = '';
     this.c.appendChild(this.head());
     if (this.o.searchable) this.c.appendChild(this.toolbar());
+    if (this.o.facetFilter) { this.facetHost = el('div', 'facet-bar'); this.c.appendChild(this.facetHost); }
     this.body = document.createElement('div');
     this.c.appendChild(this.body);
 
@@ -127,9 +131,36 @@ export class DataTable {
     this.flagHost.appendChild(chip);
   }
 
+  // Facet filtresi (çoklu seçim): tablonun üstünde değer başına tıklanabilir çip;
+  // seçili değer(ler) varsa yalnızca eşleşen satırlar gösterilir (or. sipariş durumu).
+  renderFacets() {
+    if (!this.o.facetFilter || !this.facetHost) return;
+    const f = this.o.facetFilter;
+    this.facetHost.innerHTML = '';
+    for (const v of f.values) {
+      const on = this.facetActive.has(v);
+      const chip = el('button', 'facet-chip' + (on ? ' on' : ''), esc(f.label ? f.label(v) : v));
+      chip.type = 'button';
+      chip.addEventListener('click', () => {
+        if (this.facetActive.has(v)) this.facetActive.delete(v); else this.facetActive.add(v);
+        this.page = 1; this.paint();
+      });
+      this.facetHost.appendChild(chip);
+    }
+    if (this.facetActive.size) {
+      const clear = el('button', 'facet-clear', 'Temizle');
+      clear.type = 'button';
+      clear.addEventListener('click', () => { this.facetActive.clear(); this.page = 1; this.paint(); });
+      this.facetHost.appendChild(clear);
+    }
+  }
+
   filtered() {
     let rows = this.all;
     if (this.flagActive && this.o.flagFilter) rows = rows.filter(r => this.o.flagFilter.test(r));
+    if (this.o.facetFilter && this.facetActive.size) {
+      rows = rows.filter(r => this.facetActive.has(this.o.facetFilter.get(r)));
+    }
     const q = this.search.trim().toLocaleLowerCase('tr');
     if (q) rows = rows.filter(r => this.o.searchText(r).toLocaleLowerCase('tr').includes(q));
     return rows;
@@ -137,6 +168,7 @@ export class DataTable {
 
   paint() {
     this.renderFlag();   // sayacı güncelle (this.all değişmiş/filtre değişmiş olabilir)
+    this.renderFacets(); // facet çiplerini (seçili durumla) yeniden çiz
     this.body.innerHTML = '';
     const rows = this.filtered();
 

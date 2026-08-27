@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Validator;
 
 use App\Core\Validator;
+use App\Dto\Order;
 
 final class OrderValidator extends Validator
 {
@@ -20,8 +21,9 @@ final class OrderValidator extends Validator
                  ->inList($input, 'source', self::SOURCES, 'Kaynak');
         }
         if ($isCreate || array_key_exists('status', $input)) {
+            // 9 asamali akistan biri (bkz. Order::STATUSES). Sutun VARCHAR(32) kalir.
             $this->required($input, 'status', 'Durum')
-                 ->maxLength($input, 'status', 32, 'Durum');
+                 ->inList($input, 'status', Order::STATUSES, 'Durum');
         }
         if ($isCreate || array_key_exists('productCodeId', $input)) {
             $this->required($input, 'productCodeId', 'Urun kodu')

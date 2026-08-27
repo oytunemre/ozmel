@@ -1,13 +1,13 @@
 // Siparişler (Üretim Siparişleri) — v2 modülü. Tasarım: Uretim-Siparisleri.dc.html.
 // Standart tablo + drawer. Kaynak: satış / üretim / stok.
 
-import { resource } from '../core/api.js';
+import { resource, request } from '../core/api.js';
 import { DataTable } from '../core/table.js';
 import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, mapNamed, ORDER_STATUS_OPTIONS, withCurrent } from '../core/lookups.js';
+import { loadLookup, mapProduct, mapNamed, withCurrent } from '../core/lookups.js';
 import { childTable } from './_childDetail.js';
 
 const api = resource('orders');
@@ -20,13 +20,31 @@ const SOURCES = [
 ];
 const SRC_LABEL = { satis: 'Satış', uretim: 'Üretim', stok: 'Stok' };
 
+// Durum -> renk tonu (rozet). Durum LİSTESİ backend'den (api/order-statuses) gelir;
+// bu harita yalnızca SUNUM (renk); listede olmayan bir değer 'neutral' ile gösterilir.
+const STATUS_TONE = {
+  'Hammadde Bekleniyor': 'warn',
+  'Üretimde': 'accent',
+  'Kalite Kontrolde': 'warn',
+  'Sevke Hazır': 'accent',
+  'Kısmi Sevk': 'accent',
+  'Sevk Edildi': 'success',
+  'İade': 'danger',
+  'Tamamlandı': 'success',
+  'İptal': 'danger'
+};
+const statusBadge = (s) => s
+  ? `<span class="status-badge ${STATUS_TONE[s] || 'neutral'}">${esc(s)}</span>`
+  : '—';
+
 export async function viewOrders(container) {
   container.innerHTML = '<div class="loading">Yükleniyor…</div>';
-  let products, ops, centers, woByOrder, producedByWo;
+  let products, ops, centers, woByOrder, producedByWo, statuses;
   try {
     products = await loadLookup('product-codes', mapProduct);
     ops = await loadLookup('operations', mapNamed);
     centers = await loadLookup('work-centers', mapNamed);
+    statuses = (await request('/order-statuses')).data;   // 9 aşamalı akış (tek kaynak: BE)
     ({ woByOrder, producedByWo } = await loadWorkOrders());
   } catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewOrders(container) })); return; }
 
@@ -52,8 +70,10 @@ export async function viewOrders(container) {
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
     load: () => api.list({ limit: 200 }).then(r => r.data),
-    searchText: (r) => [r.orderNo, products.label(r.productCodeId), r.customer].join(' '),
+    searchText: (r) => [r.orderNo, products.label(r.productCodeId), r.customer, r.status].join(' '),
     emptyMessage: 'Henüz sipariş yok. "Yeni Sipariş" ile başlayın.',
+    // Tablo üstünde duruma göre çoklu-seçim filtre (BE'den gelen sırayla).
+    facetFilter: { values: statuses, get: (r) => r.status },
     // Genişleyen satır: bu siparişe bağlı iş emirleri (no, operasyon, iş merkezi, üretilen/hedef).
     expand: (r) => childTable([
       { label: 'İş Emri', key: 'woNo', mono: true },
@@ -67,7 +87,7 @@ export async function viewOrders(container) {
       { label: 'Miktar', render: (r) => r.targetQuantity, className: 'mono' },
       { label: 'Termin', render: (r) => esc(r.requestedDeliveryDate || '—') },
       { label: 'Kaynak', render: (r) => `<span class="tag tag-neutral">${esc(SRC_LABEL[r.source] || r.source)}</span>` },
-      { label: 'Durum', render: (r) => esc(r.status || '—') }
+      { label: 'Durum', render: (r) => statusBadge(r.status) }
     ]
   });
 
@@ -78,12 +98,12 @@ export async function viewOrders(container) {
     openDrawer({
       title: editing ? 'Sipariş Düzenle' : 'Yeni Sipariş',
       submitLabel: editing ? 'Güncelle' : 'Ekle',
-      values: editing ? { ...row } : { source: '', status: 'Aktif' },
+      values: editing ? { ...row } : { source: '', status: statuses[0] },
       fields: [
         { name: 'secId', type: 'section', label: 'Sipariş' },
         { name: 'orderNo', label: 'Sipariş No', type: 'text', required: true },
         { name: 'source', label: 'Kaynak', type: 'select', required: true, options: SOURCES },
-        { name: 'status', label: 'Durum', type: 'select', required: true, options: withCurrent(ORDER_STATUS_OPTIONS, row?.status) },
+        { name: 'status', label: 'Durum', type: 'select', required: true, options: withCurrent(statuses.map(s => ({ value: s, label: s })), row?.status) },
         { name: 'productCodeId', label: 'Ürün', type: 'fk', fk: productFk, required: true },
         { name: 'targetQuantity', label: 'Hedef Miktar', type: 'number', step: 'any', required: true },
         { name: 'secDates', type: 'section', label: 'Tarihler & Müşteri' },

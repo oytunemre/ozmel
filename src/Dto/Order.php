@@ -22,6 +22,24 @@ namespace App\Dto;
  */
 final class Order
 {
+    /**
+     * Siparis durumu — 9 asamali akis (SIRA onemli; FE bu sirayla listeler).
+     * TEK KAYNAK: OrderValidator buradan dogrular, OrderStatusController bunu servis eder,
+     * FE acilir liste / rozet / filtreyi bu listeden doldurur (iki yerde tekrar edilmez).
+     * Sutun VARCHAR(32) kalir; degerler kod tarafinda uretilir (DB enum'a cevrilmez).
+     */
+    public const STATUSES = [
+        'Hammadde Bekleniyor',
+        'Üretimde',
+        'Kalite Kontrolde',
+        'Sevke Hazır',
+        'Kısmi Sevk',
+        'Sevk Edildi',
+        'İade',
+        'Tamamlandı',
+        'İptal',
+    ];
+
     public static function fromRow(array $row): array
     {
         return [
