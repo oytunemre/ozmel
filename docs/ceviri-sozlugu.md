@@ -519,3 +519,13 @@ Paylaşılan:
 **Not:** malzeme tipi (`mt.*`) BE'de TR saklanır; yalnızca gösterim çevrilir.
 
 Modül anahtarları (özet): `pc.*` Kod Tanımları (secDrawing/secMeasures/secStock/secRel, minStock, supplyDays, boxQty, suppliers, outgoingOp, parentCode…), `tp.*` Görev Kişileri, `wh.*` Çalışma Saatleri (start/breakStart/breakEnd/end, net/break/lunch, help, hoursShort…), `cap.*` Kapasiteler, `opr.*` Operatörler (skills, skillsHelp…), `rt.*` Rotalar (summary, variantsCol, variantOptions, variantsHelp…). Tümü `public/js/core/i18n.js` DICT'te birebir mevcuttur.
+
+### Parti G: Satınalma Girişleri, Görevler, Üretim Planı, Satış Raporları, Genel Bakış
+
+- `prc.*` Satınalma Girişleri (requestCol, request, requestHelp…). Bağlı istekte malzeme NULL ise etiket `common.notSelected`.
+- `tsk.*` Görevler + `ts.*` görev durumu enum (Başlamadı/Devam Ediyor/Tamamlandı → Not Started/In Progress/Completed; BE'de TR saklanır).
+- `mp.*` Üretim Planı (haftalık ızgara; gün kısaltmaları dile göre Pzt…/Mon…). bindLang ile canlı; seçili hafta korunur.
+- `sr.*` Satış Raporları (salt okunur; ay kısaltmaları dile göre). bindLang ile canlı; filtreler + son sonuç korunur, veri yeniden çekilmez. Sayı biçimi (tr-TR) korunur.
+- `db.*` Genel Bakış (salt okunur). bindLang ile canlı. **Not:** açık iş emri / tolerans dışı kartlarının BE'den gelen `detail` alt metinleri veri kaynaklıdır, çevrilmez.
+
+Tümü `public/js/core/i18n.js` DICT'te birebir mevcuttur.

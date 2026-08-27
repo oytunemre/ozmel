@@ -1,18 +1,19 @@
 // Genel Bakış panosu — v2 modülü (SALT OKUNUR). Ortak core/ katmanı üzerine.
 // Tasarım: Genel-Bakis.dc.html. Tek GET /dashboard çağrısı üç bölüm döner:
 //   cards (3 özet kart) · workCenterLoad (doluluk çubukları) · recentQuality (son ölçümler)
-//
-// "Min. stok altı" kartı YOK — eldeki stok verisi hesaplanamıyor (backend bu alanı
-// döndürmez). Tasarımdaki "Satınalma özeti alınamadı" hata kartı da yok (illüstrasyondu).
+// i18n: dil değişince VERİ ÇEKMEDEN yeniden çizilir (bindLang; veri closure'da).
+// NOT: kartların BE'den gelen `detail` alt metinleri (açık iş emri / tolerans dışı)
+// veri kaynaklıdır ve burada çevrilmez — bugünkü üretim detayı FE'de kurulur.
 
 import { request } from '../core/api.js';
 import { errorState, esc } from '../core/states.js';
+import { t, bindLang } from '../core/i18n.js';
 
 const nf = new Intl.NumberFormat('tr-TR');
 const fmt = (n) => nf.format(n ?? 0);
 
 export async function viewDashboard(container) {
-  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let data;
   try { ({ data } = await request('/dashboard')); }
   catch (err) {
@@ -21,33 +22,37 @@ export async function viewDashboard(container) {
     return;
   }
 
-  const c = data.cards;
-  const tp = c.todayProduction;
+  render();
+  bindLang(container, render);
 
-  container.innerHTML = `
-    <div class="module-head">
-      <div>
-        <h2>Genel Bakış</h2>
-        <div class="text-muted" style="font-size:13.5px; margin-top:6px;">Açık işler, bugünün üretimi ve son kalite ölçümleri</div>
+  function render() {
+    const c = data.cards;
+    const tp = c.todayProduction;
+    container.innerHTML = `
+      <div class="module-head">
+        <div>
+          <h2>${esc(t('menu.dashboard'))}</h2>
+          <div class="text-muted" style="font-size:13.5px; margin-top:6px;">${esc(t('db.subtitle'))}</div>
+        </div>
       </div>
-    </div>
 
-    <div class="kpis">
-      ${kpi('Açık iş emri', fmt(c.openWorkOrders.value), c.openWorkOrders.detail)}
-      ${kpi('Bugünkü üretim', fmt(tp.value), `hedef ${fmt(tp.target)} adet`)}
-      ${kpi('Tolerans dışı ölçüm', fmt(c.outOfTolerance.value), c.outOfTolerance.detail, c.outOfTolerance.value > 0)}
-    </div>
+      <div class="kpis">
+        ${kpi(t('db.openWo'), fmt(c.openWorkOrders.value), c.openWorkOrders.detail)}
+        ${kpi(t('db.todayProd'), fmt(tp.value), t('db.targetDetail', { n: fmt(tp.target) }))}
+        ${kpi(t('db.outOfTol'), fmt(c.outOfTolerance.value), c.outOfTolerance.detail, c.outOfTolerance.value > 0)}
+      </div>
 
-    <div class="panels">
-      <div class="panel panel-wide">
-        <div class="panel-hd"><h3>İş Merkezi Doluluğu</h3><span class="sub">bu hafta · planlanan / kapasite</span></div>
-        ${loadSection(data.workCenterLoad)}
-      </div>
-      <div class="panel panel-side">
-        <div class="panel-hd"><h3>Son Kalite Kayıtları</h3></div>
-        ${qualitySection(data.recentQuality)}
-      </div>
-    </div>`;
+      <div class="panels">
+        <div class="panel panel-wide">
+          <div class="panel-hd"><h3>${esc(t('db.wcLoad'))}</h3><span class="sub">${esc(t('db.wcLoadSub'))}</span></div>
+          ${loadSection(data.workCenterLoad)}
+        </div>
+        <div class="panel panel-side">
+          <div class="panel-hd"><h3>${esc(t('db.recentQuality'))}</h3></div>
+          ${qualitySection(data.recentQuality)}
+        </div>
+      </div>`;
+  }
 }
 
 function kpi(title, value, detail, danger) {
@@ -60,7 +65,7 @@ function kpi(title, value, detail, danger) {
 }
 
 function loadSection(rows) {
-  if (!rows || rows.length === 0) return '<div class="panel-empty">Bu hafta plan yok.</div>';
+  if (!rows || rows.length === 0) return `<div class="panel-empty">${esc(t('db.noPlan'))}</div>`;
   const body = rows.map(w => {
     const pct = w.ratio != null ? Math.round(w.ratio * 100) : null;
     const kind = w.ratio == null ? '' : (w.ratio > 1 ? 'over' : (w.ratio > 0.85 ? 'warn' : ''));
@@ -76,7 +81,7 @@ function loadSection(rows) {
 }
 
 function qualitySection(rows) {
-  if (!rows || rows.length === 0) return '<div class="panel-empty">Henüz ölçüm yok.</div>';
+  if (!rows || rows.length === 0) return `<div class="panel-empty">${esc(t('db.noQuality'))}</div>`;
   return rows.map(q => {
     // result varsa onu göster; yoksa (saatlik ölçümlerde result NULL) ölçülen değeri göster.
     const hasResult = q.result != null && q.result !== '';
