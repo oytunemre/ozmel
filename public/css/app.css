@@ -166,6 +166,16 @@ textarea.input { min-height: 84px; resize: vertical; }
 @keyframes flash { from { background: var(--color-success-fill); } to { background: transparent; } }
 .table tr.flash td { animation: flash 1.6s ease-out; }
 
+/* Satır bayrağı sayacı (toolbar) + eksik-değer satırı/hücresi */
+.toolbar .flag-host { margin-left: auto; }
+.flag-chip { font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap;
+  padding: 5px 11px; border-radius: var(--radius);
+  color: var(--color-warning); background: var(--color-warning-fill); border: 1px solid var(--color-warning); }
+.flag-chip:hover { background: color-mix(in srgb, var(--color-warning) 22%, var(--color-warning-fill)); }
+.flag-chip.on { background: var(--color-warning); color: #fff; }
+.table tr.row-warn td:first-child { box-shadow: inset 3px 0 0 var(--color-warning); }
+.cell-empty { color: var(--color-warning); font-style: italic; }
+
 .pager { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-3); font-size: 13px; }
 .pager .grow { flex: 1; }
 

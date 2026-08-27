@@ -42,12 +42,17 @@ export async function viewPurchaseRequests(container) {
     load: () => api.list({ limit: 200 }).then(r => r.data),
     searchText: (r) => [products.label(r.materialCodeId), r.supplier].join(' '),
     emptyMessage: 'Henüz istek yok. "Yeni İstek" ile başlayın.',
+    // Malzemesi seçilmemiş (ETL'de koda çözülemeyen) istekler işaretlenir.
+    rowClass: (r) => r.materialCodeId ? '' : 'row-warn',
+    flagFilter: { test: (r) => !r.materialCodeId, label: (n) => `${n} kayıtta malzeme seçilmemiş` },
     // Genişleyen satır: bu isteğe bağlı satınalma girişleri (tarih, miktar).
     expand: (r) => childTable(
       [{ label: 'Tarih', key: 'date' }, { label: 'Miktar', render: (g) => esc(String(g.quantity ?? '—')), mono: true }, { label: 'Not', render: (g) => esc(g.note || '—') }],
       receiptsByReq.get(r.id) || [], 'Henüz giriş yapılmadı.'),
     columns: [
-      { label: 'Malzeme', render: (r) => esc(products.label(r.materialCodeId)) },
+      { label: 'Malzeme', render: (r) => r.materialCodeId
+          ? esc(products.label(r.materialCodeId))
+          : '<span class="cell-empty">seçilmedi</span>' },
       { label: 'Miktar', render: (r) => r.quantity ?? '—', className: 'mono' },
       { label: 'Birim', render: (r) => esc(r.unit || '—') },
       { label: 'Tedarikçi', render: (r) => esc(r.supplier || '—') },

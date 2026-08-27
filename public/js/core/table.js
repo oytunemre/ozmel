@@ -19,7 +19,10 @@ export class DataTable {
    *   rowId?: Function, pageSize?: number, searchable?: boolean,
    *   searchText?: (row)=>string, canWrite?: boolean,
    *   addLabel?: string, onAdd?: Function, onEdit?: Function, onDelete?: Function,
-   *   emptyMessage?: string
+   *   emptyMessage?: string,
+   *   rowClass?: (row)=>string,   // <tr>'e eklenecek sinif (or. uyari seridi)
+   *   flagFilter?: { test:(row)=>boolean, label:(n:number)=>string }
+   *                               // toolbar'da tiklanabilir sayac; yalnizca isaretli satirlar
    * }} opts
    */
   constructor(container, opts) {
@@ -33,6 +36,7 @@ export class DataTable {
     this.page = 1;
     this.activeId = null;
     this.expanded = new Set();   // genişletilmiş satır id'leri (opts.expand verilmişse)
+    this.flagActive = false;     // flagFilter sayacı açık mı (yalnızca işaretli satırlar)
     this.render();
   }
 
@@ -106,16 +110,33 @@ export class DataTable {
     });
     wrap.appendChild(inp);
     bar.appendChild(wrap);
+    if (this.o.flagFilter) { this.flagHost = el('span', 'flag-host'); bar.appendChild(this.flagHost); }
     return bar;
   }
 
+  // Bayrak sayacı (or. "N kayıtta malzeme seçilmemiş"). Sayım güncel this.all
+  // üzerinden; tıklanınca this.flagActive değişir ve yalnızca işaretli satırlar süzülür.
+  renderFlag() {
+    if (!this.o.flagFilter || !this.flagHost) return;
+    this.flagHost.innerHTML = '';
+    const n = (this.all || []).filter(r => this.o.flagFilter.test(r)).length;
+    if (n === 0) { this.flagActive = false; return; }   // işaretli satır yoksa sayaç gizli
+    const chip = el('button', 'flag-chip' + (this.flagActive ? ' on' : ''), esc(this.o.flagFilter.label(n)));
+    chip.type = 'button';
+    chip.addEventListener('click', () => { this.flagActive = !this.flagActive; this.page = 1; this.paint(); });
+    this.flagHost.appendChild(chip);
+  }
+
   filtered() {
+    let rows = this.all;
+    if (this.flagActive && this.o.flagFilter) rows = rows.filter(r => this.o.flagFilter.test(r));
     const q = this.search.trim().toLocaleLowerCase('tr');
-    if (!q) return this.all;
-    return this.all.filter(r => this.o.searchText(r).toLocaleLowerCase('tr').includes(q));
+    if (q) rows = rows.filter(r => this.o.searchText(r).toLocaleLowerCase('tr').includes(q));
+    return rows;
   }
 
   paint() {
+    this.renderFlag();   // sayacı güncelle (this.all değişmiş/filtre değişmiş olabilir)
     this.body.innerHTML = '';
     const rows = this.filtered();
 
@@ -158,6 +179,7 @@ export class DataTable {
       const tr = document.createElement('tr');
       tr.dataset.id = id;
       if (id === this.activeId) tr.classList.add('is-active');
+      if (this.o.rowClass) { const rc = this.o.rowClass(row); if (rc) tr.classList.add(rc); }
       if (hasExpand) tr.appendChild(this.expanderCell(id, row));
       for (const col of this.o.columns) {
         const td = document.createElement('td');

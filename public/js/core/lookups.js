@@ -30,7 +30,9 @@ export async function loadLookup(name, mapRow) {
     source: async () => ({ rows, total: rows.length }),
     label: (id) => {
       const r = byId.get(id);
-      if (!r) return id == null ? '—' : '#' + id;
+      // FK bos (null/0/undefined) -> '—'; dolu ama yuklenmemis -> '#id'. Gecerli
+      // id'ler >=1 oldugundan 0'i da bos sayariz (NULL FK'nin '#0' gorunmesini onler).
+      if (!r) return !id ? '—' : '#' + id;
       return [r.code, r.name].filter(Boolean).join(' · ');
     }
   };

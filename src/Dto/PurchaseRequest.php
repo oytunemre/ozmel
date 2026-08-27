@@ -25,7 +25,7 @@ final class PurchaseRequest
     {
         return [
             'id'             => (int) $row['id'],
-            'materialCodeId' => (int) $row['material_code_id'],
+            'materialCodeId' => $row['material_code_id'] !== null ? (int) $row['material_code_id'] : null,
             'productCodeId'  => $row['product_code_id'] !== null ? (int) $row['product_code_id'] : null,
             'quantity'       => $row['quantity'] !== null ? (float) $row['quantity'] : null,
             'unit'           => $row['unit'] !== null ? (string) $row['unit'] : null,
