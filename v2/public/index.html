@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Özmel</title>
   <!-- ?v: onbellek kirici. app.css/modul degisince artir (build/versiyonlama yok). -->
-  <link rel="stylesheet" href="css/app.css?v=24">
+  <link rel="stylesheet" href="css/app.css?v=25">
 </head>
 <body>
   <div class="app">
@@ -29,6 +29,8 @@
               <div class="role" id="user-role">—</div>
             </div>
           </div>
+          <div class="sep"></div>
+          <button class="logout" id="logout" type="button">Çıkış</button>
         </div>
       </header>
       <div class="content" id="content"></div>
@@ -42,6 +44,9 @@
     window.SESSION_ROLE  = params.get('role')  || localStorage.getItem('sessionRole')  || 'editor';
     window.SESSION_USER  = params.get('user')  || localStorage.getItem('sessionUser')  || 'Kullanıcı';
     if (params.get('token')) localStorage.setItem('sessionToken', params.get('token'));
+
+    // Oturum yoksa giriş ekranına gönder — uygulama kabuğu hiç çizilmez.
+    if (!window.SESSION_TOKEN) { location.replace('login.html'); throw new Error('no-session'); }
 
     // Modül kaydı — tasarim/Yon-B-Rahat.dc.html'deki gruplu düzen.
     const GROUPS = [
@@ -126,6 +131,23 @@
     const savedLang = localStorage.getItem('lang') || 'tr';
     lang.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.lang === savedLang));
 
+    // Çıkış: sunucu oturumunu sil (fire-and-forget), yerel oturumu temizle, giriş ekranına dön.
+    document.getElementById('logout').addEventListener('click', () => {
+      const token = window.SESSION_TOKEN;
+      try {
+        fetch('../../logout.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+          keepalive: true
+        }).catch(() => {});
+      } catch {}
+      localStorage.removeItem('sessionToken');
+      localStorage.removeItem('sessionRole');
+      localStorage.removeItem('sessionUser');
+      location.replace('login.html');
+    });
+
     async function route() {
       const key = location.hash.slice(1) || 'work-centers';
       const m = BY_KEY[key] || BY_KEY['work-centers'];
@@ -138,7 +160,7 @@
           <div class="state-msg">${err && err.message ? err.message : err}</div></div>`;
       };
       try {
-        const mod = await import(`./js/modules/${m.file}?v=24`);
+        const mod = await import(`./js/modules/${m.file}?v=25`);
         // view fonksiyonu async — hatası sessiz kalmasın, ekranda göster.
         const p = mod[m.fn](content);
         if (p && p.catch) p.catch(showErr);
