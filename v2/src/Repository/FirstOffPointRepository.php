@@ -9,7 +9,7 @@ final class FirstOffPointRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_first_off_points';
+        return 'first_off_points';
     }
 
     protected function columns(): array

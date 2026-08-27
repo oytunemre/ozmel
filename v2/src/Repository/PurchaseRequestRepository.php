@@ -9,7 +9,7 @@ final class PurchaseRequestRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_purchase_requests';
+        return 'purchase_requests';
     }
 
     protected function columns(): array

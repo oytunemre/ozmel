@@ -9,8 +9,8 @@ namespace App\Dto;
  *
  * v1 alan adlari burada Ingilizce API anahtarlarina ve DB sutunlarina cevrilir —
  * camelCase <-> snake_case sinirinin tek yeri. Ekran metinleri FE'de Turkce kalir.
- *   urun          -> productCodeId (v2_product_codes.id)
- *   operasyon     -> operationId   (v2_operations.id)
+ *   urun          -> productCodeId (product_codes.id)
+ *   operasyon     -> operationId   (operations.id)
  *   olcumYeri     -> measureLocation
  *   tip           -> type (olcusel / nitel)
  *   nominal/altLimit/ustLimit -> nominal / lowerLimit / upperLimit

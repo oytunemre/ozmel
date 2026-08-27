@@ -12,7 +12,7 @@ use RuntimeException;
 
 /**
  * Yetki + dogrulama + yanit. Is mantigi Repository'de, SQL burada YOK.
- * Malzeme FK ile v2_product_codes'a baglanir (serbest metin degil).
+ * Malzeme FK ile product_codes'a baglanir (serbest metin degil).
  */
 final class PurchaseRequestController
 {

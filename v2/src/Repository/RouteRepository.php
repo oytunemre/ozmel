@@ -8,7 +8,7 @@ use App\Core\Db;
 use PDO;
 
 /**
- * Rota ana kaydi + varyant secenekleri (v2_route_variants). Ana kayit ve varyantlar
+ * Rota ana kaydi + varyant secenekleri (route_variants). Ana kayit ve varyantlar
  * TEK transaction'da yazilir; ara noktada hata olursa ikisi de geri alinir.
  *
  * Tablo adlari yalnizca table() ve variantsTable()'da gecer — baska her yerde
@@ -18,13 +18,13 @@ final class RouteRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_routes';
+        return 'routes';
     }
 
     /** Cocuk tablo adinin tek yeri. */
     private function variantsTable(): string
     {
-        return 'v2_route_variants';
+        return 'route_variants';
     }
 
     protected function columns(): array

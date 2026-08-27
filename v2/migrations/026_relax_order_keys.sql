@@ -9,12 +9,12 @@
 -- altinda FARKLI urunler olabilir, ama AYNI urun iki kez girilemez. Aramalar icin
 -- (tenant_id, no) uzerine ayrica (unique OLMAYAN) indeks eklenir.
 
-ALTER TABLE v2_orders
+ALTER TABLE orders
   DROP INDEX uniq_order_tenant_no,
   ADD UNIQUE KEY uniq_order_tenant_no_product (tenant_id, order_no, product_code_id),
   ADD KEY idx_order_no (tenant_id, order_no);
 
-ALTER TABLE v2_work_orders
+ALTER TABLE work_orders
   DROP INDEX uniq_wo_tenant_no,
   ADD UNIQUE KEY uniq_wo_tenant_no_product (tenant_id, wo_no, product_code_id),
   ADD KEY idx_wo_no (tenant_id, wo_no);

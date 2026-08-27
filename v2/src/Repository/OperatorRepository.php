@@ -8,7 +8,7 @@ use App\Core\Db;
 use PDO;
 
 /**
- * Operator ana kaydi + yetkinlikleri (v2_operator_skills). Ana kayit ve
+ * Operator ana kaydi + yetkinlikleri (operator_skills). Ana kayit ve
  * yetkinlikler TEK transaction'da yazilir; ara noktada hata olursa ikisi de
  * geri alinir (kismi yazim olmaz).
  *
@@ -19,13 +19,13 @@ final class OperatorRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_operators';
+        return 'operators';
     }
 
     /** Cocuk tablo adinin tek yeri. */
     private function skillsTable(): string
     {
-        return 'v2_operator_skills';
+        return 'operator_skills';
     }
 
     protected function columns(): array
@@ -77,7 +77,7 @@ final class OperatorRepository extends BaseRepository
 
     /**
      * Ana kayit + yetkinlikler tek transaction'da.
-     * @param list<int> $skills operasyon id'leri (v2_operations.id)
+     * @param list<int> $skills operasyon id'leri (operations.id)
      */
     public function createWithSkills(array $data, array $skills): int
     {
@@ -92,7 +92,7 @@ final class OperatorRepository extends BaseRepository
      * Ana kayit guncelleme + (istege bagli) yetkinlikleri degistirme, tek transaction.
      * $skills null ise yetkinliklere dokunulmaz (kismi guncelleme).
      *
-     * @param list<int>|null $skills operasyon id'leri (v2_operations.id)
+     * @param list<int>|null $skills operasyon id'leri (operations.id)
      * @throws \RuntimeException NOT_FOUND | STALE (BaseRepository::update'ten)
      */
      public function updateWithSkills(int $id, array $data, ?array $skills, ?string $expectedUpdatedAt): void
@@ -110,7 +110,7 @@ final class OperatorRepository extends BaseRepository
         });
     }
 
-    /** @return list<int> operasyon id'leri (v2_operations.id) */
+    /** @return list<int> operasyon id'leri (operations.id) */
     public function skillsFor(int $operatorId): array
     {
         $stmt = $this->pdo()->prepare(

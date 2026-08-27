@@ -9,7 +9,7 @@ final class OperationRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_operations';
+        return 'operations';
     }
 
     protected function columns(): array

@@ -5,11 +5,11 @@
 -- tabloya donusuyor, diger tablolar id ile referans verecek (Faz 4: routes,
 -- capacity -> work_center_id).
 --
--- Tablo adi v2_work_centers — tum v2 tablolari gibi v2_ onekli (v1'in eski
--- work_centers tablosu id CHAR(16) ile ETL kalintisidir; ona dokunulmaz).
+-- Tablo adi work_centers (sade ad; onceki gecici tablo oneki DB yeniden
+-- adlandirilinca kaldirildi — tum tablolar artik oneksiz).
 -- legacy_id CHAR(16): v1 ETL id'leri bu bicimde; tasima sirasinda eslesme icin.
 
-CREATE TABLE IF NOT EXISTS v2_work_centers (
+CREATE TABLE IF NOT EXISTS work_centers (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id  INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id  CHAR(16)        NULL,

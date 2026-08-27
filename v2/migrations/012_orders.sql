@@ -15,7 +15,7 @@
 -- Ortak sutunlar: id, tenant_id, legacy_id, created_at, updated_at, created_by,
 -- updated_by. legacy_id yalnizca v1 tasima icin; API'den yazilmaz.
 
-CREATE TABLE IF NOT EXISTS v2_orders (
+CREATE TABLE IF NOT EXISTS orders (
   id                      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id               INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id               VARCHAR(64)     NULL,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS v2_orders (
   KEY idx_order_tenant  (tenant_id),
   KEY idx_order_product (product_code_id),
   CONSTRAINT fk_order_tenant  FOREIGN KEY (tenant_id)       REFERENCES tenants          (id),
-  CONSTRAINT fk_order_product FOREIGN KEY (product_code_id) REFERENCES v2_product_codes (id)
+  CONSTRAINT fk_order_product FOREIGN KEY (product_code_id) REFERENCES product_codes (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('012_orders');

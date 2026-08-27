@@ -7,7 +7,7 @@
 -- Ortak sutunlar: id, tenant_id, legacy_id, created_at, updated_at, created_by,
 -- updated_by. legacy_id yalnizca v1 tasima icin; API'den yazilmaz.
 
-CREATE TABLE IF NOT EXISTS v2_audits (
+CREATE TABLE IF NOT EXISTS audits (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id  INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id  VARCHAR(64)     NULL,

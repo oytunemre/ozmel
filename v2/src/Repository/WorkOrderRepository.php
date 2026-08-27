@@ -10,7 +10,7 @@ final class WorkOrderRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_work_orders';
+        return 'work_orders';
     }
 
     protected function columns(): array
@@ -41,7 +41,7 @@ final class WorkOrderRepository extends BaseRepository
     }
 
     /**
-     * Is emrini siler. Uretim kayitlari (v2_production) FK ON DELETE CASCADE ile
+     * Is emrini siler. Uretim kayitlari (production) FK ON DELETE CASCADE ile
      * ayni islemde gider. Tek DELETE + kaskad zaten atomiktir; "yarim kalmaz"
      * garantisini acikca ifade etmek icin transaction'a alinir (siparis silmesiyle ayni desen).
      */

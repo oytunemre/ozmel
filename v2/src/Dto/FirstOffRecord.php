@@ -9,8 +9,8 @@ namespace App\Dto;
  *
  * v1 alan adlari burada Ingilizce API anahtarlarina ve DB sutunlarina cevrilir —
  * camelCase <-> snake_case sinirinin tek yeri. Ekran metinleri FE'de Turkce kalir.
- *   urun         -> productCodeId (v2_product_codes.id)
- *   operasyon    -> operationId   (v2_operations.id)
+ *   urun         -> productCodeId (product_codes.id)
+ *   operasyon    -> operationId   (operations.id)
  *   tarih        -> date
  *   vardiya      -> shift
  *   operator     -> operatorName (ISIM metni, FK degil)
@@ -18,8 +18,8 @@ namespace App\Dto;
  *   numuneAdedi  -> sampleCount
  *   kontrolSaati -> checkTime
  *   genelKarar   -> overallResult
- *   degerler{}   -> measurements (cocuk: v2_first_off_measurements; {pointId,value,result})
- *   gerekce[]    -> reasons      (cocuk: v2_first_off_reasons; string dizisi)
+ *   degerler{}   -> measurements (cocuk: first_off_measurements; {pointId,value,result})
+ *   gerekce[]    -> reasons      (cocuk: first_off_reasons; string dizisi)
  */
 final class FirstOffRecord
 {

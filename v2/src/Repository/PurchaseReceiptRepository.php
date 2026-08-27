@@ -9,7 +9,7 @@ final class PurchaseReceiptRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_purchase_receipts';
+        return 'purchase_receipts';
     }
 
     protected function columns(): array

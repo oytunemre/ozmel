@@ -3,7 +3,7 @@
 -- v1'de urunAgaclari OZ-REFERANSLI bir agacti: parentId -> urunAgaclari.id.
 -- Dugumun urunu `kod` (serbest metin -> kodTanimlari.kod) ile, kullandigi
 -- hammadde `malzemeKodu` (yine serbest metin) ile gosteriliyordu. Burada ikisi de
--- v2_product_codes'a FK (id) ile baglanir — serbest metin degil.
+-- product_codes'a FK (id) ile baglanir — serbest metin degil.
 --   kod          -> product_code_id  (dugumun kendi urunu)
 --   malzemeKodu  -> material_code_id  (kullanilan hammadde; orada type='Hammadde')
 --
@@ -15,7 +15,7 @@
 -- Ortak sutunlar: id, tenant_id, legacy_id, created_at, updated_at, created_by,
 -- updated_by. legacy_id yalnizca v1 tasima icin; API'den yazilmaz.
 
-CREATE TABLE IF NOT EXISTS v2_product_trees (
+CREATE TABLE IF NOT EXISTS product_trees (
   id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id             INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id             VARCHAR(64)     NULL,
@@ -48,11 +48,11 @@ CREATE TABLE IF NOT EXISTS v2_product_trees (
   KEY idx_ptree_material (material_code_id),
   CONSTRAINT fk_ptree_tenant   FOREIGN KEY (tenant_id)        REFERENCES tenants          (id),
   -- Alt dugumler ust silinince gider.
-  CONSTRAINT fk_ptree_parent   FOREIGN KEY (parent_id)        REFERENCES v2_product_trees (id) ON DELETE CASCADE,
+  CONSTRAINT fk_ptree_parent   FOREIGN KEY (parent_id)        REFERENCES product_trees (id) ON DELETE CASCADE,
   -- Kullanimda olan kod tanimi silinemez (RESTRICT — varsayilan).
-  CONSTRAINT fk_ptree_product  FOREIGN KEY (product_code_id)  REFERENCES v2_product_codes (id),
+  CONSTRAINT fk_ptree_product  FOREIGN KEY (product_code_id)  REFERENCES product_codes (id),
   -- Hammadde kodu silinirse baglanti kopar (NULL).
-  CONSTRAINT fk_ptree_material FOREIGN KEY (material_code_id) REFERENCES v2_product_codes (id) ON DELETE SET NULL
+  CONSTRAINT fk_ptree_material FOREIGN KEY (material_code_id) REFERENCES product_codes (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('008_product_trees');

@@ -13,8 +13,8 @@ namespace App\Dto;
  *   adSoyad             -> fullName / full_name
  *   sicilNo             -> badgeNo  / badge_no
  *   durum (Aktif/Pasif) -> isActive / is_active (bool)
- *   yetkinOperasyonlar  -> skills   (cocuk tablo: v2_operator_skills; operasyon
- *                                    ID dizisi -> v2_operations.id)
+ *   yetkinOperasyonlar  -> skills   (cocuk tablo: operator_skills; operasyon
+ *                                    ID dizisi -> operations.id)
  */
 final class Operator
 {

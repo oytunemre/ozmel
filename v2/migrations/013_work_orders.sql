@@ -18,7 +18,7 @@
 -- Ortak sutunlar: id, tenant_id, legacy_id, created_at, updated_at, created_by,
 -- updated_by. legacy_id yalnizca v1 tasima icin; API'den yazilmaz.
 
-CREATE TABLE IF NOT EXISTS v2_work_orders (
+CREATE TABLE IF NOT EXISTS work_orders (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id       INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id       VARCHAR(64)     NULL,
@@ -45,10 +45,10 @@ CREATE TABLE IF NOT EXISTS v2_work_orders (
   KEY idx_wo_wc        (work_center_id),
   CONSTRAINT fk_wo_tenant    FOREIGN KEY (tenant_id)       REFERENCES tenants          (id),
   -- Siparis silinince is emirleri de gider.
-  CONSTRAINT fk_wo_order     FOREIGN KEY (order_id)        REFERENCES v2_orders        (id) ON DELETE CASCADE,
-  CONSTRAINT fk_wo_product   FOREIGN KEY (product_code_id) REFERENCES v2_product_codes (id),
-  CONSTRAINT fk_wo_operation FOREIGN KEY (operation_id)    REFERENCES v2_operations    (id),
-  CONSTRAINT fk_wo_wc        FOREIGN KEY (work_center_id)  REFERENCES v2_work_centers  (id)
+  CONSTRAINT fk_wo_order     FOREIGN KEY (order_id)        REFERENCES orders        (id) ON DELETE CASCADE,
+  CONSTRAINT fk_wo_product   FOREIGN KEY (product_code_id) REFERENCES product_codes (id),
+  CONSTRAINT fk_wo_operation FOREIGN KEY (operation_id)    REFERENCES operations    (id),
+  CONSTRAINT fk_wo_wc        FOREIGN KEY (work_center_id)  REFERENCES work_centers  (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('013_work_orders');

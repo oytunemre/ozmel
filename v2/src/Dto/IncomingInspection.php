@@ -10,9 +10,9 @@ namespace App\Dto;
  * v1 alan adlari burada Ingilizce API anahtarlarina ve DB sutunlarina cevrilir —
  * camelCase <-> snake_case sinirinin tek yeri. Ekran metinleri FE'de Turkce kalir.
  *   satinalmaGirisIdleri -> legacyPurchaseReceiptId (ETL eslesme icin CHAR(16) metin, korunur)
- *                        -> purchaseReceiptId (v2_purchase_receipts.id FK; 025 ile eklendi)
+ *                        -> purchaseReceiptId (purchase_receipts.id FK; 025 ile eklendi)
  *   tedarikci            -> supplier
- *   malzeme              -> materialCodeId (v2_product_codes.id)
+ *   malzeme              -> materialCodeId (product_codes.id)
  *   cizimNo              -> drawingNo
  *   gozlemNedeni         -> reason
  *   malzemeGelisTarihi   -> arrivalDate

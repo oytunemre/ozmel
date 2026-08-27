@@ -1,10 +1,10 @@
 -- 027_users_admin.sql — Kullanici Yonetimi: paylasilan v1 `users` tablosuna hesap
--- yonetimi icin ek sutunlar. YENI tablo (v2_users) KURULMAZ.
+-- yonetimi icin ek sutunlar. AYRI bir kullanici tablosu KURULMAZ.
 --
 -- Karar: v1 ile TEK kimlik kaynagi paylasilir (users + sessions; login.php ortak).
--- v1 cutover'a kadar canli oldugundan ayri bir v2_users kimligi ikiye boler
+-- v1 cutover'a kadar canli oldugundan ayri bir kullanici tablosu kimligi ikiye boler
 -- (bir yerde acilan hesap digerinde yok, sifreler ayrisir) — overlap doneminin en
--- buyuk riski budur. Bu yuzden paylasim korunur; temiz v2_users'a gecis, v1
+-- buyuk riski budur. Bu yuzden paylasim korunur; ayri temiz bir tabloya gecis, v1
 -- kapandiginda AYRI bir adim olarak yapilir.
 --
 -- Sutunlar additive: mevcut satirlar aktif sayilir. v1 login.php ek sutunlardan

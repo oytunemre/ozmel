@@ -9,7 +9,7 @@ final class WorkCenterRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_work_centers';
+        return 'work_centers';
     }
 
     protected function columns(): array

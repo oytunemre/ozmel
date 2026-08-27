@@ -2,8 +2,8 @@
 --
 -- v1'de her kayit {urun, isMerkezi, kapasite, dakika} idi; urun/isMerkezi SERBEST
 -- METIN olarak tekrarlaniyordu. Burada ikisi de id ile FK:
---   urun      -> product_code_id (v2_product_codes)
---   isMerkezi -> work_center_id  (v2_work_centers)
+--   urun      -> product_code_id (product_codes)
+--   isMerkezi -> work_center_id  (work_centers)
 --   kapasite  -> capacity_per_shift (vardiya basi)
 --   dakika    -> minutes (opsiyonel)
 --
@@ -13,7 +13,7 @@
 -- Ortak sutunlar: id, tenant_id, legacy_id, created_at, updated_at, created_by,
 -- updated_by. legacy_id yalnizca v1 tasima icin; API'den yazilmaz.
 
-CREATE TABLE IF NOT EXISTS v2_capacities (
+CREATE TABLE IF NOT EXISTS capacities (
   id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id          INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id          VARCHAR(64)     NULL,
@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS v2_capacities (
   KEY idx_cap_product (product_code_id),
   KEY idx_cap_wc      (work_center_id),
   CONSTRAINT fk_cap_tenant  FOREIGN KEY (tenant_id)       REFERENCES tenants          (id),
-  CONSTRAINT fk_cap_product FOREIGN KEY (product_code_id) REFERENCES v2_product_codes (id),
-  CONSTRAINT fk_cap_wc      FOREIGN KEY (work_center_id)  REFERENCES v2_work_centers  (id)
+  CONSTRAINT fk_cap_product FOREIGN KEY (product_code_id) REFERENCES product_codes (id),
+  CONSTRAINT fk_cap_wc      FOREIGN KEY (work_center_id)  REFERENCES work_centers  (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('011_capacities');

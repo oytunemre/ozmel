@@ -14,7 +14,7 @@
 -- Ortak sutunlar: id, tenant_id, legacy_id, created_at, updated_at, created_by,
 -- updated_by. legacy_id yalnizca v1 tasima icin.
 
-CREATE TABLE IF NOT EXISTS v2_hourly_records (
+CREATE TABLE IF NOT EXISTS hourly_records (
   id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id        INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id        VARCHAR(64)     NULL,
@@ -36,12 +36,12 @@ CREATE TABLE IF NOT EXISTS v2_hourly_records (
   KEY idx_hr_product   (product_code_id),
   KEY idx_hr_operation (operation_id),
   CONSTRAINT fk_hr_tenant    FOREIGN KEY (tenant_id)       REFERENCES tenants          (id),
-  CONSTRAINT fk_hr_product   FOREIGN KEY (product_code_id) REFERENCES v2_product_codes (id),
-  CONSTRAINT fk_hr_operation FOREIGN KEY (operation_id)    REFERENCES v2_operations    (id)
+  CONSTRAINT fk_hr_product   FOREIGN KEY (product_code_id) REFERENCES product_codes (id),
+  CONSTRAINT fk_hr_operation FOREIGN KEY (operation_id)    REFERENCES operations    (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Cocuk: olcumler. Bir nokta icin degisken sayida deger; sequence sirayi korur.
-CREATE TABLE IF NOT EXISTS v2_hourly_measurements (
+CREATE TABLE IF NOT EXISTS hourly_measurements (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id  INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id  VARCHAR(64)     NULL,
@@ -61,8 +61,8 @@ CREATE TABLE IF NOT EXISTS v2_hourly_measurements (
   KEY idx_hm_record (record_id),
   KEY idx_hm_point  (point_id),
   CONSTRAINT fk_hm_tenant FOREIGN KEY (tenant_id) REFERENCES tenants            (id),
-  CONSTRAINT fk_hm_record FOREIGN KEY (record_id) REFERENCES v2_hourly_records (id) ON DELETE CASCADE,
-  CONSTRAINT fk_hm_point  FOREIGN KEY (point_id)  REFERENCES v2_hourly_points  (id)
+  CONSTRAINT fk_hm_record FOREIGN KEY (record_id) REFERENCES hourly_records (id) ON DELETE CASCADE,
+  CONSTRAINT fk_hm_point  FOREIGN KEY (point_id)  REFERENCES hourly_points  (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('019_hourly_records');

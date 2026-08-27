@@ -10,7 +10,7 @@ use PDO;
 /**
  * Satis Raporlari — SALT OKUNUR toplu sorgular. Tenant filtresi her sorguda elle.
  *
- * Kaynak: v2_orders + bagli v2_production.actual_quantity (order -> work_orders ->
+ * Kaynak: orders + bagli production.actual_quantity (order -> work_orders ->
  * production). Siparis bazinda URETILEN miktar toplanir; aya/urune/musteriye gruplanir.
  *
  * Not: mockup "sevkiyat" der ama veride sevkiyat/teslimat kaydi YOK. Bu rapor
@@ -64,9 +64,9 @@ final class SalesReportRepository
     ): array {
         [$where, $params] = $this->filter($from, $to, $customer);
         $sql = "SELECT $selectExpr, COALESCE(SUM(p.actual_quantity),0) AS quantity
-                  FROM v2_orders o
-                  JOIN v2_work_orders wo ON wo.order_id = o.id AND wo.tenant_id = o.tenant_id
-                  JOIN v2_production p ON p.work_order_id = wo.id AND p.tenant_id = o.tenant_id
+                  FROM orders o
+                  JOIN work_orders wo ON wo.order_id = o.id AND wo.tenant_id = o.tenant_id
+                  JOIN production p ON p.work_order_id = wo.id AND p.tenant_id = o.tenant_id
                  WHERE $where $extraWhere
               GROUP BY $groupBy
                  $orderBy";
@@ -80,10 +80,10 @@ final class SalesReportRepository
     {
         [$where, $params] = $this->filter($from, $to, $customer);
         $sql = "SELECT pc.code AS code, pc.name AS name, COALESCE(SUM(p.actual_quantity),0) AS quantity
-                  FROM v2_orders o
-                  JOIN v2_work_orders wo ON wo.order_id = o.id AND wo.tenant_id = o.tenant_id
-                  JOIN v2_production p ON p.work_order_id = wo.id AND p.tenant_id = o.tenant_id
-                  JOIN v2_product_codes pc ON pc.id = o.product_code_id AND pc.tenant_id = o.tenant_id
+                  FROM orders o
+                  JOIN work_orders wo ON wo.order_id = o.id AND wo.tenant_id = o.tenant_id
+                  JOIN production p ON p.work_order_id = wo.id AND p.tenant_id = o.tenant_id
+                  JOIN product_codes pc ON pc.id = o.product_code_id AND pc.tenant_id = o.tenant_id
                  WHERE $where
               GROUP BY pc.id, pc.code, pc.name
               ORDER BY quantity DESC";

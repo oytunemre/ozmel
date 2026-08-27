@@ -10,7 +10,7 @@ final class OrderRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_orders';
+        return 'orders';
     }
 
     protected function columns(): array
@@ -41,8 +41,8 @@ final class OrderRepository extends BaseRepository
     }
 
     /**
-     * Siparisi siler. Is emirleri (v2_work_orders) ve onlarin uretim kayitlari
-     * (v2_production) FK ON DELETE CASCADE zinciriyle ayni islemde gider; makine
+     * Siparisi siler. Is emirleri (work_orders) ve onlarin uretim kayitlari
+     * (production) FK ON DELETE CASCADE zinciriyle ayni islemde gider; makine
      * planlarinin work_order_id'si ise SET NULL olur.
      *
      * Tek DELETE + InnoDB kaskadi zaten atomiktir; yine de transaction'a alarak

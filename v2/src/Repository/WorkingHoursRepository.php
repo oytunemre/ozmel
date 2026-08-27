@@ -13,7 +13,7 @@ final class WorkingHoursRepository extends SingletonRepository
 {
     protected function table(): string
     {
-        return 'v2_working_hours';
+        return 'working_hours';
     }
 
     protected function columns(): array

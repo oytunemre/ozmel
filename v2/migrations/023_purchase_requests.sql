@@ -2,8 +2,8 @@
 -- ~29 kayit)
 --
 -- Ekip karari: malzeme artik LISTEDEN secilecek, serbest metin degil ->
--- material_code_id FK (v2_product_codes) NOT NULL. Malzeme tanimi AYRI SUTUN
--- TUTULMAZ; v2_product_codes.name'den JOIN ile gelir (tek kaynak, drift yok).
+-- material_code_id FK (product_codes) NOT NULL. Malzeme tanimi AYRI SUTUN
+-- TUTULMAZ; product_codes.name'den JOIN ile gelir (tek kaynak, drift yok).
 --
 -- NOT: gercek veride 14 malzemenin 10'u kod yerine aciklama tasiyor; Melih
 -- duzeltiyor, ETL oncesi temizlenmis olacak (bu yuzden NOT NULL guvenli).
@@ -14,7 +14,7 @@
 -- Ortak sutunlar: id, tenant_id, legacy_id, created_at, updated_at, created_by,
 -- updated_by. legacy_id yalnizca v1 tasima icin.
 
-CREATE TABLE IF NOT EXISTS v2_purchase_requests (
+CREATE TABLE IF NOT EXISTS purchase_requests (
   id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id        INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id        VARCHAR(64)     NULL,
@@ -38,10 +38,10 @@ CREATE TABLE IF NOT EXISTS v2_purchase_requests (
   KEY idx_preq_product  (product_code_id),
   KEY idx_preq_order    (order_id),
   CONSTRAINT fk_preq_tenant   FOREIGN KEY (tenant_id)        REFERENCES tenants          (id),
-  CONSTRAINT fk_preq_material  FOREIGN KEY (material_code_id) REFERENCES v2_product_codes (id),
-  CONSTRAINT fk_preq_product   FOREIGN KEY (product_code_id)  REFERENCES v2_product_codes (id),
+  CONSTRAINT fk_preq_material  FOREIGN KEY (material_code_id) REFERENCES product_codes (id),
+  CONSTRAINT fk_preq_product   FOREIGN KEY (product_code_id)  REFERENCES product_codes (id),
   -- Bagli siparis silinirse istek kalir, bag kopar.
-  CONSTRAINT fk_preq_order     FOREIGN KEY (order_id)         REFERENCES v2_orders        (id) ON DELETE SET NULL
+  CONSTRAINT fk_preq_order     FOREIGN KEY (order_id)         REFERENCES orders        (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('023_purchase_requests');

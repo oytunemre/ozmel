@@ -57,6 +57,9 @@ Yanit zarfi her zaman ayni:
 - Guncellemede istemci `updatedAt` gonderir; degismisse 409 doner.
 - Kimlik DB'de uretilir. `uid()` yok.
 - Acilista veri duzeltme kodu calismaz; duzeltmeler migration'dir.
+- Tablo adlari sade, onek YOK (or. `work_centers`, `orders`, `first_off_records`).
+  Erken gelistirmede kullanilan gecici tablo oneki DB yeniden adlandirilinca
+  kaldirildi; `Repository::table()` degerleri de sade addir.
 
 ## ETL (v1 -> v2 tasima)
 

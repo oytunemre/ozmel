@@ -8,7 +8,7 @@ namespace App\Dto;
  * Sutun adi degisirse tek yer degisir, istemci etkilenmez.
  *
  * v1 satinalmaGirisleri: malzemeyi kendisi tutmazdi (istek uzerinden gelir).
- *   (istek)  -> purchaseRequestId (v2_purchase_requests.id)
+ *   (istek)  -> purchaseRequestId (purchase_requests.id)
  *   tarih    -> date
  *   miktar   -> quantity
  *   not      -> note

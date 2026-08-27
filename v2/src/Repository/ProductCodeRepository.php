@@ -9,7 +9,7 @@ final class ProductCodeRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_product_codes';
+        return 'product_codes';
     }
 
     protected function columns(): array

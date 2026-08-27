@@ -10,8 +10,8 @@ namespace App\Dto;
  * v1 alan adlari burada Ingilizce API anahtarlarina ve DB sutunlarina cevrilir —
  * camelCase <-> snake_case sinirinin tek yeri. Ekran metinleri FE'de Turkce kalir.
  *   parentId               -> parentId / parent_id (oz-referans)
- *   kod                    -> productCodeId  (v2_product_codes.id)
- *   malzemeKodu            -> materialCodeId  (v2_product_codes.id, Hammadde)
+ *   kod                    -> productCodeId  (product_codes.id)
+ *   malzemeKodu            -> materialCodeId  (product_codes.id, Hammadde)
  *   malzemeAciklama        -> materialDescription
  *   aciklama               -> description
  *   revNo / revTarihi      -> revision / revisionDate

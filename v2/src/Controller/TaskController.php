@@ -12,7 +12,7 @@ use RuntimeException;
 
 /**
  * Yetki + dogrulama + yanit. Is mantigi Repository'de, SQL burada YOK.
- * Sorumlular v2_task_people'a FK (paylasimli dizin); atama bagi opsiyonel.
+ * Sorumlular task_people'a FK (paylasimli dizin); atama bagi opsiyonel.
  */
 final class TaskController
 {

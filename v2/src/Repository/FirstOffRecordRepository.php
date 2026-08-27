@@ -18,17 +18,17 @@ final class FirstOffRecordRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_first_off_records';
+        return 'first_off_records';
     }
 
     private function measurementsTable(): string
     {
-        return 'v2_first_off_measurements';
+        return 'first_off_measurements';
     }
 
     private function reasonsTable(): string
     {
-        return 'v2_first_off_reasons';
+        return 'first_off_reasons';
     }
 
     protected function columns(): array

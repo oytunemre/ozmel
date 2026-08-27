@@ -9,7 +9,7 @@ final class AuditRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_audits';
+        return 'audits';
     }
 
     protected function columns(): array

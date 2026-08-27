@@ -9,7 +9,7 @@
 -- updated_by. legacy_id yalnizca v1 tasima icin; API'den yazilmaz (Repository
 -- whitelist'inde yoktur).
 
-CREATE TABLE IF NOT EXISTS v2_operations (
+CREATE TABLE IF NOT EXISTS operations (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id  INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id  VARCHAR(64)     NULL,

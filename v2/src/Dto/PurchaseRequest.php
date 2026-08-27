@@ -8,15 +8,15 @@ namespace App\Dto;
  * Sutun adi degisirse tek yer degisir, istemci etkilenmez.
  *
  * v1 satinalmaIstekleri alan adlari -> Ingilizce API/DB. Malzeme artik FK
- * (materialCodeId); tanim ayri tutulmaz, v2_product_codes.name'den JOIN ile gelir.
- *   malzeme       -> materialCodeId (v2_product_codes.id, NOT NULL)
- *   urun          -> productCodeId  (v2_product_codes.id, opsiyonel)
+ * (materialCodeId); tanim ayri tutulmaz, product_codes.name'den JOIN ile gelir.
+ *   malzeme       -> materialCodeId (product_codes.id, NOT NULL)
+ *   urun          -> productCodeId  (product_codes.id, opsiyonel)
  *   miktar        -> quantity
  *   birim         -> unit
  *   tedarikci     -> supplier
  *   istekTarihi   -> requestDate
  *   beklenenTarih -> expectedDate
- *   siparis       -> orderId (v2_orders.id, opsiyonel)
+ *   siparis       -> orderId (orders.id, opsiyonel)
  *   not           -> note
  */
 final class PurchaseRequest

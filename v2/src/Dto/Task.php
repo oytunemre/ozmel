@@ -11,8 +11,8 @@ namespace App\Dto;
  *   sira              -> sequence
  *   gorevTanimi       -> description
  *   departman         -> department
- *   anaSorumlu        -> primaryAssigneeId   (isim -> v2_task_people.id, ETL'de eslenir)
- *   yardimci          -> secondaryAssigneeId (isim -> v2_task_people.id)
+ *   anaSorumlu        -> primaryAssigneeId   (isim -> task_people.id, ETL'de eslenir)
+ *   yardimci          -> secondaryAssigneeId (isim -> task_people.id)
  *   oncelik           -> priority
  *   termin            -> dueDate
  *   durum             -> status

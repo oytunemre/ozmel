@@ -13,7 +13,7 @@ final class ProductTreeRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_product_trees';
+        return 'product_trees';
     }
 
     protected function columns(): array

@@ -12,7 +12,7 @@
 -- Ortak sutunlar: id, tenant_id, legacy_id, created_at, updated_at, created_by,
 -- updated_by. legacy_id yalnizca v1 tasima icin; API'den yazilmaz.
 
-CREATE TABLE IF NOT EXISTS v2_working_hours (
+CREATE TABLE IF NOT EXISTS working_hours (
   id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id             INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id             VARCHAR(64)     NULL,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS v2_working_hours (
 -- Konfig HEP var olsun: her mevcut firma icin makul bir varsayilan vardiya tohumlanir.
 -- Boylece GET api/working-hours asla bos donmez ve controller'da "yoksa olustur" olmaz.
 -- INSERT IGNORE + UNIQUE(tenant_id): migration yeniden calissa da cift satir olusmaz.
-INSERT IGNORE INTO v2_working_hours
+INSERT IGNORE INTO working_hours
   (tenant_id, morning_start, morning_break_start, morning_break_end, morning_end,
    afternoon_start, afternoon_break_start, afternoon_break_end, afternoon_end)
 SELECT id, '08:00:00', '10:00:00', '10:15:00', '12:00:00',

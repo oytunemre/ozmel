@@ -1,4 +1,4 @@
-// Görevler (Görev Takibi) — v2 modülü. Sorumlular v2_task_people'a FK.
+// Görevler (Görev Takibi) — v2 modülü. Sorumlular task_people'a FK.
 
 import { resource } from '../core/api.js';
 import { DataTable } from '../core/table.js';

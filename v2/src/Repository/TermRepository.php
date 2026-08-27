@@ -9,7 +9,7 @@ final class TermRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_terms';
+        return 'terms';
     }
 
     protected function columns(): array

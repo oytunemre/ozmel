@@ -2,14 +2,14 @@
 -- ~19 kayit)
 --
 -- v1'de bu tablo malzeme kodunu KENDISI TUTMAZDI; istege bagliydi. O desen korunur:
--- malzeme bilgisi purchase_request_id -> v2_purchase_requests uzerinden JOIN ile
+-- malzeme bilgisi purchase_request_id -> purchase_requests uzerinden JOIN ile
 -- gelir (tek kaynak, drift yok). Giris bir istege baglidir; istek silinince
 -- girisleri de gider (ON DELETE CASCADE).
 --
 -- Ortak sutunlar: id, tenant_id, legacy_id, created_at, updated_at, created_by,
 -- updated_by. legacy_id yalnizca v1 tasima icin.
 
-CREATE TABLE IF NOT EXISTS v2_purchase_receipts (
+CREATE TABLE IF NOT EXISTS purchase_receipts (
   id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id           INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id           VARCHAR(64)     NULL,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS v2_purchase_receipts (
   KEY idx_prec_request (purchase_request_id),
   CONSTRAINT fk_prec_tenant  FOREIGN KEY (tenant_id)           REFERENCES tenants               (id),
   -- Istek silinince girisleri de gider.
-  CONSTRAINT fk_prec_request FOREIGN KEY (purchase_request_id) REFERENCES v2_purchase_requests (id) ON DELETE CASCADE
+  CONSTRAINT fk_prec_request FOREIGN KEY (purchase_request_id) REFERENCES purchase_requests (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('024_purchase_receipts');

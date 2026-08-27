@@ -9,15 +9,15 @@ namespace App\Dto;
  *
  * v1 alan adlari burada Ingilizce API anahtarlarina ve DB sutunlarina cevrilir —
  * camelCase <-> snake_case sinirinin tek yeri. Ekran metinleri FE'de Turkce kalir.
- *   urun        -> productCodeId (v2_product_codes.id)
- *   operasyon   -> operationId   (v2_operations.id)
+ *   urun        -> productCodeId (product_codes.id)
+ *   operasyon   -> operationId   (operations.id)
  *   tarih       -> date
  *   vardiya     -> shift
  *   saat        -> hour
  *   personel    -> personnelName (isim, FK degil)
  *   makina      -> machineName   (isim, FK degil)
  *   uretimAdedi -> productionCount
- *   degerler{}  -> measurements (cocuk: v2_hourly_measurements)
+ *   degerler{}  -> measurements (cocuk: hourly_measurements)
  *
  * measurements sekli: [{pointId, values:[deger,...]}]. Bir nokta icin degisken
  * sayida deger; DB'de her deger ayri satir (sequence = dizi indeksi).

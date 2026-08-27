@@ -9,7 +9,7 @@ final class HourlyPointRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_hourly_points';
+        return 'hourly_points';
     }
 
     protected function columns(): array

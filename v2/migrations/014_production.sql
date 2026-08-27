@@ -14,7 +14,7 @@
 -- Ortak sutunlar: id, tenant_id, legacy_id, created_at, updated_at, created_by,
 -- updated_by. legacy_id yalnizca v1 tasima icin; API'den yazilmaz.
 
-CREATE TABLE IF NOT EXISTS v2_production (
+CREATE TABLE IF NOT EXISTS production (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id       INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id       VARCHAR(64)     NULL,
@@ -39,9 +39,9 @@ CREATE TABLE IF NOT EXISTS v2_production (
   KEY idx_prod_operator  (operator_id),
   CONSTRAINT fk_prod_tenant    FOREIGN KEY (tenant_id)     REFERENCES tenants         (id),
   -- Is emri silinince uretim kayitlari da gider.
-  CONSTRAINT fk_prod_workorder FOREIGN KEY (work_order_id) REFERENCES v2_work_orders (id) ON DELETE CASCADE,
+  CONSTRAINT fk_prod_workorder FOREIGN KEY (work_order_id) REFERENCES work_orders (id) ON DELETE CASCADE,
   -- Operator silinirse kayit kalir, baglanti kopar.
-  CONSTRAINT fk_prod_operator  FOREIGN KEY (operator_id)   REFERENCES v2_operators    (id) ON DELETE SET NULL
+  CONSTRAINT fk_prod_operator  FOREIGN KEY (operator_id)   REFERENCES operators    (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('014_production');

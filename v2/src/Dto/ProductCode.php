@@ -16,7 +16,7 @@ namespace App\Dto;
  *   cizimNo          -> drawingNo    / drawing_no
  *   revizyon(Tarihi) -> revision / revisionDate
  *   tedarikciler     -> suppliers
- *   cikanOperasyon   -> outgoingOperationId (v1'de operasyon ADI; artik v2_operations.id)
+ *   cikanOperasyon   -> outgoingOperationId (v1'de operasyon ADI; artik operations.id)
  *   anaUrun          -> parentProductCode
  *
  * v1'de disCap/icCap/... "float veya '' " karisik tipti; API'de sayi ya da null.

@@ -9,7 +9,7 @@ final class TaskPersonRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_task_people';
+        return 'task_people';
     }
 
     protected function columns(): array

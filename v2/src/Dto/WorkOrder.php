@@ -10,10 +10,10 @@ namespace App\Dto;
  * v1 alan adlari burada Ingilizce API anahtarlarina ve DB sutunlarina cevrilir —
  * camelCase <-> snake_case sinirinin tek yeri. Ekran metinleri FE'de Turkce kalir.
  *   isEmriNo/woNo   -> woNo / wo_no
- *   orderId         -> orderId (v2_orders.id)
- *   urun            -> productCodeId (v2_product_codes.id)
- *   operasyon       -> operationId  (v2_operations.id)
- *   isMerkezi       -> workCenterId (v2_work_centers.id)
+ *   orderId         -> orderId (orders.id)
+ *   urun            -> productCodeId (product_codes.id)
+ *   operasyon       -> operationId  (operations.id)
+ *   isMerkezi       -> workCenterId (work_centers.id)
  *   sira            -> sequence
  *   hedefMiktar     -> targetQuantity
  *   durum           -> status

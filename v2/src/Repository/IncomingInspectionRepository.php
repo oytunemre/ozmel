@@ -22,17 +22,17 @@ final class IncomingInspectionRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_incoming_inspections';
+        return 'incoming_inspections';
     }
 
     private function characteristicsTable(): string
     {
-        return 'v2_incoming_characteristics';
+        return 'incoming_characteristics';
     }
 
     private function valuesTable(): string
     {
-        return 'v2_incoming_values';
+        return 'incoming_values';
     }
 
     protected function columns(): array

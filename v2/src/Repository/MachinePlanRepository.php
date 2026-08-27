@@ -9,7 +9,7 @@ final class MachinePlanRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_machine_plans';
+        return 'machine_plans';
     }
 
     protected function columns(): array

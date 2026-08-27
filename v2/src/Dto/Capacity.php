@@ -9,8 +9,8 @@ namespace App\Dto;
  *
  * v1 alan adlari burada Ingilizce API anahtarlarina ve DB sutunlarina cevrilir —
  * camelCase <-> snake_case sinirinin tek yeri.
- *   urun      -> productCodeId    (v2_product_codes.id)
- *   isMerkezi -> workCenterId     (v2_work_centers.id)
+ *   urun      -> productCodeId    (product_codes.id)
+ *   isMerkezi -> workCenterId     (work_centers.id)
  *   kapasite  -> capacityPerShift (vardiya basi)
  *   dakika    -> minutes (opsiyonel)
  */

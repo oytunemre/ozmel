@@ -2,7 +2,7 @@
 --
 -- v1'de her kayit {id, adSoyad, sicilNo, durum, yetkinOperasyonlar[]} idi;
 -- yetkinOperasyonlar bir SERBEST METIN dizisiydi (operasyon adlari). Burada
--- operatorun kendisi ana tabloya, yetkinlikler v2_operator_skills cocuk
+-- operatorun kendisi ana tabloya, yetkinlikler operator_skills cocuk
 -- tablosuna ayrilir — bir satir bir yetkinlik. production.operator ileride
 -- bu tabloya id ile referans verecek.
 --
@@ -10,7 +10,7 @@
 -- updated_at, created_by, updated_by. legacy_id yalnizca v1 tasima icin;
 -- API'den yazilmaz (Repository whitelist'inde yoktur).
 
-CREATE TABLE IF NOT EXISTS v2_operators (
+CREATE TABLE IF NOT EXISTS operators (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id  INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id  VARCHAR(64)     NULL,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS v2_operators (
   CONSTRAINT fk_op_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS v2_operator_skills (
+CREATE TABLE IF NOT EXISTS operator_skills (
   id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id      INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id      VARCHAR(64)     NULL,
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS v2_operator_skills (
   KEY idx_opskill_operator (operator_id),
   CONSTRAINT fk_opskill_tenant   FOREIGN KEY (tenant_id)   REFERENCES tenants     (id),
   -- Operator silinince yetkinlikleri de gider.
-  CONSTRAINT fk_opskill_operator FOREIGN KEY (operator_id) REFERENCES v2_operators (id) ON DELETE CASCADE
+  CONSTRAINT fk_opskill_operator FOREIGN KEY (operator_id) REFERENCES operators (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('002_operators');

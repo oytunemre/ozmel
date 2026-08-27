@@ -9,7 +9,7 @@ final class CapacityRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_capacities';
+        return 'capacities';
     }
 
     protected function columns(): array

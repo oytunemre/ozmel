@@ -9,7 +9,7 @@ final class TaskRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_tasks';
+        return 'tasks';
     }
 
     protected function columns(): array

@@ -13,7 +13,7 @@ final class ProductionRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_production';
+        return 'production';
     }
 
     protected function columns(): array

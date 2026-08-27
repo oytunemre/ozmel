@@ -9,13 +9,13 @@ namespace App\Dto;
  *
  * v1 alan adlari burada Ingilizce API anahtarlarina ve DB sutunlarina cevrilir —
  * camelCase <-> snake_case sinirinin tek yeri. Ekran metinleri FE'de Turkce kalir.
- *   urun               -> productCodeId (v2_product_codes.id)
- *   operasyon          -> operationId   (v2_operations.id)
- *   isMerkezi          -> workCenterId  (v2_work_centers.id)
+ *   urun               -> productCodeId (product_codes.id)
+ *   operasyon          -> operationId   (operations.id)
+ *   isMerkezi          -> workCenterId  (work_centers.id)
  *   sira               -> sequence
  *   aktif              -> isActive
  *   varyantEtiketi     -> variantLabel
- *   varyantSecenekleri -> variants (cocuk tablo: v2_route_variants; string dizisi)
+ *   varyantSecenekleri -> variants (cocuk tablo: route_variants; string dizisi)
  */
 final class Route
 {

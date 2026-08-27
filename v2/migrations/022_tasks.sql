@@ -6,14 +6,14 @@
 -- ediyordu; burada primary/secondary_assignee_id ile FK. ETL'de isimden id'ye
 -- eslenecek; eslesmeyen isim cikabilecegi icin FK'ler NULL (ON DELETE SET NULL).
 --
--- v2_task_people ONCE gelir — v2_tasks ona FK verir.
+-- task_people ONCE gelir — tasks ona FK verir.
 --
 -- completion_ratio: v1'de 0–1 arasi KESIR (1 = %100), yuzde degil -> DECIMAL(5,4).
 --
 -- Ortak sutunlar (iki tabloda): id, tenant_id, legacy_id, created_at, updated_at,
 -- created_by, updated_by. legacy_id yalnizca v1 tasima icin.
 
-CREATE TABLE IF NOT EXISTS v2_task_people (
+CREATE TABLE IF NOT EXISTS task_people (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id  INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id  VARCHAR(64)     NULL,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS v2_task_people (
   CONSTRAINT fk_tperson_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS v2_tasks (
+CREATE TABLE IF NOT EXISTS tasks (
   id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id             INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id             VARCHAR(64)     NULL,
@@ -58,8 +58,8 @@ CREATE TABLE IF NOT EXISTS v2_tasks (
   KEY idx_task_secondary (secondary_assignee_id),
   CONSTRAINT fk_task_tenant    FOREIGN KEY (tenant_id)             REFERENCES tenants        (id),
   -- Kisi silinirse gorev kalir, atama bagi kopar (isim eslesmesi kaybolabilir).
-  CONSTRAINT fk_task_primary   FOREIGN KEY (primary_assignee_id)   REFERENCES v2_task_people (id) ON DELETE SET NULL,
-  CONSTRAINT fk_task_secondary FOREIGN KEY (secondary_assignee_id) REFERENCES v2_task_people (id) ON DELETE SET NULL
+  CONSTRAINT fk_task_primary   FOREIGN KEY (primary_assignee_id)   REFERENCES task_people (id) ON DELETE SET NULL,
+  CONSTRAINT fk_task_secondary FOREIGN KEY (secondary_assignee_id) REFERENCES task_people (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('022_tasks');

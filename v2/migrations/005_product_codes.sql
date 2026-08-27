@@ -14,7 +14,7 @@
 -- updated_by. legacy_id yalnizca v1 tasima icin; API'den yazilmaz (Repository
 -- whitelist'inde yoktur).
 
-CREATE TABLE IF NOT EXISTS v2_product_codes (
+CREATE TABLE IF NOT EXISTS product_codes (
   id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id             INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id             VARCHAR(64)     NULL,
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS v2_product_codes (
   KEY idx_prodcode_operation (outgoing_operation_id),
   CONSTRAINT fk_prodcode_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id),
   -- Cikan operasyon master tablodan id ile gelir; operasyon silinirse baglanti kopar (NULL).
-  CONSTRAINT fk_prodcode_operation FOREIGN KEY (outgoing_operation_id) REFERENCES v2_operations (id) ON DELETE SET NULL
+  CONSTRAINT fk_prodcode_operation FOREIGN KEY (outgoing_operation_id) REFERENCES operations (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('005_product_codes');

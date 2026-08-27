@@ -6,19 +6,19 @@
 -- ornekAdedi, karakteristikler[], genelSonuc} idi. Iki seviyeli ic ice yapi:
 --   kayit -> karakteristik[] -> degerler[]
 --
--- karakteristikler[] cocuk tabloya (v2_incoming_characteristics), her karakteristigin
--- degerler[] dizisi de bir alt cocuga (v2_incoming_values; sequence sirayi korur).
+-- karakteristikler[] cocuk tabloya (incoming_characteristics), her karakteristigin
+-- degerler[] dizisi de bir alt cocuga (incoming_values; sequence sirayi korur).
 --
 -- legacy_purchase_receipt_id: v1'de satinalmaGirisIdleri satinalma girislerine
 -- referanstir; o tablo (satinalmaGirisleri) Faz 7'de gelecek. Simdilik referans
 -- CHAR(16) METIN olarak saklanir (FK degil); Faz 7'de gercek FK'ye donusecek.
 --
--- malzeme -> material_code_id FK (v2_product_codes), NULL kabul.
+-- malzeme -> material_code_id FK (product_codes), NULL kabul.
 --
 -- Ortak sutunlar (uc tabloda): id, tenant_id, legacy_id, created_at, updated_at,
 -- created_by, updated_by. legacy_id yalnizca v1 tasima icin.
 
-CREATE TABLE IF NOT EXISTS v2_incoming_inspections (
+CREATE TABLE IF NOT EXISTS incoming_inspections (
   id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id            INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id            VARCHAR(64)     NULL,
@@ -42,11 +42,11 @@ CREATE TABLE IF NOT EXISTS v2_incoming_inspections (
   KEY idx_ii_tenant   (tenant_id),
   KEY idx_ii_material (material_code_id),
   CONSTRAINT fk_ii_tenant   FOREIGN KEY (tenant_id)        REFERENCES tenants          (id),
-  CONSTRAINT fk_ii_material FOREIGN KEY (material_code_id) REFERENCES v2_product_codes (id) ON DELETE SET NULL
+  CONSTRAINT fk_ii_material FOREIGN KEY (material_code_id) REFERENCES product_codes (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Seviye 1: karakteristikler.
-CREATE TABLE IF NOT EXISTS v2_incoming_characteristics (
+CREATE TABLE IF NOT EXISTS incoming_characteristics (
   id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id     INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id     VARCHAR(64)     NULL,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS v2_incoming_characteristics (
   KEY idx_ic_tenant     (tenant_id),
   KEY idx_ic_inspection (inspection_id),
   CONSTRAINT fk_ic_tenant     FOREIGN KEY (tenant_id)     REFERENCES tenants                 (id),
-  CONSTRAINT fk_ic_inspection FOREIGN KEY (inspection_id) REFERENCES v2_incoming_inspections (id) ON DELETE CASCADE
+  CONSTRAINT fk_ic_inspection FOREIGN KEY (inspection_id) REFERENCES incoming_inspections (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Seviye 2: karakteristik degerleri. Degisken sayida; sequence sirayi korur.
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS v2_incoming_characteristics (
 --   olcusel karakteristik -> value dolu, result NULL
 --   nitel karakteristik   -> value NULL, result metni ('Uygun'/'Uygun Değil')
 -- (first-off olcumlerindeki value+result deseniyle tutarli.)
-CREATE TABLE IF NOT EXISTS v2_incoming_values (
+CREATE TABLE IF NOT EXISTS incoming_values (
   id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id         INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id         VARCHAR(64)     NULL,
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS v2_incoming_values (
   KEY idx_iv_tenant (tenant_id),
   KEY idx_iv_char   (characteristic_id),
   CONSTRAINT fk_iv_tenant FOREIGN KEY (tenant_id)         REFERENCES tenants                     (id),
-  CONSTRAINT fk_iv_char   FOREIGN KEY (characteristic_id) REFERENCES v2_incoming_characteristics (id) ON DELETE CASCADE
+  CONSTRAINT fk_iv_char   FOREIGN KEY (characteristic_id) REFERENCES incoming_characteristics (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('020_incoming_inspections');

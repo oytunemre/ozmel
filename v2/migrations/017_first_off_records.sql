@@ -17,7 +17,7 @@
 -- Ortak sutunlar (uc tabloda): id, tenant_id, legacy_id, created_at, updated_at,
 -- created_by, updated_by. legacy_id yalnizca v1 tasima icin.
 
-CREATE TABLE IF NOT EXISTS v2_first_off_records (
+CREATE TABLE IF NOT EXISTS first_off_records (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id       INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id       VARCHAR(64)     NULL,
@@ -40,13 +40,13 @@ CREATE TABLE IF NOT EXISTS v2_first_off_records (
   KEY idx_for_product   (product_code_id),
   KEY idx_for_operation (operation_id),
   CONSTRAINT fk_for_tenant    FOREIGN KEY (tenant_id)       REFERENCES tenants          (id),
-  CONSTRAINT fk_for_product   FOREIGN KEY (product_code_id) REFERENCES v2_product_codes (id),
-  CONSTRAINT fk_for_operation FOREIGN KEY (operation_id)    REFERENCES v2_operations    (id)
+  CONSTRAINT fk_for_product   FOREIGN KEY (product_code_id) REFERENCES product_codes (id),
+  CONSTRAINT fk_for_operation FOREIGN KEY (operation_id)    REFERENCES operations    (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Cocuk 1: olcumler. v1'de degerler{} nesnesi nokta id'sine anahtarliydi —
 -- her nokta icin tek olcum (UNIQUE tenant+record+point).
-CREATE TABLE IF NOT EXISTS v2_first_off_measurements (
+CREATE TABLE IF NOT EXISTS first_off_measurements (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id  INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id  VARCHAR(64)     NULL,
@@ -65,12 +65,12 @@ CREATE TABLE IF NOT EXISTS v2_first_off_measurements (
   KEY idx_fom_record (record_id),
   KEY idx_fom_point  (point_id),
   CONSTRAINT fk_fom_tenant FOREIGN KEY (tenant_id) REFERENCES tenants               (id),
-  CONSTRAINT fk_fom_record FOREIGN KEY (record_id) REFERENCES v2_first_off_records  (id) ON DELETE CASCADE,
-  CONSTRAINT fk_fom_point  FOREIGN KEY (point_id)  REFERENCES v2_first_off_points   (id)
+  CONSTRAINT fk_fom_record FOREIGN KEY (record_id) REFERENCES first_off_records  (id) ON DELETE CASCADE,
+  CONSTRAINT fk_fom_point  FOREIGN KEY (point_id)  REFERENCES first_off_points   (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Cocuk 2: gerekceler. v1'de gerekce[] duz string diziydi.
-CREATE TABLE IF NOT EXISTS v2_first_off_reasons (
+CREATE TABLE IF NOT EXISTS first_off_reasons (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id  INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id  VARCHAR(64)     NULL,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS v2_first_off_reasons (
   KEY idx_fr_tenant (tenant_id),
   KEY idx_fr_record (record_id),
   CONSTRAINT fk_fr_tenant FOREIGN KEY (tenant_id) REFERENCES tenants              (id),
-  CONSTRAINT fk_fr_record FOREIGN KEY (record_id) REFERENCES v2_first_off_records (id) ON DELETE CASCADE
+  CONSTRAINT fk_fr_record FOREIGN KEY (record_id) REFERENCES first_off_records (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('017_first_off_records');

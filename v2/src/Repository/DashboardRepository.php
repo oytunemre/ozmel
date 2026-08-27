@@ -49,13 +49,13 @@ final class DashboardRepository
     private function openWorkOrders(): array
     {
         $open = $this->scalar(
-            "SELECT COUNT(*) FROM v2_work_orders WHERE tenant_id = :t AND status <> 'Tamamlandı'"
+            "SELECT COUNT(*) FROM work_orders WHERE tenant_id = :t AND status <> 'Tamamlandı'"
         );
         // "bugun baslamali": bagli siparisin baslangic tarihi bugun olan acik is emirleri.
         $todayStart = $this->scalar(
             "SELECT COUNT(*)
-               FROM v2_work_orders wo
-               JOIN v2_orders o ON o.id = wo.order_id AND o.tenant_id = wo.tenant_id
+               FROM work_orders wo
+               JOIN orders o ON o.id = wo.order_id AND o.tenant_id = wo.tenant_id
               WHERE wo.tenant_id = :t AND wo.status <> 'Tamamlandı' AND o.start_date = CURDATE()"
         );
         return [
@@ -70,7 +70,7 @@ final class DashboardRepository
         $stmt = $this->pdo()->prepare(
             "SELECT COALESCE(SUM(actual_quantity),0) AS actual,
                     COALESCE(SUM(target_quantity),0) AS target
-               FROM v2_production WHERE tenant_id = :t AND `date` = CURDATE()"
+               FROM production WHERE tenant_id = :t AND `date` = CURDATE()"
         );
         $stmt->execute(['t' => $this->ctx->tenantId]);
         $row = $stmt->fetch();
@@ -100,8 +100,8 @@ final class DashboardRepository
 
         $products = [];
         foreach ([
-            $sql('v2_first_off_measurements', 'v2_first_off_points', 'v2_first_off_records'),
-            $sql('v2_hourly_measurements', 'v2_hourly_points', 'v2_hourly_records'),
+            $sql('first_off_measurements', 'first_off_points', 'first_off_records'),
+            $sql('hourly_measurements', 'hourly_points', 'hourly_records'),
         ] as $q) {
             $stmt = $this->pdo()->prepare($q);
             $stmt->execute(['t' => $this->ctx->tenantId]);
@@ -128,10 +128,10 @@ final class DashboardRepository
             "SELECT wc.name AS name,
                     COALESCE(SUM(mp.target_quantity),0)   AS planned,
                     COALESCE(SUM(cap.capacity_per_shift),0) AS capacity
-               FROM v2_machine_plans mp
-               JOIN v2_work_centers wc
+               FROM machine_plans mp
+               JOIN work_centers wc
                  ON wc.id = mp.work_center_id AND wc.tenant_id = mp.tenant_id
-          LEFT JOIN v2_capacities cap
+          LEFT JOIN capacities cap
                  ON cap.product_code_id = mp.product_code_id
                 AND cap.work_center_id  = mp.work_center_id
                 AND cap.tenant_id        = mp.tenant_id
@@ -167,18 +167,18 @@ final class DashboardRepository
         $stmt = $this->pdo()->prepare(
             "(SELECT pc.code AS code, fp.characteristic AS measure,
                      m.value AS value, m.result AS result, r.`date` AS at_ts
-                FROM v2_first_off_measurements m
-                JOIN v2_first_off_points fp ON fp.id = m.point_id AND fp.tenant_id = m.tenant_id
-                JOIN v2_first_off_records r ON r.id = m.record_id AND r.tenant_id = m.tenant_id
-                JOIN v2_product_codes pc ON pc.id = fp.product_code_id AND pc.tenant_id = m.tenant_id
+                FROM first_off_measurements m
+                JOIN first_off_points fp ON fp.id = m.point_id AND fp.tenant_id = m.tenant_id
+                JOIN first_off_records r ON r.id = m.record_id AND r.tenant_id = m.tenant_id
+                JOIN product_codes pc ON pc.id = fp.product_code_id AND pc.tenant_id = m.tenant_id
                WHERE m.tenant_id = :t1)
              UNION ALL
              (SELECT pc.code, hp.measure_location,
                      m.value, NULL, r.`date`
-                FROM v2_hourly_measurements m
-                JOIN v2_hourly_points hp ON hp.id = m.point_id AND hp.tenant_id = m.tenant_id
-                JOIN v2_hourly_records r ON r.id = m.record_id AND r.tenant_id = m.tenant_id
-                JOIN v2_product_codes pc ON pc.id = hp.product_code_id AND pc.tenant_id = m.tenant_id
+                FROM hourly_measurements m
+                JOIN hourly_points hp ON hp.id = m.point_id AND hp.tenant_id = m.tenant_id
+                JOIN hourly_records r ON r.id = m.record_id AND r.tenant_id = m.tenant_id
+                JOIN product_codes pc ON pc.id = hp.product_code_id AND pc.tenant_id = m.tenant_id
                WHERE m.tenant_id = :t2)
              ORDER BY at_ts DESC
              LIMIT 10"

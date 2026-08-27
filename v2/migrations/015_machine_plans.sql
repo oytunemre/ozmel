@@ -10,7 +10,7 @@
 -- Ortak sutunlar: id, tenant_id, legacy_id, created_at, updated_at, created_by,
 -- updated_by. legacy_id yalnizca v1 tasima icin; API'den yazilmaz.
 
-CREATE TABLE IF NOT EXISTS v2_machine_plans (
+CREATE TABLE IF NOT EXISTS machine_plans (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id       INT UNSIGNED    NOT NULL DEFAULT 1,
   legacy_id       VARCHAR(64)     NULL,
@@ -31,10 +31,10 @@ CREATE TABLE IF NOT EXISTS v2_machine_plans (
   KEY idx_mplan_product   (product_code_id),
   KEY idx_mplan_workorder (work_order_id),
   CONSTRAINT fk_mplan_tenant    FOREIGN KEY (tenant_id)       REFERENCES tenants          (id),
-  CONSTRAINT fk_mplan_wc        FOREIGN KEY (work_center_id)  REFERENCES v2_work_centers  (id),
-  CONSTRAINT fk_mplan_product   FOREIGN KEY (product_code_id) REFERENCES v2_product_codes (id),
+  CONSTRAINT fk_mplan_wc        FOREIGN KEY (work_center_id)  REFERENCES work_centers  (id),
+  CONSTRAINT fk_mplan_product   FOREIGN KEY (product_code_id) REFERENCES product_codes (id),
   -- Is emri silinince plan kalir, baglanti kopar.
-  CONSTRAINT fk_mplan_workorder FOREIGN KEY (work_order_id)  REFERENCES v2_work_orders   (id) ON DELETE SET NULL
+  CONSTRAINT fk_mplan_workorder FOREIGN KEY (work_order_id)  REFERENCES work_orders   (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO schema_migrations (version) VALUES ('015_machine_plans');

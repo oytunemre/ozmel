@@ -17,12 +17,12 @@ final class HourlyRecordRepository extends BaseRepository
 {
     protected function table(): string
     {
-        return 'v2_hourly_records';
+        return 'hourly_records';
     }
 
     private function measurementsTable(): string
     {
-        return 'v2_hourly_measurements';
+        return 'hourly_measurements';
     }
 
     protected function columns(): array

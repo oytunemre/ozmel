@@ -12,7 +12,7 @@ use RuntimeException;
 
 /**
  * Yetki + dogrulama + yanit. Is mantigi Repository'de, SQL burada YOK.
- * Paylasimli kisi dizini; gorevler (v2_tasks) buna FK ile baglanir.
+ * Paylasimli kisi dizini; gorevler (tasks) buna FK ile baglanir.
  */
 final class TaskPersonController
 {

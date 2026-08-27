@@ -14,7 +14,7 @@ namespace App\Dto;
  *   durum                 -> status
  *   musteri               -> customer
  *   satisSiparisNo        -> salesOrderNo
- *   urun                  -> productCodeId (v2_product_codes.id)
+ *   urun                  -> productCodeId (product_codes.id)
  *   hedefMiktar           -> targetQuantity
  *   baslangicTarihi       -> startDate
  *   istenenTeslimTarihi   -> requestedDeliveryDate
