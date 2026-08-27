@@ -107,7 +107,7 @@ textarea.input { min-height: 84px; resize: vertical; }
 .sidebar-brand { display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 18px;
   border-bottom: 1px solid rgba(255,255,255,0.14); flex: none;
   font-family: var(--font-heading); font-weight: 700; font-size: 20px; letter-spacing: 0.05em; text-transform: uppercase; }
-.sidebar-brand .mark { width: 22px; height: 22px; border: 1.5px solid var(--color-accent-500); flex: none; }
+.sidebar-brand svg { height: 48px; width: auto; color: #fff; }
 .sidebar-nav { flex: 1; overflow-y: auto; padding: 10px 0 28px; display: flex; flex-direction: column; gap: 2px; }
 .nav-group { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; color: #8397ac; padding: 14px 18px 6px; }
 .sidebar-nav a { display: flex; align-items: center; height: 36px; padding: 0 18px; color: #e6ebf1;
