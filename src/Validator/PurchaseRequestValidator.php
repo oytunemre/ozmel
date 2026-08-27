@@ -9,13 +9,10 @@ final class PurchaseRequestValidator extends Validator
 {
     public function validate(array $input, bool $isCreate): static
     {
-        // Malzeme zorunlu FK (listeden secilir, serbest metin degil).
-        if ($isCreate || array_key_exists('materialCodeId', $input)) {
-            $this->required($input, 'materialCodeId', 'Malzeme kodu')
-                 ->positiveInt($input, 'materialCodeId', 'Malzeme kodu');
-        }
-
-        $this->positiveInt($input, 'productCodeId', 'Urun kodu')
+        // Malzeme OPSIYONEL: verilirse gecerli bir FK olmali. Eslesmeyen serbest metin
+        // ETL'de note'a yazilir, material_code_id NULL kalir (bkz. migration 028).
+        $this->positiveInt($input, 'materialCodeId', 'Malzeme kodu')
+             ->positiveInt($input, 'productCodeId', 'Urun kodu')
              ->positiveInt($input, 'orderId', 'Siparis')
              ->numeric($input, 'quantity', 'Miktar')
              ->maxLength($input, 'unit', 32, 'Birim')

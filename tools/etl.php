@@ -727,13 +727,19 @@ if ($stoppedAt === null)
 $runCollection('purchase_requests', $D['satinalmaIstekleri'] ?? [], function (array $r)
         use ($repo, &$idMap, &$ref, &$materialIssues, $str, $num): string {
     $matCode = $str($r['malzeme'] ?? null);
-    // material_code_id NOT NULL: kod bir urun koduna cozulmuyorsa atla + Melih'e raporla.
-    if ($matCode === null || !isset($ref['product'][$matCode])) {
-        $materialIssues[] = ['id' => $r['id'] ?? '', 'malzeme' => $matCode ?? '(bos)'];
-        throw new EtlSkip("malzeme kod degil, aciklama: " . ($matCode ?? '(bos)'));
+    $note    = $str($r['not'] ?? null);
+    // Malzeme bir urun koduna cozuluyorsa FK verilir; cozulmuyorsa material_code_id
+    // NULL kalir ve orijinal metin note basina eklenir (mevcut not varsa satir basiyla
+    // ayrilir). Serbest-metin malzemeli istekler artik ATLANMAZ (bkz. migration 028).
+    $materialId = ($matCode !== null && isset($ref['product'][$matCode]))
+        ? $ref['product'][$matCode]
+        : null;
+    if ($matCode !== null && $materialId === null) {
+        $materialIssues[] = ['id' => $r['id'] ?? '', 'malzeme' => $matCode];
+        $note = $matCode . ($note !== null ? "\n" . $note : '');
     }
     $res = $repo['purchase_requests']->etlUpsert($str($r['id'] ?? null), [
-        'material_code_id' => $ref['product'][$matCode],
+        'material_code_id' => $materialId,
         'product_code_id'  => isset($r['urun']) ? ($ref['product'][$str($r['urun'])] ?? null) : null,
         'quantity'         => $num($r['miktar'] ?? null),
         'unit'             => $str($r['birim'] ?? null),
@@ -741,7 +747,7 @@ $runCollection('purchase_requests', $D['satinalmaIstekleri'] ?? [], function (ar
         'request_date'     => $str($r['istekTarihi'] ?? null),
         'expected_date'    => $str($r['beklenenTarih'] ?? null),
         'order_id'         => $idMap['orders'][$r['orderId'] ?? ''] ?? null,
-        'note'             => $str($r['not'] ?? null),
+        'note'             => $note,
     ]);
     $idMap['purchase_requests'][$r['id']] = $res['id'];
     return $res['action'];
@@ -853,10 +859,13 @@ foreach ($order as $col) {
     }
 }
 
-// Melih'e ozel: malzeme alani kod yerine aciklama tasiyan istekler
+// Satinalma isteklerinde malzeme kod cozumleme ozeti (her zaman raporlanir).
+echo "\nSatinalma istekleri — malzeme cozulemedi: " . count($materialIssues) . " kayit"
+    . ($materialIssues === [] ? " (hepsi koda cozuldu)\n" : "\n");
+// Melih'e ozel: cozulemeyenler material_code_id NULL ile ice alindi, metin note'a yazildi.
 if ($materialIssues !== []) {
-    echo "\n--- MELIH ICIN: satinalma isteklerinde kod olmayan malzeme (" . count($materialIssues) . ") ---\n";
-    echo "Bunlar atlandi (material_code_id NOT NULL). Kodla degistirilince tekrar calistirilabilir.\n";
+    echo "--- MELIH ICIN: bu istekler NULL malzeme ile ice alindi; orijinal metin note basina eklendi ---\n";
+    echo "Kod tanimlanip malzeme kodla degistirilince ETL tekrar calistirilabilir.\n";
     foreach ($materialIssues as $m) {
         echo "  {$m['id']}: {$m['malzeme']}\n";
     }

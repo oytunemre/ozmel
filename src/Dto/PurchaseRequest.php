@@ -9,7 +9,7 @@ namespace App\Dto;
  *
  * v1 satinalmaIstekleri alan adlari -> Ingilizce API/DB. Malzeme artik FK
  * (materialCodeId); tanim ayri tutulmaz, product_codes.name'den JOIN ile gelir.
- *   malzeme       -> materialCodeId (product_codes.id, NOT NULL)
+ *   malzeme       -> materialCodeId (product_codes.id, opsiyonel; eslesmezse NULL)
  *   urun          -> productCodeId  (product_codes.id, opsiyonel)
  *   miktar        -> quantity
  *   birim         -> unit
@@ -49,7 +49,9 @@ final class PurchaseRequest
     {
         $out = [];
         if (array_key_exists('materialCodeId', $input)) {
-            $out['material_code_id'] = (int) $input['materialCodeId'];
+            // Malzeme opsiyonel: bos/gecersiz -> NULL (product/order ile ayni desen).
+            $id = (int) $input['materialCodeId'];
+            $out['material_code_id'] = $id > 0 ? $id : null;
         }
         if (array_key_exists('productCodeId', $input)) {
             $id = (int) $input['productCodeId'];
