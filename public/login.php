@@ -19,7 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$config = require __DIR__ . '/config.php';
+// config.php belge kökünün (public/) BİR ÜST dizininde — web'den erişilemez, korunur.
+$config = require dirname(__DIR__) . '/config.php';
 
 // Giriş, sunucuya yapılan ilk istek olduğu için kurulum hatasını burada da yakalıyoruz.
 if (($config['db_pass'] ?? '') === 'BURAYA_VERITABANI_SIFRESINI_YAZIN') {

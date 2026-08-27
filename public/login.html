@@ -146,9 +146,9 @@
   </div>
 
   <script>
-    // Giriş uç noktası kök login.php — sayfanın KENDİ konumundan çöz. .htaccess
-    // yönlendirmesi altında ../ site köküne çıkıyordu; bu hem /test/login.html hem
-    // /test/public/login.html altında doğru çözer.
+    // Giriş uç noktası login.php artık public/ içinde (bu sayfayla aynı dizin).
+    // Sayfanın KENDİ konumundan çöz; hem /test/login.html hem /test/public/login.html
+    // altında doğru sonuç verir.
     const LOGIN_URL = new URL('login.php', location.href).href;
 
     const form = document.getElementById('login-form');

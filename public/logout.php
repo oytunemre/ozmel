@@ -11,7 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$config = require __DIR__ . '/config.php';
+// config.php belge kökünün (public/) bir üst dizininde.
+$config = require dirname(__DIR__) . '/config.php';
 $input = json_decode(file_get_contents('php://input'), true);
 $token = $input['token'] ?? '';
 
