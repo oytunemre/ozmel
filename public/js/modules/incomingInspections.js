@@ -40,7 +40,7 @@ export async function viewIncomingInspections(container) {
     expand: (row) => measurementDetail((row.characteristics || []).map(c => ({
       location: c.name || ('#' + c.charNo), lower: c.lowerLimit, upper: c.upperLimit, values: c.values || []
     }))),
-    load: () => api.list({ limit: 200 }).then(r => r.data),
+    load: () => api.listAll().then(r => r.data),
     searchText: (r) => [r.supplier, products.label(r.materialCodeId), r.inspectorName].join(' '),
     emptyMessage: 'Henüz kontrol yok. "Yeni Kontrol" ile başlayın.',
     columns: [

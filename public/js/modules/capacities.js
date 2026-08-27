@@ -33,7 +33,7 @@ export async function viewCapacities(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
-    load: () => api.list({ limit: 200 }).then(r => r.data),
+    load: () => api.listAll().then(r => r.data),
     searchText: (r) => [products.label(r.productCodeId), centers.label(r.workCenterId)].join(' '),
     emptyMessage: 'Henüz kapasite eklenmemiş. "Yeni Kapasite" ile başlayın.',
     columns: [

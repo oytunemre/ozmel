@@ -20,7 +20,7 @@ export async function viewFirstOffRecords(container) {
   try {
     products = await loadLookup('product-codes', mapProduct);
     ops = await loadLookup('operations', mapNamed);
-    const pts = (await resource('first-off-points').list({ limit: 200 })).data;
+    const pts = (await resource('first-off-points').listAll()).data;
     pointRows = pts.map(p => ({ id: p.id, code: products.byId.get(p.productCodeId)?.code || '', name: `${p.characteristic} (No:${p.pointNo})` }));
     pointsById = new Map(pts.map(p => [p.id, p]));
   } catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewFirstOffRecords(container) })); return; }
@@ -41,7 +41,7 @@ export async function viewFirstOffRecords(container) {
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
     expand,
-    load: () => api.list({ limit: 200 }).then(r => r.data),
+    load: () => api.listAll().then(r => r.data),
     searchText: (r) => [products.label(r.productCodeId), ops.label(r.operationId), r.operatorName].join(' '),
     emptyMessage: 'Henüz kayıt yok. "Yeni Kayıt" ile başlayın.',
     columns: [

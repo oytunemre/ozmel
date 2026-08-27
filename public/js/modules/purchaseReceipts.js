@@ -27,7 +27,7 @@ export async function viewPurchaseReceipts(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
-    load: () => api.list({ limit: 200 }).then(r => r.data),
+    load: () => api.listAll().then(r => r.data),
     searchText: (r) => requests.label(r.purchaseRequestId),
     emptyMessage: 'Henüz giriş yok. "Giriş Kaydet" ile başlayın.',
     columns: [

@@ -21,7 +21,7 @@ export async function viewProductTrees(container) {
   let products, nodes;
   try {
     products = await loadLookup('product-codes', mapProductFull);
-    nodes = (await api.list({ limit: 200 })).data;
+    nodes = (await api.listAll()).data;
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewProductTrees(container) }));
@@ -175,7 +175,7 @@ export async function viewProductTrees(container) {
   }
 
   async function reloadNodes() {
-    nodes = (await api.list({ limit: 200 })).data;
+    nodes = (await api.listAll()).data;
     byId.clear(); nodes.forEach(n => byId.set(n.id, n));
   }
 

@@ -23,7 +23,7 @@ export async function viewRoutes(container) {
     products = await loadLookup('product-codes', mapProduct);
     ops = await loadLookup('operations', mapNamed);
     centers = await loadLookup('work-centers', mapNamed);
-    rows = (await api.list({ limit: 200 })).data;
+    rows = (await api.listAll()).data;
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewRoutes(container) }));
@@ -176,7 +176,7 @@ export async function viewRoutes(container) {
     });
   }
 
-  async function reload() { rows = (await api.list({ limit: 200 })).data; render(); }
+  async function reload() { rows = (await api.listAll()).data; render(); }
 
   async function remove(row) {
     const ok = await confirmDialog({

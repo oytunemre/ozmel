@@ -19,7 +19,7 @@ export async function viewTaskPeople(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
-    load: () => api.list({ limit: 200 }).then(r => r.data),
+    load: () => api.listAll().then(r => r.data),
     searchText: (r) => [r.name, r.email, r.phone].join(' '),
     emptyMessage: 'Henüz kişi yok. "Yeni Kişi" ile başlayın.',
     columns: [

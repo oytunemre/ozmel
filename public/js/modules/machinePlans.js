@@ -20,7 +20,7 @@ export async function viewMachinePlans(container) {
     products = await loadLookup('product-codes', mapProduct);
     centers = await loadLookup('work-centers', mapNamed);
     workOrders = await loadLookup('work-orders', (w) => ({ id: w.id, code: w.woNo, name: products.label(w.productCodeId) }));
-    plans = (await api.list({ limit: 200 })).data;
+    plans = (await api.listAll()).data;
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewMachinePlans(container) }));
@@ -147,7 +147,7 @@ export async function viewMachinePlans(container) {
     });
   }
 
-  async function reload() { plans = (await api.list({ limit: 200 })).data; render(); }
+  async function reload() { plans = (await api.listAll()).data; render(); }
 
   async function del(p) {
     const ok = await confirmDialog({ title: 'Plan silinsin mi?', body: `${products.label(p.productCodeId)} planı silinecek.`, confirmLabel: 'Sil', danger: true });

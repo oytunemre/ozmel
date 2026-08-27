@@ -18,7 +18,7 @@ export async function viewAudits(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
-    load: () => api.list({ limit: 200 }).then(r => r.data),
+    load: () => api.listAll().then(r => r.data),
     searchText: (r) => [r.form, r.section, r.question].join(' '),
     emptyMessage: 'Henüz soru yok. "Yeni Soru" ile başlayın.',
     columns: [

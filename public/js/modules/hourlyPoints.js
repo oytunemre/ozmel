@@ -28,7 +28,7 @@ export async function viewHourlyPoints(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
-    load: () => api.list({ limit: 200 }).then(r => r.data),
+    load: () => api.listAll().then(r => r.data),
     searchText: (r) => [products.label(r.productCodeId), ops.label(r.operationId), r.measureLocation].join(' '),
     emptyMessage: 'Henüz nokta yok. "Yeni Nokta" ile başlayın.',
     columns: [

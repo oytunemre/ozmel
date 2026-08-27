@@ -24,7 +24,7 @@ export async function viewOperators(container) {
   // Operasyonlar bir kez cekilir: hem yetkinlik adlarini gostermek hem FK secici icin.
   let operations;
   try {
-    operations = (await operationsApi.list({ limit: 200 })).data;
+    operations = (await operationsApi.listAll()).data;
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewOperators(container) }));
@@ -43,7 +43,7 @@ export async function viewOperators(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
-    load: () => operatorsApi.list({ limit: 200 }).then(r => r.data),
+    load: () => operatorsApi.listAll().then(r => r.data),
     rowId: (r) => r.id,
     searchText: (r) => [r.fullName, r.badgeNo, r.skills.map(id => opName.get(id) || '').join(' ')].join(' '),
     emptyMessage: 'Henüz operatör eklenmemiş. "Yeni Operatör" ile başlayın.',

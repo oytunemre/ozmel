@@ -32,7 +32,7 @@ export async function viewProductCodes(container) {
   // Çıkan operasyon FK'si için operasyonlar bir kez çekilir.
   let operations;
   try {
-    operations = (await operationsApi.list({ limit: 200 })).data;
+    operations = (await operationsApi.listAll()).data;
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewProductCodes(container) }));
@@ -49,7 +49,7 @@ export async function viewProductCodes(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
-    load: () => api.list({ limit: 200 }).then(r => r.data),
+    load: () => api.listAll().then(r => r.data),
     searchText: (r) => [r.code, r.name, r.type, r.unit].join(' '),
     emptyMessage: 'Henüz kod tanımı eklenmemiş. "Yeni Kod" ile başlayın.',
     // Genişleyen satır: tabloda görünmeyen alanlar (ölçüler, stok, tedarik, çizim…).

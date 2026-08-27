@@ -51,8 +51,8 @@ export async function viewOrders(container) {
   // Bağlı iş emirleri sipariş bazında gruplanır; üretilen adet üretim kayıtlarından toplanır.
   async function loadWorkOrders() {
     const [{ data: wos }, { data: prod }] = await Promise.all([
-      resource('work-orders').list({ limit: 200 }),
-      resource('production').list({ limit: 200 })
+      resource('work-orders').listAll(),
+      resource('production').listAll()
     ]);
     const producedByWo = new Map();
     for (const p of prod) producedByWo.set(p.workOrderId, (producedByWo.get(p.workOrderId) || 0) + (p.actualQuantity || 0));
@@ -69,7 +69,7 @@ export async function viewOrders(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
-    load: () => api.list({ limit: 200 }).then(r => r.data),
+    load: () => api.listAll().then(r => r.data),
     searchText: (r) => [r.orderNo, products.label(r.productCodeId), r.customer, r.status].join(' '),
     emptyMessage: 'Henüz sipariş yok. "Yeni Sipariş" ile başlayın.',
     // Tablo üstünde duruma göre çoklu-seçim filtre (BE'den gelen sırayla).

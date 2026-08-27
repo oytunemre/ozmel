@@ -31,7 +31,7 @@ export async function viewWorkOrders(container) {
 
   // Üretim kayıtları bir kez çekilir: hem üretilen adet toplamı hem iş emri bazında liste.
   async function loadProduction() {
-    const { data } = await resource('production').list({ limit: 200 });
+    const { data } = await resource('production').listAll();
     const producedByWo = new Map();
     const prodByWo = new Map();
     for (const p of data) {
@@ -50,7 +50,7 @@ export async function viewWorkOrders(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
-    load: () => api.list({ limit: 200 }).then(r => r.data),
+    load: () => api.listAll().then(r => r.data),
     searchText: (r) => [r.woNo, products.label(r.productCodeId), centers.label(r.workCenterId)].join(' '),
     emptyMessage: 'Henüz iş emri yok. "İş Emri Aç" ile başlayın.',
     // Genişleyen satır: bu iş emrine ait üretim kayıtları (tarih, vardiya, gerçek adet, fire).

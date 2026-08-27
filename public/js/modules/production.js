@@ -20,12 +20,12 @@ export async function viewProduction(container) {
   let products, woRows, woTarget, woLabel, operators, entries;
   try {
     products = await loadLookup('product-codes', mapProduct);
-    const woData = (await resource('work-orders').list({ limit: 200 })).data;
+    const woData = (await resource('work-orders').listAll()).data;
     woRows = woData.map(w => ({ id: w.id, code: w.woNo, name: products.label(w.productCodeId) }));
     woTarget = new Map(woData.map(w => [w.id, w.targetQuantity]));
     woLabel = new Map(woData.map(w => [w.id, w.woNo]));
     operators = await loadLookup('operators', (o) => ({ id: o.id, code: o.badgeNo, name: o.fullName }));
-    entries = (await api.list({ limit: 200 })).data;
+    entries = (await api.listAll()).data;
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewProduction(container) }));

@@ -25,7 +25,7 @@ export async function viewPurchaseRequests(container) {
 
   // Satınalma girişleri istek bazında gruplanır (genişleyen satır için).
   async function loadReceipts() {
-    const { data } = await resource('purchase-receipts').list({ limit: 200 });
+    const { data } = await resource('purchase-receipts').listAll();
     const m = new Map();
     for (const g of data) { if (!m.has(g.purchaseRequestId)) m.set(g.purchaseRequestId, []); m.get(g.purchaseRequestId).push(g); }
     return m;
@@ -39,7 +39,7 @@ export async function viewPurchaseRequests(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
-    load: () => api.list({ limit: 200 }).then(r => r.data),
+    load: () => api.listAll().then(r => r.data),
     searchText: (r) => [products.label(r.materialCodeId), r.supplier].join(' '),
     emptyMessage: 'Henüz istek yok. "Yeni İstek" ile başlayın.',
     // Malzemesi seçilmemiş (ETL'de koda çözülemeyen) istekler işaretlenir.

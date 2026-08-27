@@ -8,7 +8,7 @@ import { resource } from './api.js';
 const inflight = new Map();
 function fetchList(name) {
   if (inflight.has(name)) return inflight.get(name);
-  const p = resource(name).list({ limit: 200 })
+  const p = resource(name).listAll()
     .then(r => r.data)
     .finally(() => inflight.delete(name));
   inflight.set(name, p);

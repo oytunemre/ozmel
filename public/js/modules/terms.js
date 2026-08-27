@@ -20,7 +20,7 @@ export async function viewTerms(container) {
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
-    load: () => api.list({ limit: 200 }).then(r => r.data),
+    load: () => api.listAll().then(r => r.data),
     searchText: (r) => [r.original, r.translation].join(' '),
     emptyMessage: 'Henüz terim eklenmemiş. "Yeni Terim" ile başlayın.',
     columns: [

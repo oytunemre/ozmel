@@ -96,14 +96,41 @@ export async function request(path, { method = 'GET', body = null } = {}) {
   throw new ApiError(generic, { status: res.status, code });
 }
 
+// Sunucu tarafi sayfalama YOK; istemci hepsini cekip kendi sayfaliyor. listAll,
+// backend'in 200 tavanina takilmadan meta.total'a ulasana kadar tum sayfalari birlestirir.
+const PAGE_LIMIT = 200;   // backend tavani ile ayni
+const MAX_PAGES  = 50;    // sonsuz donguye karsi: 50 * 200 = 10.000 kayit
+
+/** page=1'den meta.total'a ulasana kadar tum sayfalari cekip birlestirir. */
+async function listAll(name, params = {}) {
+  const all = [];
+  let meta = {};
+  let page = 1;
+  for (; page <= MAX_PAGES; page++) {
+    const res  = await request('/' + name + qs({ ...params, page, limit: PAGE_LIMIT }));
+    const rows = res.data || [];
+    meta = res.meta || {};
+    all.push(...rows);
+    const total = Number(meta.total);
+    // Son sayfa: tam sayfadan az geldiyse ya da toplam sayiya ulasildiysa dur.
+    if (rows.length < PAGE_LIMIT || (Number.isFinite(total) && all.length >= total)) break;
+  }
+  if (page > MAX_PAGES) {
+    console.warn(`listAll('${name}'): ${MAX_PAGES} sayfa (${MAX_PAGES * PAGE_LIMIT}) siniri asildi — veri EKSIK olabilir (${all.length} kayit alindi).`);
+  }
+  const total = Number(meta.total);
+  return { data: all, meta: { ...meta, total: Number.isFinite(total) ? total : all.length } };
+}
+
 /** Kaynak icin kisa CRUD yardimcilari. */
 export function resource(name) {
   return {
-    list:   (params = {}) => request('/' + name + qs({ page: 1, limit: 50, ...params })),
-    get:    (id)          => request(`/${name}/${id}`),
-    create: (data)        => request('/' + name, { method: 'POST', body: data }),
-    update: (id, data)    => request(`/${name}/${id}?op=guncelle`, { method: 'POST', body: data }),
-    remove: (id)          => request(`/${name}/${id}?op=sil`, { method: 'POST' })
+    list:    (params = {}) => request('/' + name + qs({ page: 1, limit: 50, ...params })),
+    listAll: (params = {}) => listAll(name, params),   // tum sayfalar (200 tavanini asar)
+    get:     (id)          => request(`/${name}/${id}`),
+    create:  (data)        => request('/' + name, { method: 'POST', body: data }),
+    update:  (id, data)    => request(`/${name}/${id}?op=guncelle`, { method: 'POST', body: data }),
+    remove:  (id)          => request(`/${name}/${id}?op=sil`, { method: 'POST' })
   };
 }
 

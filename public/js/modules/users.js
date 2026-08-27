@@ -17,7 +17,7 @@ const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 export async function viewUsers(container) {
   container.innerHTML = '<div class="loading">Yükleniyor…</div>';
   let rows;
-  try { rows = (await api.list({ limit: 200 })).data; }
+  try { rows = (await api.listAll()).data; }
   catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewUsers(container) })); return; }
 
   let search = '';
@@ -82,7 +82,7 @@ export async function viewUsers(container) {
     return wrap;
   }
 
-  async function reload() { rows = (await api.list({ limit: 200 })).data; render(); }
+  async function reload() { rows = (await api.listAll()).data; render(); }
 
   function openCreate() {
     openDrawer({
