@@ -74,7 +74,10 @@
   </div>
 
   <script type="module">
-    import { t, getLang, setLang, onLangChange } from './js/core/i18n.js?v=34';
+    // i18n.js SORGUSUZ import edilir — core/modül dosyaları da './i18n.js' / '../core/i18n.js'
+    // ile sorgusuz alıyor. Aynı URL = TEK modül örneği = TEK `lang`. (?v konursa AYRI örnek
+    // oluşur; kabuk ile modül farklı dile düşer.) htaccess no-cache zaten tazeler.
+    import { t, getLang, setLang, onLangChange } from './js/core/i18n.js';
     // Oturum jetonu: giriş ekranı localStorage'a yazar; geliştirmede ?token= ile de gelebilir.
     const params = new URLSearchParams(location.search);
     window.SESSION_TOKEN = params.get('token') || localStorage.getItem('sessionToken') || '';
