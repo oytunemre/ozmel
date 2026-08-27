@@ -5,23 +5,27 @@
 //
 // Silme yok — kullanıcı pasife alınır. Bu yüzden ortak DataTable yerine özel liste
 // (Düzenle + Şifre sıfırla aksiyonları).
+// i18n: özel görünüm — bindLang ile dil değişince VERİ ÇEKMEDEN yeniden çizilir
+// (arama korunur). Kullanıcı adı/ad soyad veri, çevrilmez.
 
 import { resource, request } from '../core/api.js';
 import { openDrawer } from '../core/drawer.js';
 import { toast } from '../core/toast.js';
 import { errorState, esc } from '../core/states.js';
+import { t, bindLang } from '../core/i18n.js';
 
 const api = resource('users');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewUsers(container) {
-  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let rows;
   try { rows = (await api.listAll()).data; }
   catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewUsers(container) })); return; }
 
   let search = '';
   render();
+  bindLang(container, render);   // dil değişince yeniden çiz (veri + arama closure'da)
 
   function render() {
     const q = search.trim().toLocaleLowerCase('tr');
@@ -30,20 +34,20 @@ export async function viewUsers(container) {
     container.innerHTML = `
       <div class="module-head">
         <div>
-          <h2>Kullanıcı Yönetimi</h2>
-          <div class="text-muted" style="font-size:13.5px; margin-top:6px;">${rows.length} kullanıcı · tüm kullanıcılar yönetici · hesap yönetimi</div>
+          <h2>${esc(t('menu.users'))}</h2>
+          <div class="text-muted" style="font-size:13.5px; margin-top:6px;">${esc(t('us.summary', { n: rows.length }))}</div>
         </div>
-        <button class="btn btn-primary" id="us-add"${canWrite ? '' : ' disabled title="Salt okuma"'}>Yeni Kullanıcı</button>
+        <button class="btn btn-primary" id="us-add"${canWrite ? '' : ' disabled title="' + esc(t('common.readonlyHint')) + '"'}>${esc(t('us.new'))}</button>
       </div>
       <div class="toolbar"><div class="search">
-        <input class="input" type="search" id="us-search" placeholder="Ad veya kullanıcı adı ara…" value="${esc(search)}">
+        <input class="input" type="search" id="us-search" placeholder="${esc(t('us.search'))}" value="${esc(search)}">
       </div></div>
       <div id="us-body"></div>`;
 
     const body = container.querySelector('#us-body');
     if (shown.length === 0) {
-      body.innerHTML = `<div class="state"><div class="state-title">${rows.length === 0 ? 'Kullanıcı yok' : 'Sonuç yok'}</div>
-        <div class="state-msg">${rows.length === 0 ? 'Henüz kullanıcı eklenmemiş.' : 'Aramayla eşleşen kullanıcı yok.'}</div></div>`;
+      body.innerHTML = `<div class="state"><div class="state-title">${esc(rows.length === 0 ? t('us.emptyTitle') : t('common.noResults'))}</div>
+        <div class="state-msg">${esc(rows.length === 0 ? t('us.empty') : t('us.noMatch'))}</div></div>`;
     } else {
       body.appendChild(tableEl(shown));
     }
@@ -58,20 +62,20 @@ export async function viewUsers(container) {
     const wrap = el('div', 'table-wrap');
     const table = document.createElement('table');
     table.className = 'table';
-    table.innerHTML = '<thead><tr><th>Ad Soyad</th><th>Kullanıcı adı</th><th>Durum</th><th></th></tr></thead>';
+    table.innerHTML = `<thead><tr><th>${esc(t('field.nameSurname'))}</th><th>${esc(t('us.username'))}</th><th>${esc(t('field.status'))}</th><th></th></tr></thead>`;
     const tb = document.createElement('tbody');
     for (const u of list) {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${esc(u.displayName)}</td>
         <td class="mono" style="color:var(--color-accent-800)">${esc(u.username)}</td>
-        <td>${u.isActive ? '<span class="tag tag-success">Aktif</span>' : '<span class="tag tag-neutral">Pasif</span>'}</td>`;
+        <td>${u.isActive ? `<span class="tag tag-success">${esc(t('common.active'))}</span>` : `<span class="tag tag-neutral">${esc(t('common.inactive'))}</span>`}</td>`;
       const act = document.createElement('td');
       act.className = 'actions';
       if (canWrite) {
         act.append(
-          btn('Düzenle', 'btn-ghost', () => openEdit(u)),
-          btn('Şifre sıfırla', 'btn-ghost', () => openReset(u))
+          btn(t('action.edit'), 'btn-ghost', () => openEdit(u)),
+          btn(t('us.resetPw'), 'btn-ghost', () => openReset(u))
         );
       }
       tr.appendChild(act);
@@ -86,47 +90,47 @@ export async function viewUsers(container) {
 
   function openCreate() {
     openDrawer({
-      title: 'Yeni Kullanıcı',
-      submitLabel: 'Ekle',
+      title: () => t('us.newTitle'),
+      submitLabel: () => t('action.add'),
       values: {},
       fields: [
-        { name: 'displayName', label: 'Ad Soyad', type: 'text', required: true },
-        { name: 'username', label: 'Kullanıcı Adı', type: 'text', required: true,
-          help: 'Girişte kullanılır; sonradan değiştirilemez. Harf, rakam ve . _ -' },
-        { name: 'password', label: 'Şifre', type: 'password', required: true, help: 'En az 8 karakter.' }
+        { name: 'displayName', label: () => t('field.nameSurname'), type: 'text', required: true },
+        { name: 'username', label: () => t('us.usernameField'), type: 'text', required: true,
+          help: () => t('us.usernameHelp') },
+        { name: 'password', label: () => t('field.password'), type: 'password', required: true, help: () => t('us.pwHelp') }
       ],
       onSubmit: async (v) => (await api.create({ displayName: v.displayName, username: v.username, password: v.password })).data,
-      onSaved: async () => { toast('Kullanıcı eklendi', 'success'); await reload(); }
+      onSaved: async () => { toast(t('us.added'), 'success'); await reload(); }
     });
   }
 
   function openEdit(u) {
     openDrawer({
-      title: 'Kullanıcı Düzenle',
-      submitLabel: 'Güncelle',
+      title: () => t('us.editTitle'),
+      submitLabel: () => t('action.update'),
       values: { ...u },
       fields: [
         { name: 'secId', type: 'section', label: `${u.username}` },
-        { name: 'displayName', label: 'Ad Soyad', type: 'text', required: true },
-        { name: 'isActive', label: 'Aktif', type: 'bool',
-          help: 'Pasif kullanıcı giriş yapamaz; açık oturumları kapanır. Kendi hesabınızı pasife alamazsınız.' }
+        { name: 'displayName', label: () => t('field.nameSurname'), type: 'text', required: true },
+        { name: 'isActive', label: () => t('common.active'), type: 'bool',
+          help: () => t('us.activeHelp') }
       ],
       onSubmit: async (v) => (await api.update(u.id, { displayName: v.displayName, isActive: v.isActive, updatedAt: v.updatedAt })).data,
-      onSaved: async () => { toast('Kullanıcı güncellendi', 'success'); await reload(); }
+      onSaved: async () => { toast(t('us.updated'), 'success'); await reload(); }
     });
   }
 
   function openReset(u) {
     openDrawer({
-      title: 'Şifre Sıfırla',
-      submitLabel: 'Şifreyi Güncelle',
+      title: () => t('us.resetTitle'),
+      submitLabel: () => t('us.resetSubmit'),
       values: {},
       fields: [
         { name: 'sec', type: 'section', label: `${u.displayName} · ${u.username}` },
-        { name: 'password', label: 'Yeni Şifre', type: 'password', required: true, help: 'En az 8 karakter. Kaydettikten sonra tekrar görüntülenemez.' }
+        { name: 'password', label: () => t('us.newPw'), type: 'password', required: true, help: () => t('us.newPwHelp') }
       ],
       onSubmit: async (v) => (await request(`/users/${u.id}?op=sifre`, { method: 'POST', body: { password: v.password } })).data,
-      onSaved: async () => { toast('Şifre güncellendi', 'success'); }
+      onSaved: async () => { toast(t('us.pwUpdated'), 'success'); }
     });
   }
 }

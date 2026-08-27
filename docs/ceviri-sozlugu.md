@@ -529,3 +529,10 @@ Modül anahtarları (özet): `pc.*` Kod Tanımları (secDrawing/secMeasures/secS
 - `db.*` Genel Bakış (salt okunur). bindLang ile canlı. **Not:** açık iş emri / tolerans dışı kartlarının BE'den gelen `detail` alt metinleri veri kaynaklıdır, çevrilmez.
 
 Tümü `public/js/core/i18n.js` DICT'te birebir mevcuttur.
+
+### Parti H (son): Denetim Soruları, Kullanıcı Yönetimi
+
+- `aud.*` Denetim Soruları (form/section/question/score/evidence). Form değeri (or. 'TQS') veri, çevrilmez.
+- `us.*` Kullanıcı Yönetimi (özel liste; silme yok, pasife alma). bindLang ile canlı; arama korunur. Kullanıcı adı / ad soyad veri, çevrilmez. `field.password` eklendi.
+
+Tüm 26 modül artık i18n.js kullanıyor. Sözlük i18n.js DICT ile birebir.

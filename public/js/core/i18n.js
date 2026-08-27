@@ -304,6 +304,27 @@ const DICT = {
     'db.targetDetail': 'hedef {n} adet', 'db.wcLoad': 'İş Merkezi Doluluğu',
     'db.wcLoadSub': 'bu hafta · planlanan / kapasite', 'db.recentQuality': 'Son Kalite Kayıtları',
     'db.noPlan': 'Bu hafta plan yok.', 'db.noQuality': 'Henüz ölçüm yok.',
+    'field.password': 'Şifre',
+    // Denetim Soruları
+    'aud.subtitle': 'Denetim soru bankası', 'aud.new': 'Yeni Soru',
+    'aud.empty': 'Henüz soru yok. "Yeni Soru" ile başlayın.',
+    'aud.newTitle': 'Yeni Soru', 'aud.editTitle': 'Soru Düzenle',
+    'aud.form': 'Form', 'aud.section': 'Bölüm', 'aud.question': 'Soru', 'aud.score': 'Puan', 'aud.evidence': 'Kanıt',
+    'aud.updated': 'Soru güncellendi', 'aud.added': 'Soru eklendi', 'aud.deleted': 'Soru silindi',
+    'aud.deleteTitle': 'Soru silinsin mi?', 'aud.deleteBody': 'Bu denetim sorusu silinecek.',
+    // Kullanıcı Yönetimi
+    'us.summary': '{n} kullanıcı · tüm kullanıcılar yönetici · hesap yönetimi',
+    'us.new': 'Yeni Kullanıcı', 'us.search': 'Ad veya kullanıcı adı ara…',
+    'us.emptyTitle': 'Kullanıcı yok', 'us.empty': 'Henüz kullanıcı eklenmemiş.', 'us.noMatch': 'Aramayla eşleşen kullanıcı yok.',
+    'us.username': 'Kullanıcı adı', 'us.resetPw': 'Şifre sıfırla',
+    'us.newTitle': 'Yeni Kullanıcı', 'us.usernameField': 'Kullanıcı Adı',
+    'us.usernameHelp': 'Girişte kullanılır; sonradan değiştirilemez. Harf, rakam ve . _ -',
+    'us.pwHelp': 'En az 8 karakter.', 'us.added': 'Kullanıcı eklendi',
+    'us.editTitle': 'Kullanıcı Düzenle',
+    'us.activeHelp': 'Pasif kullanıcı giriş yapamaz; açık oturumları kapanır. Kendi hesabınızı pasife alamazsınız.',
+    'us.updated': 'Kullanıcı güncellendi',
+    'us.resetTitle': 'Şifre Sıfırla', 'us.resetSubmit': 'Şifreyi Güncelle', 'us.newPw': 'Yeni Şifre',
+    'us.newPwHelp': 'En az 8 karakter. Kaydettikten sonra tekrar görüntülenemez.', 'us.pwUpdated': 'Şifre güncellendi',
   },
   en: {
     // — menu groups —
@@ -601,6 +622,27 @@ const DICT = {
     'db.targetDetail': 'target {n} pcs', 'db.wcLoad': 'Work Center Load',
     'db.wcLoadSub': 'this week · planned / capacity', 'db.recentQuality': 'Recent Quality Records',
     'db.noPlan': 'No plans this week.', 'db.noQuality': 'No measurements yet.',
+    'field.password': 'Password',
+    // Audit Questions
+    'aud.subtitle': 'Audit question bank', 'aud.new': 'New Question',
+    'aud.empty': 'No questions yet. Start with "New Question".',
+    'aud.newTitle': 'New Question', 'aud.editTitle': 'Edit Question',
+    'aud.form': 'Form', 'aud.section': 'Section', 'aud.question': 'Question', 'aud.score': 'Score', 'aud.evidence': 'Evidence',
+    'aud.updated': 'Question updated', 'aud.added': 'Question added', 'aud.deleted': 'Question deleted',
+    'aud.deleteTitle': 'Delete this question?', 'aud.deleteBody': 'This audit question will be deleted.',
+    // Users
+    'us.summary': '{n} users · all users are administrators · account management',
+    'us.new': 'New User', 'us.search': 'Search name or username…',
+    'us.emptyTitle': 'No users', 'us.empty': 'No users yet.', 'us.noMatch': 'No users match your search.',
+    'us.username': 'Username', 'us.resetPw': 'Reset password',
+    'us.newTitle': 'New User', 'us.usernameField': 'Username',
+    'us.usernameHelp': 'Used to sign in; cannot be changed later. Letters, digits and . _ -',
+    'us.pwHelp': 'At least 8 characters.', 'us.added': 'User added',
+    'us.editTitle': 'Edit User',
+    'us.activeHelp': 'An inactive user cannot sign in; their open sessions are closed. You cannot deactivate your own account.',
+    'us.updated': 'User updated',
+    'us.resetTitle': 'Reset Password', 'us.resetSubmit': 'Update Password', 'us.newPw': 'New Password',
+    'us.newPwHelp': 'At least 8 characters. Cannot be viewed again after saving.', 'us.pwUpdated': 'Password updated',
   }
 };
 
