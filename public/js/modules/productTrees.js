@@ -1,6 +1,8 @@
 // Ürün Ağaçları — v2 modülü. Tasarım: Urun-Agaclari.dc.html.
 // Açılır/kapanır hiyerarşik ağaç (chevron, tümünü daralt). Kolonlar: Düğüm / Miktar /
 // Birim / Tip. Öz-referanslı; parentId kendi tablosundan seçilir (kendini seçemez).
+// i18n: özel görünüm — bindLang render()'ı veri çekmeden yeniden çağırır (search/açık
+// düğümler/aktif kayıt korunur, closure'da). Drawer kendi relabel'ıyla (drawer.js) çevrilir.
 
 import { resource } from '../core/api.js';
 import { openDrawer } from '../core/drawer.js';
@@ -8,16 +10,15 @@ import { FkSelect } from '../core/fkselect.js';
 import { toast, flashRow } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
 import { loadLookup } from '../core/lookups.js';
+import { t, bindLang } from '../core/i18n.js';
 
-// Ağaç tablosunda Birim/Tip ürün kodundan gelir; lookup satırına unit+type de eklenir
-// (varsayılan mapProduct yalnızca id/code/name taşır).
 const mapProductFull = (r) => ({ id: r.id, code: r.code, name: r.name, unit: r.unit, type: r.type });
 
 const api = resource('product-trees');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewProductTrees(container) {
-  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, nodes;
   try {
     products = await loadLookup('product-codes', mapProductFull);
@@ -44,24 +45,25 @@ export async function viewProductTrees(container) {
   const subtreeMatches = (n) => nodeMatches(n) || childrenOf(n.id).some(subtreeMatches);
 
   render();
+  bindLang(container, render);   // dil değişince yeniden çiz (search/açık düğümler korunur)
 
   function render() {
     container.innerHTML = `
       <div class="module-head">
         <div>
-          <h2>Ürün Ağaçları</h2>
-          <div class="text-muted" style="font-size:13.5px; margin-top:6px;">Bir düğüm başka bir düğümün altında durur · miktarlar üst düğümün bir adedi içindir</div>
+          <h2>${esc(t('menu.product-trees'))}</h2>
+          <div class="text-muted" style="font-size:13.5px; margin-top:6px;">${esc(t('tree.subtitle'))}</div>
         </div>
         <div style="display:flex; gap:10px;">
-          <button class="btn btn-secondary" id="pt-collapse">Tümünü daralt</button>
-          <button class="btn btn-primary" id="pt-add"${canWrite ? '' : ' disabled title="Salt okuma"'}>Yeni Düğüm</button>
+          <button class="btn btn-secondary" id="pt-collapse">${esc(t('tree.collapseAll'))}</button>
+          <button class="btn btn-primary" id="pt-add"${canWrite ? '' : ` disabled title="${esc(t('common.readonlyHint'))}"`}>${esc(t('tree.new'))}</button>
         </div>
       </div>
       <div class="toolbar"><div class="search">
-        <input class="input" type="search" id="pt-search" placeholder="Ürün kodu veya açıklama ara…" value="${esc(search)}">
+        <input class="input" type="search" id="pt-search" placeholder="${esc(t('tree.search'))}" value="${esc(search)}">
       </div></div>
       <div class="tree-wrap">
-        <div class="tree-head"><div>Düğüm</div><div>Miktar</div><div>Birim</div><div>Tip</div><div></div></div>
+        <div class="tree-head"><div>${esc(t('tree.colNode'))}</div><div>${esc(t('field.quantity'))}</div><div>${esc(t('field.unit'))}</div><div>${esc(t('field.type'))}</div><div></div></div>
         <div id="pt-body"></div>
       </div>`;
 
@@ -69,7 +71,7 @@ export async function viewProductTrees(container) {
     const visibleRoots = rootNodes().filter(subtreeMatches);
     if (visibleRoots.length === 0) {
       body.innerHTML = `<div class="tree-row"><div class="text-muted" style="grid-column:1/-1">${
-        search ? 'Eşleşen düğüm yok.' : 'Henüz ağaç düğümü yok.'}</div></div>`;
+        esc(search ? t('tree.noMatch') : t('tree.empty'))}</div></div>`;
     } else {
       for (const r of visibleRoots) renderNode(body, r, 0);
     }
@@ -109,9 +111,9 @@ export async function viewProductTrees(container) {
     const actions = row.querySelector('.tree-actions');
     if (canWrite) {
       actions.append(
-        btn('Alt Ekle', 'btn-ghost', () => openForm(null, node.id)),
-        btn('Düzenle', 'btn-ghost', () => openForm(node, null)),
-        btn('Sil', 'btn-danger', () => remove(node))
+        btn(t('tree.addChild'), 'btn-ghost', () => openForm(null, node.id)),
+        btn(t('action.edit'), 'btn-ghost', () => openForm(node, null)),
+        btn(t('action.delete'), 'btn-danger', () => remove(node))
       );
     }
     body.appendChild(row);
@@ -123,43 +125,43 @@ export async function viewProductTrees(container) {
     const editing = !!row;
     activeId = editing ? row.id : null; markActive();
 
-    const productFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.productCodeId ?? null, placeholder: 'Ürün seçin…' });
-    const materialFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.materialCodeId ?? null, placeholder: 'Hammadde seçin…' });
-    const parentRows = nodes.filter(t => !editing || t.id !== row.id)
-      .map(t => ({ id: t.id, code: pc(t).code || '', name: t.description || '' }));
+    const productFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.productCodeId ?? null, placeholder: t('tree.selectProduct') });
+    const materialFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.materialCodeId ?? null, placeholder: t('tree.selectMaterial') });
+    const parentRows = nodes.filter(n => !editing || n.id !== row.id)
+      .map(n => ({ id: n.id, code: pc(n).code || '', name: n.description || '' }));
     const parentFk = new FkSelect({
       source: async () => ({ rows: parentRows, total: parentRows.length }), rows: parentRows,
-      value: editing ? (row.parentId ?? null) : (presetParentId ?? null), placeholder: 'Üst düğüm seçin…'
+      value: editing ? (row.parentId ?? null) : (presetParentId ?? null), placeholder: t('tree.selectParent')
     });
 
     openDrawer({
-      title: editing ? 'Düğüm Düzenle' : (presetParentId ? 'Alt Düğüm Ekle' : 'Yeni Düğüm'),
-      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      title: () => t(editing ? 'tree.editTitle' : (presetParentId ? 'tree.addChildTitle' : 'tree.newTitle')),
+      submitLabel: () => t(editing ? 'action.update' : 'action.add'),
       values: editing ? { ...row } : { parentId: presetParentId ?? null },
       fields: [
-        { name: 'secId', type: 'section', label: 'Kimlik' },
-        { name: 'productCodeId', label: 'Ürün', type: 'fk', fk: productFk, required: true },
-        { name: 'description', label: 'Açıklama', type: 'text' },
-        { name: 'parentId', label: 'Üst Düğüm', type: 'fk', fk: parentFk, help: 'Boş bırakılırsa kök düğüm.' },
-        { name: 'secMat', type: 'section', label: 'Malzeme' },
-        { name: 'materialCodeId', label: 'Malzeme (Hammadde)', type: 'fk', fk: materialFk },
-        { name: 'materialDescription', label: 'Malzeme Açıklaması', type: 'text' },
-        { name: 'secMeasures', type: 'section', label: 'Ölçüler' },
-        { name: 'unitQuantity', label: 'Birim Miktar', type: 'number', step: 'any' },
-        { name: 'outerDiameter', label: 'Dış Çap', type: 'number', step: 'any' },
-        { name: 'innerDiameter', label: 'İç Çap', type: 'number', step: 'any' },
-        { name: 'materialLength', label: 'Malzeme Uzunluğu', type: 'number', step: 'any' },
-        { name: 'materialWeight', label: 'Malzeme Ağırlığı', type: 'number', step: 'any' },
-        { name: 'partLength', label: 'Parça Boyu', type: 'number', step: 'any' },
-        { name: 'cutLoss', label: 'Kesim Kaybı', type: 'number', step: 'any' },
-        { name: 'supplierCutLength', label: 'Tedarikçi Kesim Uzunluğu', type: 'number', step: 'any' },
-        { name: 'secRev', type: 'section', label: 'Revizyon' },
-        { name: 'revision', label: 'Revizyon', type: 'text' },
-        { name: 'revisionDate', label: 'Revizyon Tarihi', type: 'date' }
+        { name: 'secId', type: 'section', label: () => t('tree.secId') },
+        { name: 'productCodeId', label: () => t('field.product'), type: 'fk', fk: productFk, required: true },
+        { name: 'description', label: () => t('field.description'), type: 'text' },
+        { name: 'parentId', label: () => t('field.parentNode'), type: 'fk', fk: parentFk, help: () => t('tree.parentHelp') },
+        { name: 'secMat', type: 'section', label: () => t('tree.secMat') },
+        { name: 'materialCodeId', label: () => t('tree.materialField'), type: 'fk', fk: materialFk },
+        { name: 'materialDescription', label: () => t('tree.materialDesc'), type: 'text' },
+        { name: 'secMeasures', type: 'section', label: () => t('tree.secMeasures') },
+        { name: 'unitQuantity', label: () => t('field.unitQuantity'), type: 'number', step: 'any' },
+        { name: 'outerDiameter', label: () => t('field.outerDiameter'), type: 'number', step: 'any' },
+        { name: 'innerDiameter', label: () => t('field.innerDiameter'), type: 'number', step: 'any' },
+        { name: 'materialLength', label: () => t('field.materialLength'), type: 'number', step: 'any' },
+        { name: 'materialWeight', label: () => t('field.materialWeight'), type: 'number', step: 'any' },
+        { name: 'partLength', label: () => t('tree.partLength'), type: 'number', step: 'any' },
+        { name: 'cutLoss', label: () => t('tree.cutLoss'), type: 'number', step: 'any' },
+        { name: 'supplierCutLength', label: () => t('tree.supplierCutLength'), type: 'number', step: 'any' },
+        { name: 'secRev', type: 'section', label: () => t('tree.secRev') },
+        { name: 'revision', label: () => t('field.revision'), type: 'text' },
+        { name: 'revisionDate', label: () => t('field.revisionDate'), type: 'date' }
       ],
       onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
       onSaved: async (saved) => {
-        toast(editing ? 'Düğüm güncellendi' : 'Düğüm eklendi', 'success');
+        toast(t('toast.saved'), 'success');
         await reloadNodes();
         activeId = saved.id;
         render();
@@ -181,12 +183,12 @@ export async function viewProductTrees(container) {
 
   async function remove(node) {
     const ok = await confirmDialog({
-      title: 'Düğüm silinsin mi?',
-      body: `"${pc(node).code || node.productCodeId}" ve ALT düğümleri kalıcı olarak silinecek.`,
-      confirmLabel: 'Sil', danger: true
+      title: t('tree.deleteTitle'),
+      body: t('tree.deleteBody', { name: pc(node).code || node.productCodeId }),
+      confirmLabel: t('action.delete'), danger: true
     });
     if (!ok) return;
-    try { await api.remove(node.id); toast('Düğüm silindi', 'success'); await reloadNodes(); render(); }
+    try { await api.remove(node.id); toast(t('toast.deleted'), 'success'); await reloadNodes(); render(); }
     catch (err) { toast(err.message, 'danger'); }
   }
 }

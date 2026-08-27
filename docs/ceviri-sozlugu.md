@@ -357,3 +357,42 @@ baktığında tanıdık kelimeleri görmeli.
 | wo.noProduction | Üretim kaydı yok. | No production records. |
 | wo.deleteTitle | İş emri silinsin mi? | Delete this work order? |
 | wo.deleteBody | "{no}" ve BAĞLI üretim kayıtları silinecek. | "{no}" and its LINKED production records will be deleted. |
+
+### Parti C (Üretim Girişi / Ürün Ağaçları) — alanlar, vardiya, modül metinleri
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| field.description | Açıklama | Description |
+| field.type | Tip | Type |
+| field.unitQuantity | Birim Miktar | Unit Quantity |
+| field.outerDiameter / field.innerDiameter | Dış Çap / İç Çap | Outer Diameter / Inner Diameter |
+| field.materialLength / field.materialWeight | Malzeme Uzunluğu / Malzeme Ağırlığı | Material Length / Material Weight |
+| field.revision / field.revisionDate | Revizyon / Revizyon Tarihi | Revision / Revision Date |
+| field.parentNode | Üst Düğüm | Parent Node |
+| shift.Öğleden Sonra / shift.Mesai | Öğleden Sonra / Mesai | Afternoon / Overtime |
+| prod.subtitle | Vardiya sonunda iş emri başına üretilen ve fire adedi girilir | At shift end, enter produced and scrap quantity per work order |
+| prod.newEntry / prod.today | Yeni Giriş / Bugünkü Girişler | New Entry / Today's Entries |
+| prod.count | {n} kayıt | {n} records |
+| prod.noToday | Bugün henüz giriş yok. | No entries today yet. |
+| prod.needEdit | Giriş için düzenleme yetkisi gerekiyor. | Editing permission is required to add entries. |
+| prod.selectWo / prod.selectOp | İş emri seçin… / Operatör seçin… | Select work order… / Select operator… |
+| prod.remaining | Kalan hedef: {n} adet | Remaining target: {n} pcs |
+| prod.woField / prod.operatorField | İş emri / Operatör | Work Order / Operator |
+| prod.actualField / prod.scrapField | Üretilen adet / Fire adet | Produced quantity / Scrap quantity |
+| prod.saveNew | Kaydet ve yeni | Save & new |
+| prod.savedToast | Giriş kaydedildi · {n} adet · {s} fire | Entry saved · {n} pcs · {s} scrap |
+| prod.colTime | Saat | Time |
+| tree.subtitle | Bir düğüm başka bir düğümün altında durur · miktarlar üst düğümün bir adedi içindir | A node sits under another · quantities are per one unit of the parent |
+| tree.collapseAll / tree.new | Tümünü daralt / Yeni Düğüm | Collapse all / New Node |
+| tree.search | Ürün kodu veya açıklama ara… | Search product code or description… |
+| tree.colNode | Düğüm | Node |
+| tree.noMatch / tree.empty | Eşleşen düğüm yok. / Henüz ağaç düğümü yok. | No matching nodes. / No tree nodes yet. |
+| tree.addChild | Alt Ekle | Add Child |
+| tree.selectProduct / tree.selectMaterial / tree.selectParent | Ürün / Hammadde / Üst düğüm seçin… | Select product / raw material / parent node… |
+| tree.editTitle / tree.addChildTitle / tree.newTitle | Düğüm Düzenle / Alt Düğüm Ekle / Yeni Düğüm | Edit Node / Add Child Node / New Node |
+| tree.secId / tree.secMat / tree.secMeasures / tree.secRev | Kimlik / Malzeme / Ölçüler / Revizyon | Identity / Material / Measurements / Revision |
+| tree.parentHelp | Boş bırakılırsa kök düğüm. | Leave empty for a root node. |
+| tree.materialField / tree.materialDesc | Malzeme (Hammadde) / Malzeme Açıklaması | Material (Raw) / Material Description |
+| tree.partLength / tree.cutLoss / tree.supplierCutLength | Parça Boyu / Kesim Kaybı / Tedarikçi Kesim Uzunluğu | Part Length / Cut Loss / Supplier Cut Length |
+| tree.deleteTitle | Düğüm silinsin mi? | Delete this node? |
+| tree.deleteBody | "{name}" ve ALT düğümleri kalıcı olarak silinecek. | "{name}" and its CHILD nodes will be permanently deleted. |

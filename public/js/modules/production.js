@@ -1,22 +1,26 @@
 // Üretim Girişi — v2 modülü. Tasarım: Uretim-Girisi.dc.html.
 // Sol: "Yeni Giriş" formu; sağ: "Bugünkü Girişler" listesi. Vardiya sonu giriş ekranı.
+// i18n: özel görünüm (DataTable yok) — dil değişince bindLang render()'ı VERİ ÇEKMEDEN
+// yeniden çağırır. NOT: dil ACIKKEN form yeniden kurulur, yarım kalan giriş sıfırlanır
+// (kenar durum; toggle mid-entry nadir). Etiketler t() ile.
 
 import { resource, ValidationError, ApiError } from '../core/api.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { errorState, esc } from '../core/states.js';
 import { loadLookup, mapProduct } from '../core/lookups.js';
+import { t, bindLang } from '../core/i18n.js';
 
 const api = resource('production');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
-const SHIFTS = [
-  { value: 'Sabah', label: 'Sabah' },
-  { value: 'Öğleden Sonra', label: 'Öğleden Sonra' },
-  { value: 'Mesai', label: 'Mesai' }
+const shiftOptions = () => [
+  { value: 'Sabah', label: t('shift.Sabah') },
+  { value: 'Öğleden Sonra', label: t('shift.Öğleden Sonra') },
+  { value: 'Mesai', label: t('shift.Mesai') }
 ];
 
 export async function viewProduction(container) {
-  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, woRows, woTarget, woLabel, operators, entries;
   try {
     products = await loadLookup('product-codes', mapProduct);
@@ -38,22 +42,21 @@ export async function viewProduction(container) {
     return m;
   };
 
-  // NOT: render()'dan ÖNCE tanımlanmalı — renderForm() bunu kullanıyor; const olduğu
-  // için sonra tanımlanırsa "temporal dead zone" ReferenceError'ı verir (panel boş kalır).
   const woSource = async () => ({ rows: woRows, total: woRows.length });
 
   render();
+  bindLang(container, render);   // dil değişince yeniden çiz (veri closure'da, çekilmez)
 
   function render() {
     container.innerHTML = `
       <div class="module-head"><div>
-        <h2>Üretim Girişi</h2>
-        <div class="text-muted" style="font-size:13.5px; margin-top:6px;">Vardiya sonunda iş emri başına üretilen ve fire adedi girilir</div>
+        <h2>${esc(t('menu.production'))}</h2>
+        <div class="text-muted" style="font-size:13.5px; margin-top:6px;">${esc(t('prod.subtitle'))}</div>
       </div></div>
       <div class="split">
-        <div class="panel"><div class="panel-head">Yeni Giriş</div><div class="panel-body" id="pr-form"></div></div>
+        <div class="panel"><div class="panel-head">${esc(t('prod.newEntry'))}</div><div class="panel-body" id="pr-form"></div></div>
         <div class="panel">
-          <div class="panel-head">Bugünkü Girişler <span class="sub" id="pr-count"></span></div>
+          <div class="panel-head">${esc(t('prod.today'))} <span class="sub" id="pr-count"></span></div>
           <div id="pr-today"></div>
         </div>
       </div>`;
@@ -63,41 +66,37 @@ export async function viewProduction(container) {
 
   function renderForm() {
     const host = container.querySelector('#pr-form');
-    if (!canWrite) { host.innerHTML = '<div class="text-muted">Giriş için düzenleme yetkisi gerekiyor.</div>'; return; }
+    if (!canWrite) { host.innerHTML = `<div class="text-muted">${esc(t('prod.needEdit'))}</div>`; return; }
 
-    const woFk = new FkSelect({ source: woSource, rows: woRows, placeholder: 'İş emri seçin…' });
-    const opFk = new FkSelect({ source: operators.source, rows: operators.rows, placeholder: 'Operatör seçin…' });
+    const woFk = new FkSelect({ source: woSource, rows: woRows, placeholder: t('prod.selectWo') });
+    const opFk = new FkSelect({ source: operators.source, rows: operators.rows, placeholder: t('prod.selectOp') });
 
     const F = {};
     host.innerHTML = '';
     const banner = div('drawer-error'); banner.style.display = 'none'; host.appendChild(banner);
 
-    // İş emri + kalan hedef
-    const woField = field('İş emri', woFk.el, true);
+    const woField = field(t('prod.woField'), woFk.el, true);
     const remain = div('text-muted'); remain.style.cssText = 'font-size:12px; margin-top:4px;';
     woField.appendChild(remain);
     host.appendChild(woField);
     F.workOrderId = { read: () => woFk.getValue(), field: woField, err: errSpan(woField) };
     woFk.onChange((id) => {
-      const t = woTarget.get(id); const done = producedByWo().get(id) || 0;
-      remain.textContent = (t != null) ? `Kalan hedef: ${Math.max(0, t - done)} adet` : '';
+      const tgt = woTarget.get(id); const done = producedByWo().get(id) || 0;
+      remain.textContent = (tgt != null) ? t('prod.remaining', { n: Math.max(0, tgt - done) }) : '';
     });
 
-    // Tarih + Vardiya
-    F.date = input('Tarih', 'date', todayStr(), host);
-    F.shift = select('Vardiya', SHIFTS, 'Sabah', host);
-    // Operatör
-    const opField = field('Operatör', opFk.el, false);
+    F.date = input(t('field.date'), 'date', todayStr(), host);
+    F.shift = select(t('field.shift'), shiftOptions(), 'Sabah', host);
+    const opField = field(t('prod.operatorField'), opFk.el, false);
     host.appendChild(opField);
     F.operatorId = { read: () => opFk.getValue(), field: opField, err: errSpan(opField) };
-    // Üretilen + Fire
-    F.actualQuantity = input('Üretilen adet', 'number', '', host, true);
-    F.scrapQuantity = input('Fire adet', 'number', '', host);
-    F.note = textarea('Not', host);
+    F.actualQuantity = input(t('prod.actualField'), 'number', '', host, true);
+    F.scrapQuantity = input(t('prod.scrapField'), 'number', '', host);
+    F.note = textarea(t('field.note'), host);
 
     const actions = div('drawer-actions'); actions.style.cssText = 'border:0; padding:8px 0 0;';
-    const clearBtn = btn('Temizle', 'btn-secondary', reset);
-    const saveBtn = btn('Kaydet ve yeni', 'btn-primary', save);
+    const clearBtn = btn(t('action.clear'), 'btn-secondary', reset);
+    const saveBtn = btn(t('prod.saveNew'), 'btn-primary', save);
     actions.append(clearBtn, saveBtn);
     host.appendChild(actions);
 
@@ -113,22 +112,21 @@ export async function viewProduction(container) {
       clearErrors();
       const body = {};
       for (const k in F) body[k] = F[k].read ? F[k].read() : F[k].inp.value;
-      saveBtn.disabled = true; saveBtn.textContent = 'Kaydediliyor…';
+      saveBtn.disabled = true; saveBtn.textContent = t('action.saving');
       try {
         const { data } = await api.create(body);
-        toast(`Giriş kaydedildi · ${data.actualQuantity} adet · ${data.scrapQuantity} fire`, 'success');
+        toast(t('prod.savedToast', { n: data.actualQuantity, s: data.scrapQuantity }), 'success');
         entries.unshift(data);
         reset();
         renderToday();
-        // kalan hedefi güncelle
-        const t = woTarget.get(data.workOrderId); const done = producedByWo().get(data.workOrderId) || 0;
-        if (t != null) remain.textContent = `Kalan hedef: ${Math.max(0, t - done)} adet`;
+        const tgt = woTarget.get(data.workOrderId); const done = producedByWo().get(data.workOrderId) || 0;
+        if (tgt != null) remain.textContent = t('prod.remaining', { n: Math.max(0, tgt - done) });
       } catch (err) {
         if (err instanceof ValidationError) {
           for (const [k, msg] of Object.entries(err.fields)) if (F[k]) { F[k].field.classList.add('has-error'); if (F[k].err) { F[k].err.textContent = msg; F[k].err.style.display = ''; } }
-        } else { banner.textContent = err instanceof ApiError ? err.message : 'Kaydedilemedi'; banner.style.display = ''; }
+        } else { banner.textContent = err instanceof ApiError ? err.message : t('err.GENERIC'); banner.style.display = ''; }
       } finally {
-        saveBtn.disabled = false; saveBtn.textContent = 'Kaydet ve yeni';
+        saveBtn.disabled = false; saveBtn.textContent = t('prod.saveNew');
       }
     }
   }
@@ -136,11 +134,11 @@ export async function viewProduction(container) {
   function renderToday() {
     const today = todayStr();
     const list = entries.filter(e => e.date === today);
-    container.querySelector('#pr-count').textContent = `${list.length} kayıt`;
+    container.querySelector('#pr-count').textContent = t('prod.count', { n: list.length });
     const host = container.querySelector('#pr-today');
-    if (list.length === 0) { host.innerHTML = '<div class="panel-body text-muted">Bugün henüz giriş yok.</div>'; return; }
+    if (list.length === 0) { host.innerHTML = `<div class="panel-body text-muted">${esc(t('prod.noToday'))}</div>`; return; }
     host.innerHTML = `<table class="table"><thead><tr>
-        <th>Saat</th><th>İş Emri</th><th>Operatör</th><th>Adet</th><th>Fire</th></tr></thead>
+        <th>${esc(t('prod.colTime'))}</th><th>${esc(t('field.workOrderNo'))}</th><th>${esc(t('prod.operatorField'))}</th><th>${esc(t('field.quantity'))}</th><th>${esc(t('field.scrap'))}</th></tr></thead>
       <tbody>${list.map(e => `<tr>
         <td class="mono">${esc((e.updatedAt || '').slice(11, 16) || '—')}</td>
         <td>${esc(woLabel.get(e.workOrderId) || '#' + e.workOrderId)}</td>

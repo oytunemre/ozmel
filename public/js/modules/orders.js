@@ -8,7 +8,7 @@ import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, mapNamed, withCurrent } from '../core/lookups.js';
+import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
 import { childTable } from './_childDetail.js';
 import { t, tStatus } from '../core/i18n.js';
 
@@ -92,7 +92,7 @@ export async function viewOrders(container) {
         { name: 'secId', type: 'section', label: () => t('ord.secOrder') },
         { name: 'orderNo', label: () => t('field.orderNo'), type: 'text', required: true },
         { name: 'source', label: () => t('field.source'), type: 'select', required: true, options: sourceOptions() },
-        { name: 'status', label: () => t('field.status'), type: 'select', required: true, options: withCurrent(statuses.map(s => ({ value: s, label: tStatus(s) })), row?.status) },
+        { name: 'status', label: () => t('field.status'), type: 'select', required: true, options: statuses.map(s => ({ value: s, label: tStatus(s) })) },
         { name: 'productCodeId', label: () => t('field.product'), type: 'fk', fk: productFk, required: true },
         { name: 'targetQuantity', label: () => t('field.targetQuantity'), type: 'number', step: 'any', required: true },
         { name: 'secDates', type: 'section', label: () => t('ord.secDates') },
