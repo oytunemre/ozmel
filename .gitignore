@@ -13,7 +13,6 @@ config.php
 .idea/
 *.swp
 krc-v71.html
-v2/config.php
 tasarim/
 onizleme/
-v2/data/*.json
+data/*.json

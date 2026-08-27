@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * etl_web.php — GECICI tarayici sarmalayicisi (SSH yok; Plesk File Manager + tarayici).
  *
- *   .../v2/tools/etl_web.php?key=<ANAHTAR>           -> DRY-RUN (varsayilan, HICBIR SEY yazmaz)
- *   .../v2/tools/etl_web.php?key=<ANAHTAR>&live=1     -> CANLI (v2 tablolarina yazar)
+ *   .../tools/etl_web.php?key=<ANAHTAR>           -> DRY-RUN (varsayilan, HICBIR SEY yazmaz)
+ *   .../tools/etl_web.php?key=<ANAHTAR>&live=1     -> CANLI (tablolara yazar)
  *   ...&file=/mutlak/yol.json                         -> belirli dosya (varsayilan: data/ ilk *.json)
  *
  * GUVENLIK: yalnizca anahtari bilen calistirir; eslemezse 403. ETL yeniden
@@ -42,7 +42,7 @@ header('Content-Type: text/html; charset=utf-8');
 echo "<!doctype html><meta charset=utf-8><title>Ozmel ETL</title>";
 echo "<body style='background:#111;color:#ddd;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;padding:18px'>";
 echo "<div style='margin-bottom:10px'>Mod: <b style='color:" . ($ETL_DRYRUN ? '#6cf' : '#f96') . "'>"
-    . ($ETL_DRYRUN ? 'DRY-RUN — hicbir sey yazilmaz' : 'CANLI — v2 tablolarina yazar')
+    . ($ETL_DRYRUN ? 'DRY-RUN — hicbir sey yazilmaz' : 'CANLI — tablolara yazar')
     . "</b>";
 if ($ETL_DRYRUN) {
     echo " &nbsp;|&nbsp; canli calistirmak icin URL'ye <code>&amp;live=1</code> ekleyin";

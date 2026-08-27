@@ -135,7 +135,7 @@
     document.getElementById('logout').addEventListener('click', () => {
       const token = window.SESSION_TOKEN;
       try {
-        fetch('../../logout.php', {
+        fetch('../logout.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),

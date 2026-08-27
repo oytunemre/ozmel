@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // --- rota cozumleme --------------------------------------------------------
-// /v2/public/api/index.php/work-centers/12  ->  ['work-centers', '12']
+// /public/api/index.php/work-centers/12  ->  ['work-centers', '12']
 $path    = trim($_SERVER['PATH_INFO'] ?? '', '/');
 $parts   = $path === '' ? [] : explode('/', $path);
 $resource = $parts[0] ?? '';
