@@ -2,6 +2,7 @@
 // id->kayıt haritası döner. FK id'lerini tabloda ad/kod olarak göstermek için kullanılır.
 
 import { resource } from './api.js';
+import { t } from './i18n.js';
 
 // In-flight deduplication: aynı kaynağa EŞZAMANLI istekler tek fetch'i paylaşır.
 // (Kalıcı cache değil — çözülünce silinir, düzenleme sonrası taze veri gelir.)
@@ -30,9 +31,9 @@ export async function loadLookup(name, mapRow) {
     source: async () => ({ rows, total: rows.length }),
     label: (id) => {
       const r = byId.get(id);
-      // FK bos (null/0/undefined) -> '—'; dolu ama yuklenmemis -> '#id'. Gecerli
-      // id'ler >=1 oldugundan 0'i da bos sayariz (NULL FK'nin '#0' gorunmesini onler).
-      if (!r) return !id ? '—' : '#' + id;
+      // FK boş (null/0/undefined) -> "seçilmedi/Not selected"; dolu ama yüklenmemiş -> '#id'.
+      // Geçerli id'ler >=1 olduğundan 0'ı da boş sayarız (NULL FK'nin '#0' görünmesini önler).
+      if (!r) return !id ? t('common.notSelected') : '#' + id;
       return [r.code, r.name].filter(Boolean).join(' · ');
     }
   };
