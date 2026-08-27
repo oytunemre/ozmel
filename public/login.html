@@ -53,6 +53,15 @@
       border: 1px solid var(--divider); background: #fff; border-radius: 0; }
     .input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
 
+    /* Şifre göster/gizle göz düğmesi (alanın sağ içinde) */
+    .pw-wrap { position: relative; }
+    .pw-wrap .input { padding-right: 42px; }
+    .pw-toggle { position: absolute; top: 0; right: 0; height: 42px; width: 40px;
+      display: grid; place-items: center; padding: 0; background: none; border: 0;
+      cursor: pointer; color: var(--neutral-600); }
+    .pw-toggle:hover { color: var(--neutral-700); }
+    .pw-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
     .btn { width: 100%; height: 46px; margin-top: 6px; font-family: var(--font-body); font-size: 15px; font-weight: 500;
       background: var(--accent); color: #fff; border: 1px solid var(--accent-700); border-radius: 0; cursor: pointer; }
     .btn:hover:not(:disabled) { background: var(--accent-600); }
@@ -123,7 +132,10 @@
         </div>
         <div class="field">
           <label for="password">Şifre</label>
-          <input class="input" id="password" name="password" type="password" autocomplete="current-password" required>
+          <div class="pw-wrap">
+            <input class="input" id="password" name="password" type="password" autocomplete="current-password" required>
+            <button type="button" class="pw-toggle" id="pw-toggle" tabindex="0" aria-label="Şifreyi göster" title="Göster"></button>
+          </div>
         </div>
 
         <button class="btn" id="submit" type="submit">Giriş Yap</button>
@@ -134,8 +146,10 @@
   </div>
 
   <script>
-    // Giriş uç noktası kök login.php (public → bir üst dizin).
-    const LOGIN_URL = '../login.php';
+    // Giriş uç noktası kök login.php — sayfanın KENDİ konumundan çöz. .htaccess
+    // yönlendirmesi altında ../ site köküne çıkıyordu; bu hem /test/login.html hem
+    // /test/public/login.html altında doğru çözer.
+    const LOGIN_URL = new URL('login.php', location.href).href;
 
     const form = document.getElementById('login-form');
     const errBox = document.getElementById('err');
@@ -174,6 +188,25 @@
         restore();
       }
     });
+
+    // Şifre göster/gizle — drawer.js'teki password alan tipiyle aynı Lucide eye/eye-off.
+    // login.html kabuğun DIŞINDA olduğundan (drawer.js içe alınmaz) ikonlar inline gömülü.
+    const EYE = '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const EYE_OFF = '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>';
+    const pwInput = document.getElementById('password');
+    const pwToggle = document.getElementById('pw-toggle');
+    function paintPw() {
+      const shown = pwInput.type === 'text';
+      pwToggle.innerHTML = shown ? EYE_OFF : EYE;
+      pwToggle.setAttribute('aria-label', shown ? 'Şifreyi gizle' : 'Şifreyi göster');
+      pwToggle.title = shown ? 'Gizle' : 'Göster';
+    }
+    pwToggle.addEventListener('click', () => {
+      pwInput.type = pwInput.type === 'password' ? 'text' : 'password';   // varsayılan gizli
+      paintPw();
+      pwInput.focus();
+    });
+    paintPw();
   </script>
 </body>
 </html>

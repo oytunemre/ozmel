@@ -89,22 +89,11 @@
     // Jeton yoksa giriş ekranına gönder — uygulama kabuğu hiç çizilmez.
     if (!window.SESSION_TOKEN) { toLogin(); throw new Error('no-session'); }
 
-    // Kullanıcı bilgisi SUNUCUDAN gelir (api/me -> sessions ⋈ users). Kimlik/rol
-    // buradan doldurulur; modüller window.SESSION_ROLE'ü route()'tan ÖNCE görsün diye
-    // bu çağrı bloklar. Yanıt gelmezse ya da 401 dönerse giriş ekranına dön.
-    let me = null;
-    try {
-      const res = await fetch('api/index.php/me', { headers: { 'X-Session-Token': window.SESSION_TOKEN } });
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json.ok) me = json.data;
-      }
-    } catch { /* ağ hatası -> aşağıda login'e yönlendirilir */ }
-    if (!me) { toLogin(); throw new Error('no-session'); }
-
-    window.SESSION_ROLE = me.role || 'editor';
-    window.SESSION_USER = me.displayName || 'Kullanıcı';
-    window.SESSION_USERNAME = me.username || '';
+    // Kimlik/rol giriş yanıtından (login.php) localStorage'a yazıldı; üst şerit ve
+    // modül yetkisi (SESSION_ROLE) buradan türer. Sunucuya ek çağrı yok — böylece
+    // .htaccess yönlendirmesi altında API yolu bağımlılığı olmaz.
+    window.SESSION_ROLE = localStorage.getItem('sessionRole') || 'editor';
+    window.SESSION_USER = localStorage.getItem('sessionUser') || 'Kullanıcı';
 
     // Modül kaydı — tasarim/Yon-B-Rahat.dc.html'deki gruplu düzen.
     const GROUPS = [
@@ -173,11 +162,11 @@
       }
     }
 
-    // Üst bar: kullanıcı + rol + baş harfler
+    // Üst bar: kullanıcı + rol + ismin baş harfi
     document.getElementById('user-name').textContent = window.SESSION_USER;
     document.getElementById('user-role').textContent = window.SESSION_ROLE;
     document.getElementById('avatar').textContent =
-      window.SESSION_USER.split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase() || '?';
+      (window.SESSION_USER.trim().charAt(0) || '?').toLocaleUpperCase('tr');
 
     // Dil seçimi (görsel; modüller şimdilik Türkçe). Tercihi saklar.
     const lang = document.getElementById('lang');
@@ -193,7 +182,8 @@
     document.getElementById('logout').addEventListener('click', () => {
       const token = window.SESSION_TOKEN;
       try {
-        fetch('../logout.php', {
+        // Sayfanın kendi konumundan çöz — .htaccess yönlendirmesi altında ../ yanlış çıkardı.
+        fetch(new URL('logout.php', location.href).href, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),
