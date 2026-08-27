@@ -2,6 +2,7 @@
 // serbest değer yazar. Enter/virgül ekler, × ya da Backspace siler. getValue() dizi döner.
 
 import { esc } from './states.js';
+import { t } from './i18n.js';
 
 export class TagList {
   /**
@@ -9,7 +10,7 @@ export class TagList {
    * unique=true (varsayılan): tekrar eden değer eklenmez (varyantlar için doğru).
    * unique=false: tekrarlara İZİN verilir, sıra korunur (ölçüm değerleri — 8.88, 8.88 normal).
    */
-  constructor({ value = [], placeholder = 'Yaz ve Enter…', unique = true } = {}) {
+  constructor({ value = [], placeholder = t('tag.placeholder'), unique = true } = {}) {
     this.unique = unique;
     this.tags = clean(value, unique);
     this.placeholder = placeholder;

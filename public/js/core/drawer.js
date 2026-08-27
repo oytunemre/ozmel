@@ -231,6 +231,7 @@ function buildField(f, value, markDirty, form) {
   wrap.appendChild(label);
 
   let read, clear, phInput = null;   // phInput: placeholder'ı çevrilecek input (varsa)
+  let extraRelabel = null;           // tipe özel canlı çeviri (bool Evet/Hayır, password ipuçları)
   if (f.type === 'fk') {
     const fk = f.fk;
     if (value != null) fk.setValue(value);
@@ -253,14 +254,19 @@ function buildField(f, value, markDirty, form) {
   } else if (f.type === 'bool') {
     const seg = h('div', 'seg');
     const cur = value ? '1' : '0';
-    for (const [v, lbl] of [['1', 'Evet'], ['0', 'Hayır']]) {
-      const opt = h('label', 'seg-opt', esc(lbl));
-      opt.insertAdjacentHTML('afterbegin',
-        `<input type="radio" name="${esc(f.name)}" value="${v}"${v === cur ? ' checked' : ''}>`);
+    const boolSpans = [];   // [span, i18nKey] — canlı dil değişiminde güncellenir
+    for (const [v, key] of [['1', 'common.yes'], ['0', 'common.no']]) {
+      const opt = h('label', 'seg-opt');
+      opt.innerHTML = `<input type="radio" name="${esc(f.name)}" value="${v}"${v === cur ? ' checked' : ''}> `;
+      const span = document.createElement('span');
+      span.textContent = t(key);
+      opt.appendChild(span);
+      boolSpans.push([span, key]);
       seg.appendChild(opt);
     }
     seg.addEventListener('change', markDirty);
     wrap.appendChild(seg);
+    extraRelabel = () => { for (const [span, key] of boolSpans) span.textContent = t(key); };
     read = () => Number(form.querySelector(`input[name="${cssEsc(f.name)}"]:checked`)?.value ?? 0);
   } else if (f.type === 'select') {
     const sel = h('select', 'input');
@@ -294,8 +300,8 @@ function buildField(f, value, markDirty, form) {
     const paint = () => {
       const shown = inp.type === 'text';
       toggle.innerHTML = shown ? EYE_OFF_SVG : EYE_SVG;
-      toggle.setAttribute('aria-label', shown ? 'Şifreyi gizle' : 'Şifreyi göster');
-      toggle.title = shown ? 'Gizle' : 'Göster';
+      toggle.setAttribute('aria-label', shown ? t('common.hidePassword') : t('common.showPassword'));
+      toggle.title = shown ? t('action.hide') : t('action.show');
     };
     toggle.addEventListener('click', () => {
       inp.type = inp.type === 'password' ? 'text' : 'password';
@@ -303,6 +309,7 @@ function buildField(f, value, markDirty, form) {
       inp.focus();
     });
     paint();
+    extraRelabel = paint;   // dil değişince aria-label/title güncellensin
     pw.append(inp, toggle);
     wrap.appendChild(pw);
     read = () => inp.value;   // şifre KIRPILMAZ — boşluk anlamlı olabilir
@@ -348,6 +355,7 @@ function buildField(f, value, markDirty, form) {
       paintLabel();
       if (helpEl) helpEl.textContent = lbl(f.help);
       if (phInput && f.placeholder) phInput.placeholder = lbl(f.placeholder);
+      extraRelabel?.();   // bool Evet/Hayır, password göster/gizle ipuçları
     },
     focus: () => wrap.querySelector('input, textarea, select, .fk-control')?.focus(),
     setError: (msg) => { wrap.classList.add('has-error'); errEl.textContent = msg; errEl.style.display = ''; },

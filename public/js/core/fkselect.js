@@ -5,6 +5,7 @@
 // filtreleme istemci tarafinda. total > yuklenen satirdan buyukse uyari cikar.
 
 import { esc } from './states.js';
+import { t } from './i18n.js';
 
 export class FkSelect {
   /**
@@ -13,7 +14,7 @@ export class FkSelect {
    * source: async () => ({rows, total}) — ilk acilista yuklenir. rows onceden
    * verilirse (cagiranda zaten varsa) etiketler hemen cozulur, source cagrilmaz.
    */
-  constructor({ source, multiple = false, value = null, placeholder = 'Seçin…', warnAt = 200, rows = null, total = 0 }) {
+  constructor({ source, multiple = false, value = null, placeholder = t('fk.select'), warnAt = 200, rows = null, total = 0 }) {
     this.source = source;
     this.multiple = multiple;
     this.placeholder = placeholder;
@@ -95,7 +96,7 @@ export class FkSelect {
     const searchWrap = node('div', 'fk-search');
     this.search = document.createElement('input');
     this.search.className = 'input';
-    this.search.placeholder = 'Ara…';
+    this.search.placeholder = t('action.search');
     searchWrap.appendChild(this.search);
     this.pop.appendChild(searchWrap);
     this.warnEl = node('div', 'fk-warn');
@@ -112,7 +113,7 @@ export class FkSelect {
     // Yüklenene kadar "Yükleniyor…" göster; BOŞ liste gösterme. Yükleme bitince
     // otomatik doldur — kullanıcının tekrar tıklaması gerekmesin.
     if (this.rows === null) {
-      this.listEl.innerHTML = '<div class="fk-empty">Yükleniyor…</div>';
+      this.listEl.innerHTML = `<div class="fk-empty">${esc(t('common.loading'))}</div>`;
       await this.ensureLoaded();
       if (!this.pop) return;   // bu arada kapatıldıysa çık
     }
@@ -143,13 +144,13 @@ export class FkSelect {
     // 200+ uyarisi: yuklenen satirdan fazlasi varsa (sunucu-tarafi arama yok).
     if (this.total > this.rows.length && this.total > this.warnAt) {
       this.warnEl.style.display = '';
-      this.warnEl.textContent = `${this.total} kayıttan ilk ${this.rows.length} gösteriliyor — aramayı daraltın.`;
+      this.warnEl.textContent = t('fk.warn', { total: this.total, shown: this.rows.length });
     } else {
       this.warnEl.style.display = 'none';
     }
     if (this.active >= rows.length) this.active = rows.length - 1;
 
-    if (rows.length === 0) { this.listEl.innerHTML = '<div class="fk-empty">Sonuç yok.</div>'; return; }
+    if (rows.length === 0) { this.listEl.innerHTML = `<div class="fk-empty">${esc(t('common.noResults'))}</div>`; return; }
     this.listEl.innerHTML = '';
     rows.forEach((r, i) => {
       const opt = node('div', 'fk-opt' + (i === this.active ? ' active' : '') +

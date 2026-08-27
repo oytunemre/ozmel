@@ -235,6 +235,12 @@ baktığında tanıdık kelimeleri görmeli.
 | drawer.unsavedTitle | Kaydedilmemiş değişiklikler | Unsaved changes |
 | drawer.unsavedBody | Bu panelde kaydedilmemiş değişiklikler var. Ne yapmak istersiniz? | This panel has unsaved changes. What would you like to do? |
 | drawer.discard | Kaydetme | Don't save |
+| common.yes / common.no | Evet / Hayır | Yes / No |
+| common.hidePassword / common.showPassword | Şifreyi Gizle / Şifreyi Göster | Hide password / Show password |
+| action.hide / action.show | Gizle / Göster | Hide / Show |
+| fk.select | Seçin… | Select… |
+| fk.warn | {total} kayıttan ilk {shown} gösteriliyor — aramayı daraltın. | Showing first {shown} of {total} — narrow your search. |
+| tag.placeholder | Yaz ve Enter… | Type and Enter… |
 
 ### Hata kodları (BE `meta.code` → sözlük; BE metni basılmaz)
 

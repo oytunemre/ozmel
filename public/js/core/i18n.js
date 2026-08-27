@@ -40,6 +40,10 @@ const DICT = {
     'common.noResultsFor': '"{q}" ile eşleşen kayıt yok.',
     'common.readonlyHint': 'Salt okuma yetkiniz var — değişiklik yapamazsınız',
     'common.dash': '—',
+    'common.hidePassword': 'Şifreyi Gizle', 'common.showPassword': 'Şifreyi Göster',
+    'action.hide': 'Gizle', 'action.show': 'Göster',
+    'fk.select': 'Seçin…', 'fk.warn': '{total} kayıttan ilk {shown} gösteriliyor — aramayı daraltın.',
+    'tag.placeholder': 'Yaz ve Enter…',
     // — sipariş durumları (Excel) —
     'status.Hammadde Bekleniyor': 'Hammadde Bekleniyor', 'status.Üretimde': 'Üretimde',
     'status.Kalite Kontrolde': 'Kalite Kontrolde', 'status.Sevke Hazır': 'Sevke Hazır',
@@ -178,6 +182,10 @@ const DICT = {
     'common.noResultsFor': 'No records match "{q}".',
     'common.readonlyHint': 'You have read-only access — changes are disabled',
     'common.dash': '—',
+    'common.hidePassword': 'Hide password', 'common.showPassword': 'Show password',
+    'action.hide': 'Hide', 'action.show': 'Show',
+    'fk.select': 'Select…', 'fk.warn': 'Showing first {shown} of {total} — narrow your search.',
+    'tag.placeholder': 'Type and Enter…',
     // — order statuses (Excel) —
     'status.Hammadde Bekleniyor': 'Awaiting Raw Material', 'status.Üretimde': 'In Production',
     'status.Kalite Kontrolde': 'In Quality Control', 'status.Sevke Hazır': 'Ready to Ship',
