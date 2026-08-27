@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Özmel</title>
   <!-- ?v: onbellek kirici. app.css/modul degisince artir (build/versiyonlama yok). -->
-  <link rel="stylesheet" href="css/app.css?v=22">
+  <link rel="stylesheet" href="css/app.css?v=23">
 </head>
 <body>
   <div class="app">
@@ -137,7 +137,7 @@
           <div class="state-msg">${err && err.message ? err.message : err}</div></div>`;
       };
       try {
-        const mod = await import(`./js/modules/${m.file}?v=22`);
+        const mod = await import(`./js/modules/${m.file}?v=23`);
         // view fonksiyonu async — hatası sessiz kalmasın, ekranda göster.
         const p = mod[m.fn](content);
         if (p && p.catch) p.catch(showErr);

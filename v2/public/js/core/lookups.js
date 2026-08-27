@@ -106,6 +106,18 @@ export const INSPECTION_RESULT_OPTIONS = [
   { value: 'Red', label: 'Red' },
   { value: 'Şartlı Kabul', label: 'Şartlı Kabul' }
 ];
+// First-Off kontrol gerekçeleri — fabrikadaki resmi formdaki sabit yedi seçenek.
+// Çoklu seçim; v2_first_off_reasons çocuk tablosuna yazılır. Listede olmayan
+// serbest metin gerekçe de eklenebilir (ReasonChecklist bileşeni).
+export const FIRST_OFF_REASON_OPTIONS = [
+  'Yeni iş emri / seri başlangıcı',
+  'Setup / kurulum sonrası',
+  'Vardiya değişimi',
+  'Uzun duruş sonrası',
+  'Ayar / parametre değişimi',
+  'Malzeme / lot değişimi',
+  'Düzeltici faaliyet sonrası'
+];
 
 /**
  * Mevcut değer listede yoksa başa ekler — beklenmedik bir eski değer (or. ETL'den)

@@ -1,14 +1,14 @@
 // First-Off Kayıtları — v2 modülü. Parent + iki çocuk (ölçümler + gerekçeler).
-// Ölçümler: nokta seçici + değer + sonuç satırları. Gerekçeler: serbest metin (TagList).
+// Ölçümler: nokta seçici + değer + sonuç satırları. Gerekçeler: resmi formdaki
+// yedi sabit seçenek (çoklu kutucuk) + listede olmayanlar için serbest metin.
 
 import { resource } from '../core/api.js';
 import { DataTable } from '../core/table.js';
 import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
-import { TagList } from '../core/taglist.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
+import { loadLookup, mapProduct, mapNamed, FIRST_OFF_REASON_OPTIONS } from '../core/lookups.js';
 import { measurementDetail } from './_measDetail.js';
 
 const api = resource('first-off-records');
@@ -60,7 +60,7 @@ export async function viewFirstOffRecords(container) {
     const productFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.productCodeId ?? null, placeholder: 'Ürün seçin…' });
     const opFk = new FkSelect({ source: ops.source, rows: ops.rows, value: row?.operationId ?? null, placeholder: 'Operasyon seçin…' });
     const meas = new MeasurementsEditor(pointRows);
-    const reasons = new TagList({ placeholder: 'Gerekçe yaz ve Enter…' });
+    const reasons = new ReasonChecklist(FIRST_OFF_REASON_OPTIONS);
 
     openDrawer({
       title: editing ? 'Kayıt Düzenle' : 'Yeni Kayıt',
@@ -80,7 +80,7 @@ export async function viewFirstOffRecords(container) {
         { name: 'secMeas', type: 'section', label: 'Ölçümler' },
         { name: 'measurements', type: 'component', component: meas },
         { name: 'secReasons', type: 'section', label: 'Gerekçeler' },
-        { name: 'reasons', type: 'tags', tags: reasons, help: 'Serbest metin; yaz ve Enter ile ekle.' }
+        { name: 'reasons', type: 'component', component: reasons, help: 'Resmi formdaki gerekçeleri işaretleyin; listede yoksa serbest metin ekleyin.' }
       ],
       onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
       onSaved: async (saved) => { toast(editing ? 'Kayıt güncellendi' : 'Kayıt eklendi', 'success'); await table.reload(); table.flash(saved.id); },
@@ -146,6 +146,88 @@ class MeasurementsEditor {
     let e = this.body.querySelector('.rows-empty');
     if (this.rows.length === 0) { if (!e) { e = el('div', 'rows-empty', 'Ölçüm eklenmedi.'); this.body.appendChild(e); } }
     else if (e) e.remove();
+  }
+}
+
+// Gerekçe seçici: sabit seçenekler için kutucuk + listede olmayanlar için serbest
+// metin (eklenen serbest gerekçeler silinebilir çip olarak görünür). getValue():
+// işaretli sabit seçenekler (liste sırasında) + serbest gerekçeler (ekleme sırasında).
+class ReasonChecklist {
+  constructor(options) {
+    this.options = options;
+    this.selected = new Set();   // işaretli sabit seçenek etiketleri
+    this.customs = [];           // serbest metin gerekçeler
+    this.cb = null;
+    this.boxes = new Map();      // etiket -> checkbox input
+
+    this.el = el('div', 'chk-wrap');
+    const list = el('div', 'chk-list');
+    for (const label of options) {
+      const opt = el('label', 'chk-opt');
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.value = label;
+      box.addEventListener('change', () => {
+        if (box.checked) this.selected.add(label); else this.selected.delete(label);
+        this.emit();
+      });
+      opt.append(box, document.createTextNode(' ' + label));
+      list.appendChild(opt);
+      this.boxes.set(label, box);
+    }
+    this.el.appendChild(list);
+
+    const add = el('div', 'chk-custom');
+    this.input = document.createElement('input');
+    this.input.className = 'input';
+    this.input.placeholder = 'Listede yok — gerekçe yaz…';
+    this.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); this.addCustom(); } });
+    const addBtn = el('button', 'btn btn-secondary btn-sm', 'Ekle');
+    addBtn.type = 'button';
+    addBtn.addEventListener('click', () => this.addCustom());
+    add.append(this.input, addBtn);
+    this.el.appendChild(add);
+
+    this.chips = el('div', 'chk-chips');
+    this.el.appendChild(this.chips);
+  }
+  onChange(cb) { this.cb = cb; }
+  emit() { this.cb && this.cb(); }
+
+  addCustom() {
+    const val = this.input.value.trim();
+    if (!val) return;
+    // Sabit seçenekteyse onu işaretle; zaten eklenmişse yok say.
+    if (this.options.includes(val)) { this.selected.add(val); this.boxes.get(val).checked = true; }
+    else if (!this.customs.includes(val)) this.customs.push(val);
+    this.input.value = '';
+    this.renderChips();
+    this.emit();
+  }
+  renderChips() {
+    this.chips.innerHTML = '';
+    for (const label of this.customs) {
+      const chip = el('span', 'fk-chip', esc(label));
+      const x = el('button', 'fk-chip-x', '×'); x.type = 'button';
+      x.addEventListener('click', () => { this.customs = this.customs.filter(c => c !== label); this.renderChips(); this.emit(); });
+      chip.appendChild(x);
+      this.chips.appendChild(chip);
+    }
+  }
+  setValue(list) {
+    this.selected = new Set();
+    this.customs = [];
+    for (const box of this.boxes.values()) box.checked = false;
+    for (const v of (list || [])) {
+      if (v == null || v === '') continue;
+      const s = String(v);
+      if (this.options.includes(s)) { this.selected.add(s); this.boxes.get(s).checked = true; }
+      else if (!this.customs.includes(s)) this.customs.push(s);
+    }
+    this.renderChips();
+  }
+  getValue() {
+    return [...this.options.filter(o => this.selected.has(o)), ...this.customs];
   }
 }
 
