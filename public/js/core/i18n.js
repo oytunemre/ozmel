@@ -1,0 +1,145 @@
+// i18n.js — TR/EN çeviri altyapısı. { tr, en } sözlüğü + t() + dil yönetimi + olay.
+//
+// Sözlük kaynağı: docs/ceviri-sozlugu.md (müşteri Mosdorfer'in kendi Excel terimleri;
+// sipariş/malzeme alanları BİREBİR). Anahtarlar semantik (namespace.key).
+//
+// CANLI DEĞİŞİM: setLang() veriyi YENİDEN ÇEKMEZ; yalnızca 'langchange' olayını yayar.
+// Bileşenler (table.js, drawer.js, index.html…) bu olaya abone olup sadece ETİKETLERİ
+// yeniden çizer — sayfa/arama/filtre ve açık drawer'daki değerler KORUNUR.
+
+const DICT = {
+  tr: {
+    // — menü grupları —
+    'group.general': 'Genel', 'group.supplierQuality': 'Tedarikçi & Kalite',
+    'group.production': 'Üretim', 'group.purchasingStock': 'Satınalma & Stok',
+    'group.sales': 'Satış', 'group.definitions': 'Tanımlar', 'group.admin': 'Yönetim',
+    // — menü —
+    'menu.dashboard': 'Genel Bakış', 'menu.incoming-inspections': 'Giriş Kalite Kontrolleri',
+    'menu.first-off-points': 'First-Off Noktaları', 'menu.first-off-records': 'First-Off Kayıtları',
+    'menu.hourly-points': 'Saatlik Noktalar', 'menu.hourly-records': 'Saatlik Kayıtlar',
+    'menu.work-centers': 'İş Merkezleri', 'menu.operations': 'Operasyonlar',
+    'menu.operators': 'Operatörler', 'menu.routes': 'Rotalar', 'menu.capacities': 'Kapasiteler',
+    'menu.machine-plans': 'Üretim Planı', 'menu.work-orders': 'İş Emirleri',
+    'menu.production': 'Üretim Girişi', 'menu.product-trees': 'Ürün Ağaçları',
+    'menu.purchase-requests': 'Satınalma İstekleri', 'menu.purchase-receipts': 'Satınalma Girişleri',
+    'menu.orders': 'Siparişler', 'menu.sales': 'Satış Raporları',
+    'menu.product-codes': 'Kod Tanımları', 'menu.task-people': 'Görev Kişileri',
+    'menu.terms': 'Terimler', 'menu.working-hours': 'Çalışma Saatleri',
+    'menu.tasks': 'Görevler', 'menu.audits': 'Denetim Soruları', 'menu.users': 'Kullanıcı Yönetimi',
+    // — ortak eylemler —
+    'action.new': 'Yeni', 'action.edit': 'Düzenle', 'action.delete': 'Sil', 'action.save': 'Kaydet',
+    'action.update': 'Güncelle', 'action.add': 'Ekle', 'action.cancel': 'Vazgeç', 'action.close': 'Kapat',
+    'action.search': 'Ara…', 'action.filter': 'Filtrele', 'action.clear': 'Temizle',
+    'action.select': 'Seçiniz', 'action.prev': '‹ Önceki', 'action.next': 'Sonraki ›',
+    'action.signout': 'Çıkış', 'action.signin': 'Giriş Yap', 'action.retry': 'Tekrar dene',
+    'action.saving': 'Kaydediliyor…', 'action.confirm': 'Onayla',
+    // — ortak —
+    'common.yes': 'Evet', 'common.no': 'Hayır', 'common.active': 'Aktif', 'common.inactive': 'Pasif',
+    'common.loading': 'Yükleniyor…', 'common.noRecords': 'Kayıt yok', 'common.noResults': 'Sonuç yok',
+    'common.emptyHint': 'Henüz kayıt eklenmemiş.', 'common.notSelected': 'seçilmedi',
+    'common.readonlyHint': 'Salt okuma yetkiniz var — değişiklik yapamazsınız',
+    'common.dash': '—',
+    // — sipariş durumları (Excel) —
+    'status.Hammadde Bekleniyor': 'Hammadde Bekleniyor', 'status.Üretimde': 'Üretimde',
+    'status.Kalite Kontrolde': 'Kalite Kontrolde', 'status.Sevke Hazır': 'Sevke Hazır',
+    'status.Kısmi Sevk': 'Kısmi Sevk', 'status.Sevk Edildi': 'Sevk Edildi',
+    'status.İade': 'İade', 'status.Tamamlandı': 'Tamamlandı', 'status.İptal': 'İptal',
+    // — hata / bildirim —
+    'err.SESSION_EXPIRED': 'Oturum süresi doldu — lütfen tekrar giriş yapın',
+    'err.NO_SESSION': 'Oturum bulunamadı — lütfen giriş yapın',
+    'err.NO_USER': 'Oturum geçerli değil — lütfen tekrar giriş yapın',
+    'err.READ_ONLY': 'Bu işlem için yetkiniz yok',
+    'err.STALE': 'Bu kayıt başkası tarafından değiştirildi. Sayfayı yenileyip tekrar deneyin.',
+    'err.IN_USE': 'Bu kayıt başka yerlerde kullanıldığı için silinemez. Önce bağlı kayıtları kaldırın.',
+    'err.VALIDATION': 'Geçersiz değer — girdileri kontrol edin',
+    'err.REQUIRED': 'Zorunlu alan',
+    'err.NETWORK': 'Sunucuya ulaşılamadı — bağlantınızı kontrol edin',
+    'err.GENERIC': 'Bir hata oluştu',
+    'toast.saved': 'Kaydedildi', 'toast.deleted': 'Silindi',
+    'confirm.deleteTitle': 'Silmek istediğinize emin misiniz?',
+  },
+  en: {
+    // — menu groups —
+    'group.general': 'General', 'group.supplierQuality': 'Supplier & Quality',
+    'group.production': 'Production', 'group.purchasingStock': 'Purchasing & Stock',
+    'group.sales': 'Sales', 'group.definitions': 'Definitions', 'group.admin': 'Administration',
+    // — menu —
+    'menu.dashboard': 'Dashboard', 'menu.incoming-inspections': 'Incoming Inspections',
+    'menu.first-off-points': 'First-Off Points', 'menu.first-off-records': 'First-Off Records',
+    'menu.hourly-points': 'Hourly Points', 'menu.hourly-records': 'Hourly Records',
+    'menu.work-centers': 'Work Centers', 'menu.operations': 'Operations',
+    'menu.operators': 'Operators', 'menu.routes': 'Routes', 'menu.capacities': 'Capacities',
+    'menu.machine-plans': 'Production Plan', 'menu.work-orders': 'Work Orders',
+    'menu.production': 'Production Entry', 'menu.product-trees': 'Product Trees',
+    'menu.purchase-requests': 'Purchase Requests', 'menu.purchase-receipts': 'Purchase Receipts',
+    'menu.orders': 'Orders', 'menu.sales': 'Sales Reports',
+    'menu.product-codes': 'Material Codes', 'menu.task-people': 'Task Assignees',
+    'menu.terms': 'Terms', 'menu.working-hours': 'Working Hours',
+    'menu.tasks': 'Tasks', 'menu.audits': 'Audit Questions', 'menu.users': 'Users',
+    // — common actions —
+    'action.new': 'New', 'action.edit': 'Edit', 'action.delete': 'Delete', 'action.save': 'Save',
+    'action.update': 'Update', 'action.add': 'Add', 'action.cancel': 'Cancel', 'action.close': 'Close',
+    'action.search': 'Search…', 'action.filter': 'Filter', 'action.clear': 'Clear',
+    'action.select': 'Select', 'action.prev': '‹ Previous', 'action.next': 'Next ›',
+    'action.signout': 'Sign out', 'action.signin': 'Sign in', 'action.retry': 'Try again',
+    'action.saving': 'Saving…', 'action.confirm': 'Confirm',
+    // — common —
+    'common.yes': 'Yes', 'common.no': 'No', 'common.active': 'Active', 'common.inactive': 'Inactive',
+    'common.loading': 'Loading…', 'common.noRecords': 'No records found', 'common.noResults': 'No results',
+    'common.emptyHint': 'No records yet.', 'common.notSelected': 'Not selected',
+    'common.readonlyHint': 'You have read-only access — changes are disabled',
+    'common.dash': '—',
+    // — order statuses (Excel) —
+    'status.Hammadde Bekleniyor': 'Awaiting Raw Material', 'status.Üretimde': 'In Production',
+    'status.Kalite Kontrolde': 'In Quality Control', 'status.Sevke Hazır': 'Ready to Ship',
+    'status.Kısmi Sevk': 'Partially Shipped', 'status.Sevk Edildi': 'Shipped',
+    'status.İade': 'Returned', 'status.Tamamlandı': 'Completed', 'status.İptal': 'Cancelled',
+    // — error / notification —
+    'err.SESSION_EXPIRED': 'Session expired — please sign in again',
+    'err.NO_SESSION': 'No session — please sign in',
+    'err.NO_USER': 'Session is no longer valid — please sign in again',
+    'err.READ_ONLY': 'You are not authorized for this action',
+    'err.STALE': 'This record was modified by someone else. Refresh the page and try again.',
+    'err.IN_USE': 'This record is in use elsewhere and cannot be deleted. Remove the linked records first.',
+    'err.VALIDATION': 'Invalid value — please check your input',
+    'err.REQUIRED': 'Required field',
+    'err.NETWORK': 'Cannot reach the server — check your connection',
+    'err.GENERIC': 'An error occurred',
+    'toast.saved': 'Saved', 'toast.deleted': 'Deleted',
+    'confirm.deleteTitle': 'Are you sure you want to delete this?',
+  }
+};
+
+let lang = localStorage.getItem('lang') === 'en' ? 'en' : 'tr';
+document.documentElement.setAttribute('lang', lang);
+
+export function getLang() { return lang; }
+
+/** Dili değiştirir: localStorage + <html lang> + 'langchange' olayı (VERİYİ ÇEKMEZ). */
+export function setLang(next) {
+  const v = next === 'en' ? 'en' : 'tr';
+  if (v === lang) return;
+  lang = v;
+  localStorage.setItem('lang', v);
+  document.documentElement.setAttribute('lang', v);
+  window.dispatchEvent(new CustomEvent('langchange', { detail: { lang: v } }));
+}
+
+/** Anahtarı çevirir. {param} yer tutucuları params ile doldurulur; anahtar yoksa TR ya da ham anahtar. */
+export function t(key, params) {
+  let s = (DICT[lang] && DICT[lang][key]) ?? DICT.tr[key] ?? key;
+  if (params) for (const [k, val] of Object.entries(params)) s = s.split('{' + k + '}').join(String(val));
+  return s;
+}
+
+/** Sipariş durumu gibi TR değerini dile göre gösterir (sözlükte status.<değer>). */
+export function tStatus(value) {
+  return value == null || value === '' ? '' : t('status.' + value);
+}
+
+/** Bileşen aboneliği; cb her dil değişiminde çağrılır. Temizleyici döner. */
+export function onLangChange(cb) {
+  const h = (e) => cb(e.detail?.lang || getLang());
+  window.addEventListener('langchange', h);
+  return () => window.removeEventListener('langchange', h);
+}

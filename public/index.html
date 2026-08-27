@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Özmel</title>
   <!-- ?v: onbellek kirici. app.css/modul degisince artir (build/versiyonlama yok). -->
-  <link rel="stylesheet" href="css/app.css?v=31">
+  <link rel="stylesheet" href="css/app.css?v=32">
   <link rel="icon" type="image/svg+xml" href="img/ozmel-ikon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
   <link rel="apple-touch-icon" href="img/favicon-180.png">
@@ -74,6 +74,7 @@
   </div>
 
   <script type="module">
+    import { t, getLang, setLang, onLangChange } from './js/core/i18n.js?v=32';
     // Oturum jetonu: giriş ekranı localStorage'a yazar; geliştirmede ?token= ile de gelebilir.
     const params = new URLSearchParams(location.search);
     window.SESSION_TOKEN = params.get('token') || localStorage.getItem('sessionToken') || '';
@@ -95,71 +96,78 @@
     window.SESSION_ROLE = localStorage.getItem('sessionRole') || 'editor';
     window.SESSION_USER = localStorage.getItem('sessionUser') || 'Kullanıcı';
 
-    // Modül kaydı — tasarim/Yon-B-Rahat.dc.html'deki gruplu düzen.
+    // Modül kaydı: [grupAnahtarı, [[key, dosya, fn], ...]]. Etiketler t('menu.<key>')
+    // / t('group.<grup>') ile — dile göre çevrilir.
     const GROUPS = [
-      ['GENEL', [
-        ['dashboard', 'Genel Bakış', 'dashboard.js', 'viewDashboard'],
+      ['general', [['dashboard', 'dashboard.js', 'viewDashboard']]],
+      ['supplierQuality', [
+        ['incoming-inspections', 'incomingInspections.js', 'viewIncomingInspections'],
+        ['first-off-points', 'firstOffPoints.js', 'viewFirstOffPoints'],
+        ['first-off-records', 'firstOffRecords.js', 'viewFirstOffRecords'],
+        ['hourly-points', 'hourlyPoints.js', 'viewHourlyPoints'],
+        ['hourly-records', 'hourlyRecords.js', 'viewHourlyRecords'],
       ]],
-      ['TEDARİKÇİ & KALİTE', [
-        ['incoming-inspections', 'Giriş Kalite Kontrolleri', 'incomingInspections.js', 'viewIncomingInspections'],
-        ['first-off-points', 'First-Off Noktaları', 'firstOffPoints.js', 'viewFirstOffPoints'],
-        ['first-off-records', 'First-Off Kayıtları', 'firstOffRecords.js', 'viewFirstOffRecords'],
-        ['hourly-points', 'Saatlik Noktalar', 'hourlyPoints.js', 'viewHourlyPoints'],
-        ['hourly-records', 'Saatlik Kayıtlar', 'hourlyRecords.js', 'viewHourlyRecords'],
+      ['production', [
+        ['work-centers', 'workCenters.js', 'viewWorkCenters'],
+        ['operations', 'operations.js', 'viewOperations'],
+        ['operators', 'operators.js', 'viewOperators'],
+        ['routes', 'routes.js', 'viewRoutes'],
+        ['capacities', 'capacities.js', 'viewCapacities'],
+        ['machine-plans', 'machinePlans.js', 'viewMachinePlans'],
+        ['work-orders', 'workOrders.js', 'viewWorkOrders'],
+        ['production', 'production.js', 'viewProduction'],
+        ['product-trees', 'productTrees.js', 'viewProductTrees'],
       ]],
-      ['ÜRETİM', [
-        ['work-centers', 'İş Merkezleri', 'workCenters.js', 'viewWorkCenters'],
-        ['operations', 'Operasyonlar', 'operations.js', 'viewOperations'],
-        ['operators', 'Operatörler', 'operators.js', 'viewOperators'],
-        ['routes', 'Rotalar', 'routes.js', 'viewRoutes'],
-        ['capacities', 'Kapasiteler', 'capacities.js', 'viewCapacities'],
-        ['machine-plans', 'Üretim Planı', 'machinePlans.js', 'viewMachinePlans'],
-        ['work-orders', 'İş Emirleri', 'workOrders.js', 'viewWorkOrders'],
-        ['production', 'Üretim Girişi', 'production.js', 'viewProduction'],
-        ['product-trees', 'Ürün Ağaçları', 'productTrees.js', 'viewProductTrees'],
+      ['purchasingStock', [
+        ['purchase-requests', 'purchaseRequests.js', 'viewPurchaseRequests'],
+        ['purchase-receipts', 'purchaseReceipts.js', 'viewPurchaseReceipts'],
       ]],
-      ['SATINALMA & STOK', [
-        ['purchase-requests', 'Satınalma İstekleri', 'purchaseRequests.js', 'viewPurchaseRequests'],
-        ['purchase-receipts', 'Satınalma Girişleri', 'purchaseReceipts.js', 'viewPurchaseReceipts'],
+      ['sales', [
+        ['orders', 'orders.js', 'viewOrders'],
+        ['sales', 'salesReports.js', 'viewSalesReports'],
       ]],
-      ['SATIŞ', [
-        ['orders', 'Siparişler', 'orders.js', 'viewOrders'],
-        ['sales', 'Satış Raporları', 'salesReports.js', 'viewSalesReports'],
+      ['definitions', [
+        ['product-codes', 'productCodes.js', 'viewProductCodes'],
+        ['task-people', 'taskPeople.js', 'viewTaskPeople'],
+        ['terms', 'terms.js', 'viewTerms'],
+        ['working-hours', 'workingHours.js', 'viewWorkingHours'],
       ]],
-      ['TANIMLAR', [
-        ['product-codes', 'Kod Tanımları', 'productCodes.js', 'viewProductCodes'],
-        ['task-people', 'Görev Kişileri', 'taskPeople.js', 'viewTaskPeople'],
-        ['terms', 'Terimler', 'terms.js', 'viewTerms'],
-        ['working-hours', 'Çalışma Saatleri', 'workingHours.js', 'viewWorkingHours'],
-      ]],
-      ['YÖNETİM', [
-        ['tasks', 'Görevler', 'tasks.js', 'viewTasks'],
-        ['audits', 'Denetim Soruları', 'audits.js', 'viewAudits'],
-        ['users', 'Kullanıcı Yönetimi', 'users.js', 'viewUsers'],
+      ['admin', [
+        ['tasks', 'tasks.js', 'viewTasks'],
+        ['audits', 'audits.js', 'viewAudits'],
+        ['users', 'users.js', 'viewUsers'],
       ]],
     ];
 
-    // key -> { label, file, fn, group } ve düz liste
     const BY_KEY = {};
     for (const [group, items] of GROUPS)
-      for (const [key, label, file, fn] of items) BY_KEY[key] = { key, label, file, fn, group };
+      for (const [key, file, fn] of items) BY_KEY[key] = { key, file, fn, group };
 
     const nav = document.getElementById('nav');
     const content = document.getElementById('content');
     const crumb = document.getElementById('crumb');
 
-    for (const [group, items] of GROUPS) {
-      const g = document.createElement('div');
-      g.className = 'nav-group';
-      g.textContent = group;
-      nav.appendChild(g);
-      for (const [key, label] of items) {
-        const a = document.createElement('a');
-        a.href = '#' + key;
-        a.textContent = label;
-        a.dataset.key = key;
-        nav.appendChild(a);
+    function renderNav() {
+      const cur = location.hash.slice(1) || 'work-centers';
+      nav.innerHTML = '';
+      for (const [group, items] of GROUPS) {
+        const g = document.createElement('div');
+        g.className = 'nav-group';
+        g.textContent = t('group.' + group);
+        nav.appendChild(g);
+        for (const [key] of items) {
+          const a = document.createElement('a');
+          a.href = '#' + key;
+          a.textContent = t('menu.' + key);
+          a.dataset.key = key;
+          a.setAttribute('aria-current', key === cur ? 'page' : 'false');
+          nav.appendChild(a);
+        }
       }
+    }
+    function renderCrumb() {
+      const m = BY_KEY[location.hash.slice(1)] || BY_KEY['work-centers'];
+      crumb.textContent = `${t('group.' + m.group)} / ${t('menu.' + m.key)}`;
     }
 
     // Üst bar: kullanıcı + rol + ismin baş harfi
@@ -168,18 +176,22 @@
     document.getElementById('avatar').textContent =
       (window.SESSION_USER.trim().charAt(0) || '?').toLocaleUpperCase('tr');
 
-    // Dil seçimi (görsel; modüller şimdilik Türkçe). Tercihi saklar.
-    const lang = document.getElementById('lang');
-    lang.addEventListener('click', (e) => {
+    // Dil düğmesi: tıklayınca setLang -> 'langchange' olayı. Kabuk (menü/crumb/topbar)
+    // aşağıdaki abonelikte yeniden çizilir; İÇERİK modülün kendi aboneliğiyle çizilir.
+    const langEl = document.getElementById('lang');
+    const logoutBtn = document.getElementById('logout');
+    function paintChrome() {
+      logoutBtn.textContent = t('action.signout');
+      langEl.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.lang === getLang()));
+    }
+    langEl.addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;
-      lang.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-      localStorage.setItem('lang', b.dataset.lang);
+      setLang(b.dataset.lang);
     });
-    const savedLang = localStorage.getItem('lang') || 'tr';
-    lang.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.lang === savedLang));
+    onLangChange(() => { renderNav(); renderCrumb(); paintChrome(); });
 
     // Çıkış: sunucu oturumunu sil (fire-and-forget), yerel oturumu temizle, giriş ekranına dön.
-    document.getElementById('logout').addEventListener('click', () => {
+    logoutBtn.addEventListener('click', () => {
       const token = window.SESSION_TOKEN;
       try {
         // Sayfanın kendi konumundan çöz — .htaccess yönlendirmesi altında ../ yanlış çıkardı.
@@ -199,16 +211,15 @@
     async function route() {
       const key = location.hash.slice(1) || 'work-centers';
       const m = BY_KEY[key] || BY_KEY['work-centers'];
-      nav.querySelectorAll('a').forEach(a =>
-        a.setAttribute('aria-current', a.dataset.key === m.key ? 'page' : 'false'));
-      crumb.textContent = `${m.group} / ${m.label}`;
-      content.innerHTML = '<div class="loading">Yükleniyor…</div>';
+      renderNav();
+      renderCrumb();
+      content.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
       const showErr = (err) => {
-        content.innerHTML = `<div class="state error"><div class="state-title">Modül yüklenemedi</div>
+        content.innerHTML = `<div class="state error"><div class="state-title">${t('err.GENERIC')}</div>
           <div class="state-msg">${err && err.message ? err.message : err}</div></div>`;
       };
       try {
-        const mod = await import(`./js/modules/${m.file}?v=31`);
+        const mod = await import(`./js/modules/${m.file}?v=32`);
         // view fonksiyonu async — hatası sessiz kalmasın, ekranda göster.
         const p = mod[m.fn](content);
         if (p && p.catch) p.catch(showErr);
@@ -217,6 +228,7 @@
       }
     }
 
+    paintChrome();
     window.addEventListener('hashchange', route);
     route();
   </script>
