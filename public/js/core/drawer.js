@@ -4,10 +4,11 @@
 //
 // Alan tipleri: text, number, date, time, textarea, select ({options:[{value,label}]}),
 // bool (Evet/Hayir), fk ({fk: FkSelect ornegi}), password (goster/gizle dugmeli;
-// varsayilan gizli, panel kapaninca temizlenir).
+// varsayilan gizli, panel kapaninca temizlenir), phone (TR canli bicim; DB'ye yalniz rakam).
 
 import { ValidationError, ConflictError, ApiError } from './api.js';
 import { choiceDialog, esc } from './states.js';
+import { formatPhone, normalizePhone, attachPhoneFormat } from './phone.js';
 
 // Lucide eye / eye-off — sifre goster/gizle dugmesi (tasarim sisteminde mevcut ikonlar).
 const EYE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -287,6 +288,19 @@ function buildField(f, value, markDirty, form) {
     wrap.appendChild(pw);
     read = () => inp.value;   // şifre KIRPILMAZ — boşluk anlamlı olabilir
     clear = () => { inp.value = ''; inp.type = 'password'; paint(); };
+  } else if (f.type === 'phone') {
+    // Telefon alanı — canlı biçimlenir (+90 532 616 40 15), DB'ye yalnız rakam gider.
+    const inp = document.createElement('input');
+    inp.className = 'input';
+    inp.type = 'tel';
+    inp.autocomplete = 'tel';
+    inp.inputMode = 'tel';
+    inp.placeholder = f.placeholder || '+90 5xx xxx xx xx';
+    inp.value = formatPhone(value ?? '');   // saklanan haneyi biçimli göster
+    inp.addEventListener('input', markDirty);
+    attachPhoneFormat(inp);                  // canlı biçimlendirme
+    wrap.appendChild(inp);
+    read = () => normalizePhone(inp.value);  // yalnız rakam (TR 90 önekli)
   } else {
     const inp = document.createElement('input');
     inp.className = 'input';
