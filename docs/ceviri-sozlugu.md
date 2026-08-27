@@ -502,3 +502,20 @@ Giriş Kalite Kontrolleri (`ii.*`):
 | hr.valuePlaceholder | Değer yaz ve Enter… | Type a value and Enter… |
 
 **Paylaşılan (`_childDetail.js` varsayılan boş metinleri):** cd.noLinked (Bağlı kayıt yok. / No linked records.), cd.noExtra (Ek bilgi yok. / No additional info.), cd.noRecords (Kayıt yok. / No records.)
+
+### Parti F (Tanımlar/Yönetim CRUD): Kod Tanımları, Görev Kişileri, Çalışma Saatleri, Kapasiteler, Operatörler, Rotalar
+
+Paylaşılan:
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| field.code / field.fullName / field.email / field.phone | Kod / İsim / E-posta / Telefon | Code / Name / Email / Phone |
+| field.nameSurname / field.badgeNo | Ad Soyad / Sicil No | Full Name / Employee No |
+| common.deleteShort | "{name}" silinecek. | "{name}" will be deleted. |
+| word.operations / word.variants | operasyon / varyant | operations / variants |
+| mt.selectType | — Tip seçin — | — Select type — |
+| mt.Hammadde / mt.Yarı Mamül / mt.Ürün | Hammadde / Yarı Mamül / Ürün | Raw Material / Semi-Finished / Product |
+
+**Not:** malzeme tipi (`mt.*`) BE'de TR saklanır; yalnızca gösterim çevrilir.
+
+Modül anahtarları (özet): `pc.*` Kod Tanımları (secDrawing/secMeasures/secStock/secRel, minStock, supplyDays, boxQty, suppliers, outgoingOp, parentCode…), `tp.*` Görev Kişileri, `wh.*` Çalışma Saatleri (start/breakStart/breakEnd/end, net/break/lunch, help, hoursShort…), `cap.*` Kapasiteler, `opr.*` Operatörler (skills, skillsHelp…), `rt.*` Rotalar (summary, variantsCol, variantOptions, variantsHelp…). Tümü `public/js/core/i18n.js` DICT'te birebir mevcuttur.

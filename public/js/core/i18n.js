@@ -206,6 +206,60 @@ const DICT = {
     'hr.valuePlaceholder': 'Değer yaz ve Enter…',
     // — çocuk-detay (paylaşılan _childDetail.js) varsayılan boş metinleri —
     'cd.noLinked': 'Bağlı kayıt yok.', 'cd.noExtra': 'Ek bilgi yok.', 'cd.noRecords': 'Kayıt yok.',
+    // — paylaşılan alanlar + kısa silme + malzeme tipi enum —
+    'field.code': 'Kod', 'field.fullName': 'İsim', 'field.email': 'E-posta', 'field.phone': 'Telefon',
+    'common.deleteShort': '"{name}" silinecek.',
+    'mt.selectType': '— Tip seçin —', 'mt.Hammadde': 'Hammadde', 'mt.Yarı Mamül': 'Yarı Mamül', 'mt.Ürün': 'Ürün',
+    // Kod Tanımları
+    'pc.new': 'Yeni Kod', 'pc.newTitle': 'Yeni Kod Tanımı', 'pc.editTitle': 'Kod Tanımı Düzenle',
+    'pc.empty': 'Henüz kod tanımı eklenmemiş. "Yeni Kod" ile başlayın.', 'pc.noExtra': 'Ek bilgi girilmemiş.',
+    'pc.secDrawing': 'Çizim & Revizyon', 'pc.secMeasures': 'Ölçüler (yalnızca Hammadde)',
+    'pc.secStock': 'Stok & Tedarik', 'pc.secRel': 'İlişkiler', 'pc.category': 'Kategori',
+    'pc.minStock': 'Min. Stok', 'pc.minStockLevel': 'Min. Stok Seviyesi', 'pc.supplyDays': 'Tedarik Süresi (gün)',
+    'pc.boxQty': 'Koli Adedi', 'pc.suppliers': 'Tedarikçiler', 'pc.outgoingOp': 'Çıkan Operasyon',
+    'pc.parentCode': 'Ana Ürün Kodu', 'pc.parentCodeHelp': 'Bağlı olduğu üst ürünün kodu.',
+    'pc.updated': 'Kod tanımı güncellendi', 'pc.added': 'Kod tanımı eklendi', 'pc.deleted': 'Kod tanımı silindi',
+    'pc.deleteTitle': 'Kod tanımı silinsin mi?',
+    // Görev Kişileri
+    'tp.subtitle': 'Görevlerin atanacağı kişiler', 'tp.new': 'Yeni Kişi',
+    'tp.empty': 'Henüz kişi yok. "Yeni Kişi" ile başlayın.',
+    'tp.newTitle': 'Yeni Kişi', 'tp.editTitle': 'Kişi Düzenle',
+    'tp.updated': 'Kişi güncellendi', 'tp.added': 'Kişi eklendi', 'tp.deleted': 'Kişi silindi',
+    'tp.deleteTitle': 'Kişi silinsin mi?',
+    // Çalışma Saatleri
+    'wh.subtitle': 'Firma başına tek kayıt · silinemez', 'wh.readonlyTag': 'Değişiklik yetkiniz yok',
+    'wh.start': 'Başlangıç', 'wh.breakStart': 'Mola başlangıcı', 'wh.breakEnd': 'Mola bitişi', 'wh.end': 'Bitiş',
+    'wh.dailyShift': 'Günlük vardiya', 'wh.net': 'Net çalışma', 'wh.break': 'Mola', 'wh.lunch': 'Öğle arası',
+    'wh.capacityNote': 'Kapasite hesapları bu değerden türer.',
+    'wh.help': 'Saatler <b>SS:DD</b> biçiminde girilir. Bitiş saati başlangıçtan önce olamaz ve mola aralığı vardiyanın dışına taşamaz — kaydetmede kontrol edilir. Bu ekranın liste görünümü yoktur; kayıt her zaman vardır, silinemez.',
+    'wh.saved': 'Çalışma saatleri kaydedildi', 'wh.hoursShort': 'sa',
+    // Kapasiteler
+    'cap.title': 'Kapasite Yönetimi', 'cap.subtitle': 'İş merkezi başına vardiya kapasitesi',
+    'cap.new': 'Yeni Kapasite', 'cap.empty': 'Henüz kapasite eklenmemiş. "Yeni Kapasite" ile başlayın.',
+    'cap.newTitle': 'Yeni Kapasite', 'cap.editTitle': 'Kapasite Düzenle',
+    'cap.perShiftCol': 'Adet / vardiya', 'cap.perShift': 'Kapasite (vardiya başı)', 'cap.minutes': 'Dakika',
+    'cap.updated': 'Kapasite güncellendi', 'cap.added': 'Kapasite eklendi', 'cap.deleted': 'Kapasite silindi',
+    'cap.deleteTitle': 'Kapasite silinsin mi?', 'cap.deleteBody': '{name} kaydı silinecek.',
+    // — paylaşılan sözcükler + alanlar (Operatörler / Rotalar) —
+    'word.operations': 'operasyon', 'word.variants': 'varyant',
+    'field.nameSurname': 'Ad Soyad', 'field.badgeNo': 'Sicil No',
+    // Operatörler
+    'opr.new': 'Yeni Operatör', 'opr.newTitle': 'Yeni Operatör', 'opr.editTitle': 'Operatör Düzenle',
+    'opr.empty': 'Henüz operatör eklenmemiş. "Yeni Operatör" ile başlayın.',
+    'opr.noSkills': 'Yetkin operasyon tanımlı değil.', 'opr.skills': 'Yetkin Operasyonlar',
+    'opr.skillsHelp': 'Bu operatörün yetkin olduğu operasyonlar (çoklu seçim).',
+    'opr.updated': 'Operatör güncellendi', 'opr.added': 'Operatör eklendi', 'opr.deleted': 'Operatör silindi',
+    'opr.deleteTitle': 'Operatör silinsin mi?', 'opr.deleteBody': '"{name}" ve yetkinlikleri kalıcı olarak silinecek.',
+    // Rotalar
+    'rt.summary': '{routes} rota · {products} ürün · operasyon sırası üretim planını belirler',
+    'rt.new': 'Yeni Rota', 'rt.newTitle': 'Yeni Rota', 'rt.editTitle': 'Rota Düzenle',
+    'rt.search': 'Ürün / parça veya operasyon ara…',
+    'rt.emptyTitle': 'Rota yok', 'rt.empty': 'Henüz rota eklenmemiş.', 'rt.noMatch': 'Aramayla eşleşen rota yok.',
+    'rt.addOp': '+ Operasyon', 'rt.variantsCol': 'Varyantlar', 'rt.noVariants': 'Varyant seçeneği tanımlı değil.',
+    'rt.variantLabel': 'Varyant Etiketi', 'rt.variantOptions': 'Varyant Seçenekleri',
+    'rt.variantsHelp': 'Serbest metin; yaz ve Enter ile ekle.', 'rt.variantPlaceholder': 'Varyant yaz ve Enter…',
+    'rt.updated': 'Rota güncellendi', 'rt.added': 'Rota eklendi', 'rt.deleted': 'Rota silindi',
+    'rt.deleteTitle': 'Rota silinsin mi?', 'rt.deleteBody': '{name} rotası silinecek.',
   },
   en: {
     // — menu groups —
@@ -405,6 +459,60 @@ const DICT = {
     'hr.valuePlaceholder': 'Type a value and Enter…',
     // — child-detail (shared _childDetail.js) default empty texts —
     'cd.noLinked': 'No linked records.', 'cd.noExtra': 'No additional info.', 'cd.noRecords': 'No records.',
+    // — shared fields + short delete + material type enum —
+    'field.code': 'Code', 'field.fullName': 'Name', 'field.email': 'Email', 'field.phone': 'Phone',
+    'common.deleteShort': '"{name}" will be deleted.',
+    'mt.selectType': '— Select type —', 'mt.Hammadde': 'Raw Material', 'mt.Yarı Mamül': 'Semi-Finished', 'mt.Ürün': 'Product',
+    // Material Codes
+    'pc.new': 'New Code', 'pc.newTitle': 'New Material Code', 'pc.editTitle': 'Edit Material Code',
+    'pc.empty': 'No material codes yet. Start with "New Code".', 'pc.noExtra': 'No additional info entered.',
+    'pc.secDrawing': 'Drawing & Revision', 'pc.secMeasures': 'Measurements (raw material only)',
+    'pc.secStock': 'Stock & Supply', 'pc.secRel': 'Relations', 'pc.category': 'Category',
+    'pc.minStock': 'Min. Stock', 'pc.minStockLevel': 'Min. Stock Level', 'pc.supplyDays': 'Supply Time (days)',
+    'pc.boxQty': 'Box Quantity', 'pc.suppliers': 'Suppliers', 'pc.outgoingOp': 'Outgoing Operation',
+    'pc.parentCode': 'Parent Product Code', 'pc.parentCodeHelp': 'Code of the parent product it belongs to.',
+    'pc.updated': 'Material code updated', 'pc.added': 'Material code added', 'pc.deleted': 'Material code deleted',
+    'pc.deleteTitle': 'Delete this material code?',
+    // Task Assignees
+    'tp.subtitle': 'People that tasks are assigned to', 'tp.new': 'New Person',
+    'tp.empty': 'No people yet. Start with "New Person".',
+    'tp.newTitle': 'New Person', 'tp.editTitle': 'Edit Person',
+    'tp.updated': 'Person updated', 'tp.added': 'Person added', 'tp.deleted': 'Person deleted',
+    'tp.deleteTitle': 'Delete this person?',
+    // Working Hours
+    'wh.subtitle': 'One record per company · cannot be deleted', 'wh.readonlyTag': 'You cannot make changes',
+    'wh.start': 'Start', 'wh.breakStart': 'Break start', 'wh.breakEnd': 'Break end', 'wh.end': 'End',
+    'wh.dailyShift': 'Daily shift', 'wh.net': 'Net work', 'wh.break': 'Break', 'wh.lunch': 'Lunch break',
+    'wh.capacityNote': 'Capacity calculations derive from this value.',
+    'wh.help': 'Times are entered as <b>HH:MM</b>. End time cannot be before start time and the break interval cannot extend outside the shift — checked on save. This screen has no list view; the record always exists and cannot be deleted.',
+    'wh.saved': 'Working hours saved', 'wh.hoursShort': 'h',
+    // Capacities
+    'cap.title': 'Capacity Management', 'cap.subtitle': 'Shift capacity per work center',
+    'cap.new': 'New Capacity', 'cap.empty': 'No capacities yet. Start with "New Capacity".',
+    'cap.newTitle': 'New Capacity', 'cap.editTitle': 'Edit Capacity',
+    'cap.perShiftCol': 'Pcs / shift', 'cap.perShift': 'Capacity (per shift)', 'cap.minutes': 'Minutes',
+    'cap.updated': 'Capacity updated', 'cap.added': 'Capacity added', 'cap.deleted': 'Capacity deleted',
+    'cap.deleteTitle': 'Delete this capacity?', 'cap.deleteBody': 'The record {name} will be deleted.',
+    // — shared words + fields (Operators / Routes) —
+    'word.operations': 'operations', 'word.variants': 'variants',
+    'field.nameSurname': 'Full Name', 'field.badgeNo': 'Employee No',
+    // Operators
+    'opr.new': 'New Operator', 'opr.newTitle': 'New Operator', 'opr.editTitle': 'Edit Operator',
+    'opr.empty': 'No operators yet. Start with "New Operator".',
+    'opr.noSkills': 'No qualified operations defined.', 'opr.skills': 'Qualified Operations',
+    'opr.skillsHelp': 'Operations this operator is qualified for (multi-select).',
+    'opr.updated': 'Operator updated', 'opr.added': 'Operator added', 'opr.deleted': 'Operator deleted',
+    'opr.deleteTitle': 'Delete this operator?', 'opr.deleteBody': '"{name}" and their skills will be permanently deleted.',
+    // Routes
+    'rt.summary': '{routes} routes · {products} products · operation order defines the production plan',
+    'rt.new': 'New Route', 'rt.newTitle': 'New Route', 'rt.editTitle': 'Edit Route',
+    'rt.search': 'Search product / part or operation…',
+    'rt.emptyTitle': 'No routes', 'rt.empty': 'No routes yet.', 'rt.noMatch': 'No routes match your search.',
+    'rt.addOp': '+ Operation', 'rt.variantsCol': 'Variants', 'rt.noVariants': 'No variant options defined.',
+    'rt.variantLabel': 'Variant Label', 'rt.variantOptions': 'Variant Options',
+    'rt.variantsHelp': 'Free text; type and press Enter to add.', 'rt.variantPlaceholder': 'Type a variant and Enter…',
+    'rt.updated': 'Route updated', 'rt.added': 'Route added', 'rt.deleted': 'Route deleted',
+    'rt.deleteTitle': 'Delete this route?', 'rt.deleteBody': 'The route {name} will be deleted.',
   }
 };
 

@@ -3,6 +3,8 @@
 // kolonları veri modelinde yok; onların yerine Varyantlar/Aktif gösterilir.)
 //
 // urun/operasyon/isMerkezi FK; varyantlar çocuk tablo (serbest metin çoklu giriş).
+// i18n: özel görünüm — bindLang ile dil değişince VERİ ÇEKMEDEN yeniden çizilir
+// (arama/daralt/açık durumları closure'da korunur).
 
 import { resource } from '../core/api.js';
 import { openDrawer } from '../core/drawer.js';
@@ -12,12 +14,13 @@ import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
 import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
 import { childChips } from './_childDetail.js';
+import { t, bindLang } from '../core/i18n.js';
 
 const api = resource('routes');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewRoutes(container) {
-  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, ops, centers, rows;
   try {
     products = await loadLookup('product-codes', mapProduct);
@@ -42,6 +45,7 @@ export async function viewRoutes(container) {
   };
 
   render();
+  bindLang(container, render);   // dil değişince yeniden çiz (veri closure'da)
 
   function render() {
     const shown = rows.filter(rowMatches);
@@ -52,23 +56,23 @@ export async function viewRoutes(container) {
     container.innerHTML = `
       <div class="module-head">
         <div>
-          <h2>Rotalar</h2>
-          <div class="text-muted" style="font-size:13.5px; margin-top:6px;">${rows.length} rota · ${groups.size} ürün · operasyon sırası üretim planını belirler</div>
+          <h2>${esc(t('menu.routes'))}</h2>
+          <div class="text-muted" style="font-size:13.5px; margin-top:6px;">${esc(t('rt.summary', { routes: rows.length, products: groups.size }))}</div>
         </div>
         <div style="display:flex; gap:10px;">
-          <button class="btn btn-secondary" id="rt-collapse">Tümünü daralt</button>
-          <button class="btn btn-primary" id="rt-add"${canWrite ? '' : ' disabled title="Salt okuma"'}>Yeni Rota</button>
+          <button class="btn btn-secondary" id="rt-collapse">${esc(t('tree.collapseAll'))}</button>
+          <button class="btn btn-primary" id="rt-add"${canWrite ? '' : ' disabled title="' + esc(t('common.readonlyHint')) + '"'}>${esc(t('rt.new'))}</button>
         </div>
       </div>
       <div class="toolbar"><div class="search">
-        <input class="input" type="search" id="rt-search" placeholder="Ürün / parça veya operasyon ara…" value="${esc(search)}">
+        <input class="input" type="search" id="rt-search" placeholder="${esc(t('rt.search'))}" value="${esc(search)}">
       </div></div>
       <div id="rt-body"></div>`;
 
     const body = container.querySelector('#rt-body');
     if (groups.size === 0) {
-      body.innerHTML = `<div class="state"><div class="state-title">${search ? 'Sonuç yok' : 'Rota yok'}</div>
-        <div class="state-msg">${search ? 'Aramayla eşleşen rota yok.' : 'Henüz rota eklenmemiş.'}</div></div>`;
+      body.innerHTML = `<div class="state"><div class="state-title">${esc(search ? t('common.noResults') : t('rt.emptyTitle'))}</div>
+        <div class="state-msg">${esc(search ? t('rt.noMatch') : t('rt.empty'))}</div></div>`;
     } else {
       for (const [productId, list] of groups) body.appendChild(groupEl(productId, list));
     }
@@ -90,13 +94,13 @@ export async function viewRoutes(container) {
       <span class="chev">${collapsed.has(productId) ? '▸' : '▾'}</span>
       <span class="code">${esc(p.code || '#' + productId)}</span>
       <span class="rname">${esc(p.name || '')}</span>
-      <span class="count">${list.length} operasyon</span>
+      <span class="count">${list.length} ${esc(t('word.operations'))}</span>
       <span class="grow"></span>`;
     head.addEventListener('click', () => { if (collapsed.has(productId)) collapsed.delete(productId); else collapsed.add(productId); render(); });
     if (canWrite) {
       const addOp = document.createElement('button');
       addOp.className = 'btn btn-ghost btn-sm';
-      addOp.textContent = '+ Operasyon';
+      addOp.textContent = t('rt.addOp');
       addOp.addEventListener('click', (e) => { e.stopPropagation(); openForm(null, productId); });
       head.appendChild(addOp);
     }
@@ -105,7 +109,7 @@ export async function viewRoutes(container) {
     const table = document.createElement('table');
     table.className = 'table';
     table.innerHTML = `<thead><tr>
-      <th class="expander"></th><th>Sıra</th><th>Operasyon</th><th>İş Merkezi</th><th>Varyantlar</th><th>Aktif</th><th></th></tr></thead>`;
+      <th class="expander"></th><th>${esc(t('field.sequence'))}</th><th>${esc(t('field.operation'))}</th><th>${esc(t('field.workCenter'))}</th><th>${esc(t('rt.variantsCol'))}</th><th>${esc(t('common.active'))}</th><th></th></tr></thead>`;
     const tb = document.createElement('tbody');
     for (const r of list) {
       const isOpen = expanded.has(r.id);
@@ -122,14 +126,14 @@ export async function viewRoutes(container) {
         <td class="mono">${r.sequence}</td>
         <td>${esc(ops.label(r.operationId))}</td>
         <td>${esc(centers.label(r.workCenterId))}</td>
-        <td>${r.variants.length ? `<span class="mono">${r.variants.length}</span> varyant` : '—'}</td>
-        <td>${r.isActive ? '<span class="tag tag-success">Aktif</span>' : '<span class="tag tag-neutral">Pasif</span>'}</td>`);
+        <td>${r.variants.length ? `<span class="mono">${r.variants.length}</span> ${esc(t('word.variants'))}` : '—'}</td>
+        <td>${r.isActive ? `<span class="tag tag-success">${esc(t('common.active'))}</span>` : `<span class="tag tag-neutral">${esc(t('common.inactive'))}</span>`}</td>`);
       const act = document.createElement('td');
       act.className = 'actions';
       if (canWrite) {
         act.append(
-          btn('Düzenle', 'btn-ghost', () => openForm(r, null)),
-          btn('Sil', 'btn-danger', () => remove(r))
+          btn(t('action.edit'), 'btn-ghost', () => openForm(r, null)),
+          btn(t('action.delete'), 'btn-danger', () => remove(r))
         );
       }
       tr.appendChild(act);
@@ -140,7 +144,7 @@ export async function viewRoutes(container) {
         const dc = document.createElement('td');
         dc.className = 'detail-cell';
         dc.colSpan = 7;
-        dc.appendChild(childChips(r.variants, 'Varyant seçeneği tanımlı değil.'));
+        dc.appendChild(childChips(r.variants, t('rt.noVariants')));
         dr.appendChild(dc);
         tb.appendChild(dr);
       }
@@ -152,26 +156,26 @@ export async function viewRoutes(container) {
 
   function openForm(row, presetProductId) {
     const editing = !!row;
-    const productFk = new FkSelect({ source: products.source, rows: products.rows, value: editing ? row.productCodeId : (presetProductId ?? null), placeholder: 'Ürün seçin…' });
-    const opFk = new FkSelect({ source: ops.source, rows: ops.rows, value: row?.operationId ?? null, placeholder: 'Operasyon seçin…' });
-    const centerFk = new FkSelect({ source: centers.source, rows: centers.rows, value: row?.workCenterId ?? null, placeholder: 'İş merkezi seçin…' });
-    const variants = new TagList({ value: row?.variants ?? [], placeholder: 'Varyant yaz ve Enter…' });
+    const productFk = new FkSelect({ source: products.source, rows: products.rows, value: editing ? row.productCodeId : (presetProductId ?? null), placeholder: t('ord.selectProduct') });
+    const opFk = new FkSelect({ source: ops.source, rows: ops.rows, value: row?.operationId ?? null, placeholder: t('wo.selectOperation') });
+    const centerFk = new FkSelect({ source: centers.source, rows: centers.rows, value: row?.workCenterId ?? null, placeholder: t('wo.selectCenter') });
+    const variants = new TagList({ value: row?.variants ?? [], placeholder: t('rt.variantPlaceholder') });
 
     openDrawer({
-      title: editing ? 'Rota Düzenle' : 'Yeni Rota',
-      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      title: () => t(editing ? 'rt.editTitle' : 'rt.newTitle'),
+      submitLabel: () => t(editing ? 'action.update' : 'action.add'),
       values: editing ? { ...row } : { sequence: 0, isActive: 1, productCodeId: presetProductId ?? null },
       fields: [
-        { name: 'productCodeId', label: 'Ürün', type: 'fk', fk: productFk, required: true },
-        { name: 'operationId', label: 'Operasyon', type: 'fk', fk: opFk, required: true },
-        { name: 'workCenterId', label: 'İş Merkezi', type: 'fk', fk: centerFk, required: true },
-        { name: 'sequence', label: 'Sıra', type: 'number', required: true },
-        { name: 'variantLabel', label: 'Varyant Etiketi', type: 'text' },
-        { name: 'variants', label: 'Varyant Seçenekleri', type: 'tags', tags: variants, help: 'Serbest metin; yaz ve Enter ile ekle.' },
-        { name: 'isActive', label: 'Aktif', type: 'bool' }
+        { name: 'productCodeId', label: () => t('field.productShort'), type: 'fk', fk: productFk, required: true },
+        { name: 'operationId', label: () => t('field.operation'), type: 'fk', fk: opFk, required: true },
+        { name: 'workCenterId', label: () => t('field.workCenter'), type: 'fk', fk: centerFk, required: true },
+        { name: 'sequence', label: () => t('field.sequence'), type: 'number', required: true },
+        { name: 'variantLabel', label: () => t('rt.variantLabel'), type: 'text' },
+        { name: 'variants', label: () => t('rt.variantOptions'), type: 'tags', tags: variants, help: () => t('rt.variantsHelp') },
+        { name: 'isActive', label: () => t('common.active'), type: 'bool' }
       ],
       onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
-      onSaved: async () => { toast(editing ? 'Rota güncellendi' : 'Rota eklendi', 'success'); await reload(); },
+      onSaved: async () => { toast(t(editing ? 'rt.updated' : 'rt.added'), 'success'); await reload(); },
       onClose: () => {}
     });
   }
@@ -180,12 +184,12 @@ export async function viewRoutes(container) {
 
   async function remove(row) {
     const ok = await confirmDialog({
-      title: 'Rota silinsin mi?',
-      body: `${products.label(row.productCodeId)} · ${ops.label(row.operationId)} rotası silinecek.`,
-      confirmLabel: 'Sil', danger: true
+      title: t('rt.deleteTitle'),
+      body: t('rt.deleteBody', { name: `${products.label(row.productCodeId)} · ${ops.label(row.operationId)}` }),
+      confirmLabel: t('action.delete'), danger: true
     });
     if (!ok) return;
-    try { await api.remove(row.id); toast('Rota silindi', 'success'); await reload(); }
+    try { await api.remove(row.id); toast(t('rt.deleted'), 'success'); await reload(); }
     catch (err) { toast(err.message, 'danger'); }
   }
 }

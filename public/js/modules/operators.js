@@ -1,8 +1,6 @@
 // Operatorler — v2 modulu. Ortak FE katmani (core/) uzerine TAM baglanmis ornek:
-// liste + ekleme + duzenleme + silme + yetkinlik FK secici. Diger 23 modul bunu ornek alir.
-//
-// Bu modul VERI TUTMAZ. Her render veriyi API'den ceker. Ekran metinleri Turkce,
-// API anahtarlari Ingilizce (fullName/badgeNo/isActive/skills).
+// liste + ekleme + duzenleme + silme + yetkinlik FK secici.
+// i18n: etiketler () => t(...); veri değerleri (ad/sicil) çevrilmez.
 
 import { resource } from '../core/api.js';
 import { DataTable } from '../core/table.js';
@@ -11,6 +9,7 @@ import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
 import { childChips } from './_childDetail.js';
+import { t } from '../core/i18n.js';
 
 const operatorsApi = resource('operators');
 const operationsApi = resource('operations');
@@ -19,7 +18,7 @@ const operationsApi = resource('operations');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewOperators(container) {
-  container.innerHTML = '<div class="loading">Yükleniyor…</div>';
+  container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
 
   // Operasyonlar bir kez cekilir: hem yetkinlik adlarini gostermek hem FK secici icin.
   let operations;
@@ -37,32 +36,32 @@ export async function viewOperators(container) {
   });
 
   const table = new DataTable(container, {
-    title: 'Operatörler',
+    title: () => t('menu.operators'),
     canWrite,
-    addLabel: 'Yeni Operatör',
+    addLabel: () => t('opr.new'),
     onAdd: () => openForm(null),
     onEdit: (row) => openForm(row),
     onDelete: (row) => remove(row),
     load: () => operatorsApi.listAll().then(r => r.data),
     rowId: (r) => r.id,
     searchText: (r) => [r.fullName, r.badgeNo, r.skills.map(id => opName.get(id) || '').join(' ')].join(' '),
-    emptyMessage: 'Henüz operatör eklenmemiş. "Yeni Operatör" ile başlayın.',
+    emptyMessage: () => t('opr.empty'),
     // Genişleyen satır: operatörün yetkin olduğu operasyonlar (satırda yalnız sayısı).
-    expand: (r) => childChips(r.skills.map(id => opName.get(id) || ('#' + id)), 'Yetkin operasyon tanımlı değil.'),
+    expand: (r) => childChips(r.skills.map(id => opName.get(id) || ('#' + id)), t('opr.noSkills')),
     columns: [
-      { label: 'Ad Soyad', key: 'fullName' },
-      { label: 'Sicil No', key: 'badgeNo' },
+      { label: () => t('field.nameSurname'), key: 'fullName' },
+      { label: () => t('field.badgeNo'), key: 'badgeNo' },
       {
-        label: 'Yetkin Operasyonlar',
+        label: () => t('opr.skills'),
         render: (r) => r.skills.length
-          ? `<span class="mono">${r.skills.length}</span> operasyon`
+          ? `<span class="mono">${r.skills.length}</span> ${esc(t('word.operations'))}`
           : '<span class="text-muted">—</span>'
       },
       {
-        label: 'Durum',
+        label: () => t('field.status'),
         render: (r) => r.isActive
-          ? '<span class="tag tag-success">Aktif</span>'
-          : '<span class="tag tag-neutral">Pasif</span>'
+          ? `<span class="tag tag-success">${esc(t('common.active'))}</span>`
+          : `<span class="tag tag-neutral">${esc(t('common.inactive'))}</span>`
       }
     ]
   });
@@ -77,15 +76,15 @@ export async function viewOperators(container) {
     });
 
     openDrawer({
-      title: editing ? 'Operatör Düzenle' : 'Yeni Operatör',
-      submitLabel: editing ? 'Güncelle' : 'Ekle',
+      title: () => t(editing ? 'opr.editTitle' : 'opr.newTitle'),
+      submitLabel: () => t(editing ? 'action.update' : 'action.add'),
       values: editing ? { ...row } : { isActive: 1 },
       fields: [
-        { name: 'fullName', label: 'Ad Soyad', type: 'text', required: true },
-        { name: 'badgeNo', label: 'Sicil No', type: 'text', required: true },
-        { name: 'isActive', label: 'Durum', type: 'bool' },
-        { name: 'skills', label: 'Yetkin Operasyonlar', type: 'fk', fk: skillsFk,
-          help: 'Bu operatörün yetkin olduğu operasyonlar (çoklu seçim).' }
+        { name: 'fullName', label: () => t('field.nameSurname'), type: 'text', required: true },
+        { name: 'badgeNo', label: () => t('field.badgeNo'), type: 'text', required: true },
+        { name: 'isActive', label: () => t('field.status'), type: 'bool' },
+        { name: 'skills', label: () => t('opr.skills'), type: 'fk', fk: skillsFk,
+          help: () => t('opr.skillsHelp') }
       ],
       onSubmit: async (v) => {
         const payload = { fullName: v.fullName, badgeNo: v.badgeNo, isActive: v.isActive, skills: v.skills };
@@ -95,7 +94,7 @@ export async function viewOperators(container) {
         return data;
       },
       onSaved: async (saved) => {
-        toast(editing ? 'Operatör güncellendi' : 'Operatör eklendi', 'success');
+        toast(t(editing ? 'opr.updated' : 'opr.added'), 'success');
         await table.reload();
         table.flash(saved.id);
       },
@@ -105,14 +104,14 @@ export async function viewOperators(container) {
 
   async function remove(row) {
     const ok = await confirmDialog({
-      title: 'Operatör silinsin mi?',
-      body: `"${row.fullName}" ve yetkinlikleri kalıcı olarak silinecek.`,
-      confirmLabel: 'Sil', danger: true
+      title: t('opr.deleteTitle'),
+      body: t('opr.deleteBody', { name: row.fullName }),
+      confirmLabel: t('action.delete'), danger: true
     });
     if (!ok) return;
     try {
       await operatorsApi.remove(row.id);
-      toast('Operatör silindi', 'success');
+      toast(t('opr.deleted'), 'success');
       await table.reload();
     } catch (err) {
       toast(err.message, 'danger');
