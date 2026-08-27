@@ -63,6 +63,25 @@ const DICT = {
     'state.moduleError': 'Modül yüklenemedi',
     'action.showDiff': 'Farkı göster', 'action.reload': 'Yeniden yükle',
     'table.range': '{start}–{end} / {total}', 'table.page': '{page} / {pages}',
+    'drawer.unsavedTitle': 'Kaydedilmemiş değişiklikler',
+    'drawer.unsavedBody': 'Bu panelde kaydedilmemiş değişiklikler var. Ne yapmak istersiniz?',
+    'drawer.discard': 'Kaydetme',
+    // — alan etiketleri (ortak) —
+    'field.material': 'Malzeme', 'field.quantity': 'Miktar', 'field.unit': 'Birim',
+    'field.supplier': 'Tedarikçi', 'field.requestDate': 'İstek Tarihi',
+    'field.expectedDate': 'Beklenen Tarih', 'field.date': 'Tarih', 'field.note': 'Not',
+    'action.newRequest': 'Yeni İstek',
+    // — Satınalma İstekleri —
+    'pr.subtitle': 'Üretim için gereken malzemenin tedarik talebi',
+    'pr.empty': 'Henüz istek yok. "Yeni İstek" ile başlayın.',
+    'pr.noMaterialCount': '{n} kayıtta malzeme seçilmemiş',
+    'pr.noReceipts': 'Henüz giriş yapılmadı.',
+    'pr.newTitle': 'Yeni İstek', 'pr.editTitle': 'İstek Düzenle',
+    'pr.materialHelp': 'Malzeme kod listesinden seçilir; serbest metin girilmez.',
+    'pr.productFor': 'Ürün (hangi ürün için)', 'pr.linkedOrder': 'Bağlı Sipariş',
+    'pr.selectMaterial': 'Malzeme seçin…', 'pr.selectProduct': 'Ürün seçin…',
+    'pr.selectOrderOpt': 'Sipariş (opsiyonel)…',
+    'pr.deleteTitle': 'İstek silinsin mi?', 'pr.deleteBody': '{name} isteği silinecek.',
   },
   en: {
     // — menu groups —
@@ -119,6 +138,25 @@ const DICT = {
     'state.moduleError': 'Failed to load module',
     'action.showDiff': 'Show differences', 'action.reload': 'Reload',
     'table.range': '{start}–{end} / {total}', 'table.page': '{page} / {pages}',
+    'drawer.unsavedTitle': 'Unsaved changes',
+    'drawer.unsavedBody': 'This panel has unsaved changes. What would you like to do?',
+    'drawer.discard': "Don't save",
+    // — field labels (shared) —
+    'field.material': 'Material', 'field.quantity': 'Quantity', 'field.unit': 'Unit',
+    'field.supplier': 'Supplier', 'field.requestDate': 'Request Date',
+    'field.expectedDate': 'Expected Date', 'field.date': 'Date', 'field.note': 'Note',
+    'action.newRequest': 'New Request',
+    // — Purchase Requests —
+    'pr.subtitle': 'Supply request for the material needed in production',
+    'pr.empty': 'No requests yet. Start with "New Request".',
+    'pr.noMaterialCount': '{n} records without a material',
+    'pr.noReceipts': 'No receipts yet.',
+    'pr.newTitle': 'New Request', 'pr.editTitle': 'Edit Request',
+    'pr.materialHelp': 'Chosen from the material code list; free text is not allowed.',
+    'pr.productFor': 'Product (for which product)', 'pr.linkedOrder': 'Linked Order',
+    'pr.selectMaterial': 'Select material…', 'pr.selectProduct': 'Select product…',
+    'pr.selectOrderOpt': 'Order (optional)…',
+    'pr.deleteTitle': 'Delete this request?', 'pr.deleteBody': 'The request for {name} will be deleted.',
   }
 };
 

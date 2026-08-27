@@ -9,6 +9,10 @@
 import { ValidationError, ConflictError, ApiError } from './api.js';
 import { choiceDialog, esc } from './states.js';
 import { formatPhone, normalizePhone, attachPhoneFormat } from './phone.js';
+import { t, onLangChange } from './i18n.js';
+
+// Etiketler string ya da () => string olabilir — canlı dil değişiminde yeniden çözülür.
+const lbl = (v) => (typeof v === 'function' ? v() : (v ?? ''));
 
 // Lucide eye / eye-off — sifre goster/gizle dugmesi (tasarim sisteminde mevcut ikonlar).
 const EYE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -27,7 +31,7 @@ const EYE_OFF_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="
  * @returns {{ close: Function, el: HTMLElement }}
  */
 export function openDrawer(opts) {
-  const { title, fields, values = {}, submitLabel = 'Kaydet', onSubmit, onSaved, onClose } = opts;
+  const { title, fields, values = {}, submitLabel = () => t('action.save'), onSubmit, onSaved, onClose } = opts;
   let dirty = false;
 
   const backdrop = h('div', 'drawer-backdrop');
@@ -37,7 +41,8 @@ export function openDrawer(opts) {
 
   // --- baslik ---
   const head = h('div', 'drawer-head');
-  head.appendChild(h('div', 'drawer-title', esc(title)));
+  const titleEl = h('div', 'drawer-title', esc(lbl(title)));
+  head.appendChild(titleEl);
   const closeX = h('button', 'btn btn-ghost', '×');
   head.appendChild(closeX);
   drawer.appendChild(head);
@@ -66,10 +71,18 @@ export function openDrawer(opts) {
 
   // --- aksiyonlar ---
   const actions = h('div', 'drawer-actions');
-  const cancelBtn = h('button', 'btn btn-secondary', 'Vazgeç');
-  const saveBtn = h('button', 'btn btn-primary', esc(submitLabel));
+  const cancelBtn = h('button', 'btn btn-secondary', esc(t('action.cancel')));
+  const saveBtn = h('button', 'btn btn-primary', esc(lbl(submitLabel)));
   actions.append(cancelBtn, saveBtn);
   drawer.appendChild(actions);
+
+  // Dil değişince ETİKETLER güncellenir; form DEĞERLERİ korunur (yalnızca metin değişir).
+  const unsubLang = onLangChange(() => {
+    titleEl.textContent = lbl(title);
+    cancelBtn.textContent = t('action.cancel');
+    if (!saveBtn.disabled) saveBtn.textContent = lbl(submitLabel);   // "Kaydediliyor…" sırasında dokunma
+    for (const name in controls) controls[name].relabel?.();
+  });
 
   backdrop.appendChild(drawer);
   document.body.appendChild(backdrop);
@@ -118,7 +131,7 @@ export function openDrawer(opts) {
   async function submit() {
     clearErrors();
     saveBtn.disabled = true;
-    saveBtn.textContent = 'Kaydediliyor…';
+    saveBtn.textContent = t('action.saving');
     try {
       const saved = await onSubmit(collect());
       dirty = false;
@@ -126,7 +139,7 @@ export function openDrawer(opts) {
       onSaved && onSaved(saved);
     } catch (err) {
       saveBtn.disabled = false;
-      saveBtn.textContent = submitLabel;
+      saveBtn.textContent = lbl(submitLabel);
       if (err instanceof ValidationError) {
         let firstBad = null;
         for (const [name, msg] of Object.entries(err.fields)) {
@@ -139,13 +152,14 @@ export function openDrawer(opts) {
         applyVisibility();   // hatali gizli alanlar (or. tip degisince olculer) ortaya cikar
         // Hangi alana ait olmayan hatalar banner'a.
         const unknown = Object.entries(err.fields).filter(([n]) => !controls[n]).map(([, m]) => m);
-        const bannerMsg = unknown.length ? unknown.join(' · ') : (Object.keys(err.fields).length ? '' : err.message);
+        // 422 alan mesajları api.js'te GENELE indiriliyor (çeviri); alan yoksa genel banner.
+        const bannerMsg = unknown.length ? unknown.join(' · ') : (Object.keys(err.fields).length ? '' : (err.message || t('err.VALIDATION')));
         if (bannerMsg) showBanner(bannerMsg);
         firstBad?.focus?.();
       } else if (err instanceof ConflictError) {
-        showBanner(err.message + ' — paneli kapatıp listeyi yenileyin.');
+        showBanner(err.message || t('err.STALE'));
       } else {
-        showBanner((err instanceof ApiError ? err.message : 'Beklenmeyen hata') || 'Kaydedilemedi');
+        showBanner((err instanceof ApiError ? err.message : '') || t('err.GENERIC'));
       }
     }
   }
@@ -161,12 +175,12 @@ export function openDrawer(opts) {
 
     closing = true;
     const choice = await choiceDialog({
-      title: 'Kaydedilmemiş değişiklikler',
-      body: 'Bu panelde kaydedilmemiş değişiklikler var. Ne yapmak istersiniz?',
+      title: t('drawer.unsavedTitle'),
+      body: t('drawer.unsavedBody'),
       choices: [
-        { value: 'save', label: 'Kaydet', kind: 'primary' },
-        { value: 'discard', label: 'Kaydetme', kind: 'danger' },
-        { value: 'cancel', label: 'İptal' }
+        { value: 'save', label: t('action.save'), kind: 'primary' },
+        { value: 'discard', label: t('drawer.discard'), kind: 'danger' },
+        { value: 'cancel', label: t('action.cancel') }
       ]
     });
     closing = false;
@@ -178,6 +192,7 @@ export function openDrawer(opts) {
 
   function teardown() {
     document.removeEventListener('keydown', onKey);
+    unsubLang();   // dil aboneliğini bırak (leak yok)
     // Hassas alanları (şifre) kapanışta temizle — DOM kalkacak olsa da değer sızmasın.
     for (const name in controls) controls[name].clear?.();
     backdrop.remove();
@@ -201,17 +216,21 @@ function buildField(f, value, markDirty, form) {
   // Bolum basligi — girdi degil, formu gruplar. read() deger uretmez.
   if (f.type === 'section') {
     const sec = h('div', 'form-section');
-    sec.appendChild(h('h4', '', esc(f.label)));
-    if (f.help) sec.appendChild(h('small', 'text-muted', esc(f.help)));
-    return { fieldEl: sec, read: () => undefined, setError() {}, clearError() {}, focus() {} };
+    const h4 = h('h4', '', esc(lbl(f.label)));
+    sec.appendChild(h4);
+    const secHelp = f.help ? h('small', 'text-muted', esc(lbl(f.help))) : null;
+    if (secHelp) sec.appendChild(secHelp);
+    const relabel = () => { h4.textContent = lbl(f.label); if (secHelp) secHelp.textContent = lbl(f.help); };
+    return { fieldEl: sec, read: () => undefined, relabel, setError() {}, clearError() {}, focus() {} };
   }
 
   const wrap = h('div', 'field');
-  const label = h('label', '', esc(f.label));
-  if (f.required) label.insertAdjacentHTML('beforeend', ' <span class="req">*</span>');
+  const label = h('label', '');
+  const paintLabel = () => { label.innerHTML = esc(lbl(f.label)) + (f.required ? ' <span class="req">*</span>' : ''); };
+  paintLabel();
   wrap.appendChild(label);
 
-  let read, clear;
+  let read, clear, phInput = null;   // phInput: placeholder'ı çevrilecek input (varsa)
   if (f.type === 'fk') {
     const fk = f.fk;
     if (value != null) fk.setValue(value);
@@ -295,7 +314,8 @@ function buildField(f, value, markDirty, form) {
     inp.type = 'tel';
     inp.autocomplete = 'tel';
     inp.inputMode = 'tel';
-    inp.placeholder = f.placeholder || '+90 5xx xxx xx xx';
+    inp.placeholder = lbl(f.placeholder) || '+90 5xx xxx xx xx';
+    if (f.placeholder) phInput = inp;
     inp.value = formatPhone(value ?? '');   // saklanan haneyi biçimli göster
     inp.addEventListener('input', markDirty);
     attachPhoneFormat(inp);                  // canlı biçimlendirme
@@ -305,7 +325,7 @@ function buildField(f, value, markDirty, form) {
     const inp = document.createElement('input');
     inp.className = 'input';
     inp.type = f.type || 'text';
-    if (f.placeholder) inp.placeholder = f.placeholder;
+    if (f.placeholder) { inp.placeholder = lbl(f.placeholder); phInput = inp; }
     if (f.type === 'number' && f.step) inp.step = f.step;
     inp.value = value ?? '';
     inp.addEventListener('input', markDirty);
@@ -313,7 +333,8 @@ function buildField(f, value, markDirty, form) {
     read = () => inp.value.trim();   // baştaki/sondaki boşlukları kırp
   }
 
-  if (f.help) wrap.appendChild(h('small', 'text-muted', esc(f.help)));
+  const helpEl = f.help ? h('small', 'text-muted', esc(lbl(f.help))) : null;
+  if (helpEl) wrap.appendChild(helpEl);
   const errEl = h('span', 'field-error');
   errEl.style.display = 'none';
   wrap.appendChild(errEl);
@@ -322,6 +343,12 @@ function buildField(f, value, markDirty, form) {
     read,
     clear,   // yalnızca password alanında tanımlı; panel kapanınca çağrılır
     fieldEl: wrap,
+    // Dil değişiminde etiket/yardım/placeholder yenilenir; input DEĞERİNE dokunulmaz.
+    relabel: () => {
+      paintLabel();
+      if (helpEl) helpEl.textContent = lbl(f.help);
+      if (phInput && f.placeholder) phInput.placeholder = lbl(f.placeholder);
+    },
     focus: () => wrap.querySelector('input, textarea, select, .fk-control')?.focus(),
     setError: (msg) => { wrap.classList.add('has-error'); errEl.textContent = msg; errEl.style.display = ''; },
     clearError: () => { wrap.classList.remove('has-error'); errEl.textContent = ''; errEl.style.display = 'none'; }

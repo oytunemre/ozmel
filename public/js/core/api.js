@@ -7,7 +7,16 @@
 // API yolu, bu modulun konumuna gore cozulur (sayfa nerede olursa olsun dogru):
 //   public/js/core/api.js -> ../../api/index.php
 
+import { t } from './i18n.js';
+
 const API = new URL('../../api/index.php', import.meta.url).href;
+
+// Hata kodunu (meta.code) sözlükten metne çevirir; kod yok/tanımsızsa fallback anahtarı.
+// BE'nin Türkçe metni DOĞRUDAN BASILMAZ (müşteri EN görecek).
+function errText(code, fallbackKey = 'err.GENERIC') {
+  if (code) { const m = t('err.' + code); if (m !== 'err.' + code) return m; }
+  return t(fallbackKey);
+}
 
 // --- hata tipleri ---
 export class ApiError extends Error {
@@ -65,7 +74,7 @@ export async function request(path, { method = 'GET', body = null } = {}) {
       body: body != null ? JSON.stringify(body) : null
     });
   } catch {
-    throw new NetworkError();
+    throw new NetworkError(t('err.NETWORK'));
   }
 
   let json;
@@ -73,27 +82,29 @@ export async function request(path, { method = 'GET', body = null } = {}) {
     json = await res.json();
   } catch {
     // Zarf beklerken bozuk/HTML yanit — ag/sunucu sorunu gibi ele al.
-    throw new ApiError('Sunucu beklenmeyen bir yanit dondu', { status: res.status });
+    throw new ApiError(t('err.GENERIC'), { status: res.status });
   }
 
   if (json && json.ok) {
     return { data: json.data, meta: json.meta || {} };
   }
 
-  // --- hata zarfi -> tipli firlat ---
+  // --- hata zarfi -> tipli firlat. BE'nin Turkce metni DEGIL; kod -> sozluk, yoksa genel. ---
   const errors = (json && json.errors) || {};
   const code = (json && json.meta && json.meta.code) || '';
-  const generic = errors._ || 'Islem basarisiz';
 
   if (res.status === 422) {
-    // _ disindaki anahtarlar alan hatalaridir.
+    // Alan hatalari GENELE indirilir (ceviri): "zorunlu" -> Zorunlu alan, digerleri -> Gecersiz deger.
     const fields = {};
-    for (const [k, v] of Object.entries(errors)) if (k !== '_') fields[k] = v;
-    throw new ValidationError(errors._ || 'Girdileri kontrol edin', fields);
+    for (const [k, v] of Object.entries(errors)) {
+      if (k === '_') continue;
+      fields[k] = /zorunlu|gerekli|required/i.test(String(v)) ? t('err.REQUIRED') : t('err.VALIDATION');
+    }
+    throw new ValidationError(t('err.VALIDATION'), fields);
   }
-  if (res.status === 409 || code === 'STALE') throw new ConflictError(generic);
-  if (res.status === 403 || res.status === 401) throw new AuthError(generic, res.status, code);
-  throw new ApiError(generic, { status: res.status, code });
+  if (res.status === 409 || code === 'STALE') throw new ConflictError(errText(code, 'err.STALE'));
+  if (res.status === 403 || res.status === 401) throw new AuthError(errText(code, 'err.READ_ONLY'), res.status, code);
+  throw new ApiError(errText(code), { status: res.status, code });
 }
 
 // Sunucu tarafi sayfalama YOK; istemci hepsini cekip kendi sayfaliyor. listAll,

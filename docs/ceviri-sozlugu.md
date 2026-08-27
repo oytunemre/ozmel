@@ -201,3 +201,84 @@ baktığında tanıdık kelimeleri görmeli.
   orijinal, TR iken çeviri gösterilmesi düşünülebilir — ayrı bir karar.
 - **Para birimi**: Excel EUR kullanıyor. Fiyat alanları sisteme eklendiğinde
   para birimi alanı da gerekecek.
+
+---
+
+## 7. Uygulama anahtarları (kod ⇄ metin) — TEK DOĞRULUK KAYNAĞI
+
+> `public/js/core/i18n.js` içindeki `DICT` bu tabloyu birebir yansıtır. Yeni bir
+> arayüz metni eklerken **önce buraya** anahtar + TR + EN ekleyin, sonra i18n.js'e
+> geçirin. Menü/durum/eylem terimleri yukarıdaki 1–6. bölümlerden gelir.
+
+### Ortak kabuk / durum / diyalog
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| common.loading | Yükleniyor… | Loading… |
+| common.noRecords | Kayıt yok | No records found |
+| common.noResults | Sonuç yok | No results |
+| common.noResultsFor | "{q}" ile eşleşen kayıt yok. | No records match "{q}". |
+| common.emptyHint | Henüz kayıt eklenmemiş. | No records yet. |
+| common.notSelected | seçilmedi | Not selected |
+| common.readonlyHint | Salt okuma yetkiniz var — değişiklik yapamazsınız | You have read-only access — changes are disabled |
+| action.saving | Kaydediliyor… | Saving… |
+| action.retry | Tekrar dene | Try again |
+| action.showDiff | Farkı göster | Show differences |
+| action.reload | Yeniden yükle | Reload |
+| action.newRequest | Yeni İstek | New Request |
+| table.range | {start}–{end} / {total} | {start}–{end} / {total} |
+| table.page | {page} / {pages} | {page} / {pages} |
+| state.error | Hata | Error |
+| state.conflict | Çakışma | Conflict |
+| state.conflictMsg | Bu kayıt siz açtıktan sonra başkası tarafından değiştirildi. | This record was modified after you opened it. |
+| confirm.title | Emin misiniz? | Are you sure? |
+| drawer.unsavedTitle | Kaydedilmemiş değişiklikler | Unsaved changes |
+| drawer.unsavedBody | Bu panelde kaydedilmemiş değişiklikler var. Ne yapmak istersiniz? | This panel has unsaved changes. What would you like to do? |
+| drawer.discard | Kaydetme | Don't save |
+
+### Hata kodları (BE `meta.code` → sözlük; BE metni basılmaz)
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| err.SESSION_EXPIRED | Oturum süresi doldu — lütfen tekrar giriş yapın | Session expired — please sign in again |
+| err.NO_SESSION | Oturum bulunamadı — lütfen giriş yapın | No session — please sign in |
+| err.NO_USER | Oturum geçerli değil — lütfen tekrar giriş yapın | Session is no longer valid — please sign in again |
+| err.READ_ONLY | Bu işlem için yetkiniz yok | You are not authorized for this action |
+| err.STALE | Bu kayıt başkası tarafından değiştirildi. Sayfayı yenileyip tekrar deneyin. | This record was modified by someone else. Refresh the page and try again. |
+| err.IN_USE | Bu kayıt başka yerlerde kullanıldığı için silinemez. Önce bağlı kayıtları kaldırın. | This record is in use elsewhere and cannot be deleted. Remove the linked records first. |
+| err.REQUIRED | Zorunlu alan | Required field |
+| err.VALIDATION | Geçersiz değer — girdileri kontrol edin | Invalid value — please check your input |
+| err.NETWORK | Sunucuya ulaşılamadı — bağlantınızı kontrol edin | Cannot reach the server — check your connection |
+| err.GENERIC | Bir hata oluştu | An error occurred |
+
+### Ortak alan etiketleri (`field.*`)
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| field.material | Malzeme | Material |
+| field.quantity | Miktar | Quantity |
+| field.unit | Birim | Unit |
+| field.supplier | Tedarikçi | Supplier |
+| field.requestDate | İstek Tarihi | Request Date |
+| field.expectedDate | Beklenen Tarih | Expected Date |
+| field.date | Tarih | Date |
+| field.note | Not | Note |
+
+### Satınalma İstekleri (`pr.*`)
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| pr.subtitle | Üretim için gereken malzemenin tedarik talebi | Supply request for the material needed in production |
+| pr.empty | Henüz istek yok. "Yeni İstek" ile başlayın. | No requests yet. Start with "New Request". |
+| pr.noMaterialCount | {n} kayıtta malzeme seçilmemiş | {n} records without a material |
+| pr.noReceipts | Henüz giriş yapılmadı. | No receipts yet. |
+| pr.newTitle | Yeni İstek | New Request |
+| pr.editTitle | İstek Düzenle | Edit Request |
+| pr.materialHelp | Malzeme kod listesinden seçilir; serbest metin girilmez. | Chosen from the material code list; free text is not allowed. |
+| pr.productFor | Ürün (hangi ürün için) | Product (for which product) |
+| pr.linkedOrder | Bağlı Sipariş | Linked Order |
+| pr.selectMaterial | Malzeme seçin… | Select material… |
+| pr.selectProduct | Ürün seçin… | Select product… |
+| pr.selectOrderOpt | Sipariş (opsiyonel)… | Order (optional)… |
+| pr.deleteTitle | İstek silinsin mi? | Delete this request? |
+| pr.deleteBody | {name} isteği silinecek. | The request for {name} will be deleted. |
