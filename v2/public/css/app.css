@@ -249,9 +249,8 @@ textarea.input { min-height: 84px; resize: vertical; }
 .wh-stats b { font-family: var(--font-mono); }
 .wh-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
 @media (max-width: 700px) { .wh-cols { grid-template-columns: 1fr; } }
-/* Tekil kayıt formu içeriği kısa; kartı kalan yükseklikte dikey ortala (alttaki büyük boşluk yerine). */
-.wh-view { min-height: 100%; display: flex; flex-direction: column; }
-.wh-center { flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px 0 24px; }
+/* Tekil kayıt formu; diğer modüller gibi başlık altında hemen başlar (üste hizalı). */
+.wh-center { padding: 8px 0 24px; }
 .wh-card { width: 100%; max-width: 880px; padding: 22px 24px; }
 
 /* — ürün ağacı: açılır/kapanır hiyerarşi — */
