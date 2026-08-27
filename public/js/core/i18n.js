@@ -196,6 +196,16 @@ const DICT = {
     'ii.spec': 'Spesifikasyon', 'ii.values': 'Değerler', 'ii.valuePlaceholder': 'Değer (sayı ya da Uygun)…',
     'ii.added': 'Kontrol eklendi', 'ii.updated': 'Kontrol güncellendi', 'ii.deleted': 'Kontrol silindi',
     'ii.deleteTitle': 'Kontrol silinsin mi?', 'ii.deleteBody': 'Bu giriş kontrolü, karakteristikleri ve değerleri silinecek.',
+    // — Parti E: Saatlik Noktalar + Kayıtlar (nokta/kayıt metinleri fp.*/fr.* ile paylaşılır) —
+    'field.measureLocation': 'Ölçüm Yeri', 'field.hour': 'Saat', 'field.personnel': 'Personel',
+    'hp.title': 'Saatlik Kontrol Noktaları', 'hp.subtitle': 'Saatlik kontrolde ölçülecek noktalar',
+    'hr.subtitle': 'Saatlik kontrol kayıtları — nokta başına ölçüm dizisi',
+    'hr.deleteBody': 'Bu saatlik kayıt ve ölçümleri silinecek.',
+    'hr.machine': 'Makina', 'hr.productionCount': 'Üretim Adedi',
+    'hr.valuesSeq': 'Değerler (sırayla)', 'hr.addPoint': '+ Nokta ekle', 'hr.noPoint': 'Nokta eklenmedi.',
+    'hr.valuePlaceholder': 'Değer yaz ve Enter…',
+    // — çocuk-detay (paylaşılan _childDetail.js) varsayılan boş metinleri —
+    'cd.noLinked': 'Bağlı kayıt yok.', 'cd.noExtra': 'Ek bilgi yok.', 'cd.noRecords': 'Kayıt yok.',
   },
   en: {
     // — menu groups —
@@ -385,6 +395,16 @@ const DICT = {
     'ii.spec': 'Specification', 'ii.values': 'Values', 'ii.valuePlaceholder': 'Value (number or text)…',
     'ii.added': 'Inspection added', 'ii.updated': 'Inspection updated', 'ii.deleted': 'Inspection deleted',
     'ii.deleteTitle': 'Delete this inspection?', 'ii.deleteBody': 'This incoming inspection, its characteristics and values will be deleted.',
+    // — Group E: Hourly Points + Records (point/record texts shared via fp.*/fr.*) —
+    'field.measureLocation': 'Measurement Location', 'field.hour': 'Time', 'field.personnel': 'Personnel',
+    'hp.title': 'Hourly Control Points', 'hp.subtitle': 'Points to measure during hourly control',
+    'hr.subtitle': 'Hourly control records — a measurement series per point',
+    'hr.deleteBody': 'This hourly record and its measurements will be deleted.',
+    'hr.machine': 'Machine', 'hr.productionCount': 'Production Count',
+    'hr.valuesSeq': 'Values (in order)', 'hr.addPoint': '+ Add point', 'hr.noPoint': 'No points added.',
+    'hr.valuePlaceholder': 'Type a value and Enter…',
+    // — child-detail (shared _childDetail.js) default empty texts —
+    'cd.noLinked': 'No linked records.', 'cd.noExtra': 'No additional info.', 'cd.noRecords': 'No records.',
   }
 };
 

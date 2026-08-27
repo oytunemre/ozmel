@@ -6,11 +6,12 @@
 // Ölçüm/tolerans detayı için ayrıca _measDetail.js kullanılır.
 
 import { esc } from '../core/states.js';
+import { t } from '../core/i18n.js';
 
 // columns: [{ label, key?, render?(row), mono? }]
 export function childTable(columns, rows, empty) {
   const box = el('div', 'child-detail');
-  if (!rows || rows.length === 0) { box.appendChild(el('div', 'cd-empty', esc(empty || 'Bağlı kayıt yok.'))); return box; }
+  if (!rows || rows.length === 0) { box.appendChild(el('div', 'cd-empty', esc(empty || t('cd.noLinked')))); return box; }
   const t = document.createElement('table');
   t.className = 'cd-table';
   t.innerHTML = `<thead><tr>${columns.map(c => `<th${c.mono ? ' class="mono"' : ''}>${esc(c.label)}</th>`).join('')}</tr></thead>`;
@@ -32,7 +33,7 @@ export function childTable(columns, rows, empty) {
 export function childFields(pairs, empty) {
   const shown = pairs.filter(p => p.value != null && p.value !== '');
   const box = el('div', 'child-detail');
-  if (shown.length === 0) { box.appendChild(el('div', 'cd-empty', esc(empty || 'Ek bilgi yok.'))); return box; }
+  if (shown.length === 0) { box.appendChild(el('div', 'cd-empty', esc(empty || t('cd.noExtra')))); return box; }
   const grid = el('div', 'cd-fields');
   for (const p of shown) {
     const cell = el('div', 'cd-field');
@@ -47,7 +48,7 @@ export function childFields(pairs, empty) {
 export function childChips(items, empty) {
   const box = el('div', 'child-detail');
   const list = (items || []).filter(v => v != null && v !== '');
-  if (list.length === 0) { box.appendChild(el('div', 'cd-empty', esc(empty || 'Kayıt yok.'))); return box; }
+  if (list.length === 0) { box.appendChild(el('div', 'cd-empty', esc(empty || t('cd.noRecords')))); return box; }
   const wrap = el('div', 'cd-chips');
   wrap.innerHTML = list.map(it => `<span class="tag tag-accent">${esc(String(it))}</span>`).join('');
   box.appendChild(wrap);

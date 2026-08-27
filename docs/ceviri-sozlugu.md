@@ -485,3 +485,20 @@ Giriş Kalite Kontrolleri (`ii.*`):
 | ii.added / ii.updated / ii.deleted | Kontrol eklendi / güncellendi / silindi | Inspection added / updated / deleted |
 | ii.deleteTitle | Kontrol silinsin mi? | Delete this inspection? |
 | ii.deleteBody | Bu giriş kontrolü, karakteristikleri ve değerleri silinecek. | This incoming inspection, its characteristics and values will be deleted. |
+
+### Parti E (Saatlik Noktalar / Kayıtlar) — nokta/kayıt metinleri fp.*/fr.* ile paylaşılır
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| field.measureLocation | Ölçüm Yeri | Measurement Location |
+| field.hour / field.personnel | Saat / Personel | Time / Personnel |
+| hp.title | Saatlik Kontrol Noktaları | Hourly Control Points |
+| hp.subtitle | Saatlik kontrolde ölçülecek noktalar | Points to measure during hourly control |
+| hr.subtitle | Saatlik kontrol kayıtları — nokta başına ölçüm dizisi | Hourly control records — a measurement series per point |
+| hr.deleteBody | Bu saatlik kayıt ve ölçümleri silinecek. | This hourly record and its measurements will be deleted. |
+| hr.machine / hr.productionCount | Makina / Üretim Adedi | Machine / Production Count |
+| hr.valuesSeq | Değerler (sırayla) | Values (in order) |
+| hr.addPoint / hr.noPoint | + Nokta ekle / Nokta eklenmedi. | + Add point / No points added. |
+| hr.valuePlaceholder | Değer yaz ve Enter… | Type a value and Enter… |
+
+**Paylaşılan (`_childDetail.js` varsayılan boş metinleri):** cd.noLinked (Bağlı kayıt yok. / No linked records.), cd.noExtra (Ek bilgi yok. / No additional info.), cd.noRecords (Kayıt yok. / No records.)
