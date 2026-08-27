@@ -38,15 +38,37 @@
   </div>
 
   <script type="module">
-    // Oturum: gerçek uygulamada giriş ekranından gelir; geliştirmede ?token=/?role=/?user=.
+    // Oturum jetonu: giriş ekranı localStorage'a yazar; geliştirmede ?token= ile de gelebilir.
     const params = new URLSearchParams(location.search);
     window.SESSION_TOKEN = params.get('token') || localStorage.getItem('sessionToken') || '';
-    window.SESSION_ROLE  = params.get('role')  || localStorage.getItem('sessionRole')  || 'editor';
-    window.SESSION_USER  = params.get('user')  || localStorage.getItem('sessionUser')  || 'Kullanıcı';
     if (params.get('token')) localStorage.setItem('sessionToken', params.get('token'));
 
-    // Oturum yoksa giriş ekranına gönder — uygulama kabuğu hiç çizilmez.
-    if (!window.SESSION_TOKEN) { location.replace('login.html'); throw new Error('no-session'); }
+    function toLogin() {
+      localStorage.removeItem('sessionToken');
+      localStorage.removeItem('sessionRole');
+      localStorage.removeItem('sessionUser');
+      location.replace('login.html');
+    }
+
+    // Jeton yoksa giriş ekranına gönder — uygulama kabuğu hiç çizilmez.
+    if (!window.SESSION_TOKEN) { toLogin(); throw new Error('no-session'); }
+
+    // Kullanıcı bilgisi SUNUCUDAN gelir (api/me -> sessions ⋈ users). Kimlik/rol
+    // buradan doldurulur; modüller window.SESSION_ROLE'ü route()'tan ÖNCE görsün diye
+    // bu çağrı bloklar. Yanıt gelmezse ya da 401 dönerse giriş ekranına dön.
+    let me = null;
+    try {
+      const res = await fetch('api/index.php/me', { headers: { 'X-Session-Token': window.SESSION_TOKEN } });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.ok) me = json.data;
+      }
+    } catch { /* ağ hatası -> aşağıda login'e yönlendirilir */ }
+    if (!me) { toLogin(); throw new Error('no-session'); }
+
+    window.SESSION_ROLE = me.role || 'editor';
+    window.SESSION_USER = me.displayName || 'Kullanıcı';
+    window.SESSION_USERNAME = me.username || '';
 
     // Modül kaydı — tasarim/Yon-B-Rahat.dc.html'deki gruplu düzen.
     const GROUPS = [

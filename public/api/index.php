@@ -80,6 +80,8 @@ $routes = [
     'sales-reports' => App\Controller\SalesReportController::class,
     // Kullanici Yonetimi — paylasilan v1 users tablosu (op=sifre ozel islemi var).
     'users'         => App\Controller\UserController::class,
+    // Oturum sahibi — GET api/me -> {displayName, role, username}.
+    'me'            => App\Controller\MeController::class,
 ];
 
 // Tek-satir konfig kaynaklari: id yok. GET tek nesne doner, POST ?op=guncelle gunceller.
