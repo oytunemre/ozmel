@@ -311,3 +311,49 @@ baktığında tanıdık kelimeleri görmeli.
 | tm.newTitle / tm.editTitle | Yeni Terim / Terim Düzenle | New Term / Edit Term |
 | tm.deleteTitle | Terim silinsin mi? | Delete this term? |
 | tm.hiddenTag | Gizli | Hidden |
+
+### Parti B (Siparişler / İş Emirleri) — alanlar, kaynak, vardiya, modül metinleri
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| field.orderNo | Sipariş No | Purchase Order Number |
+| field.product | Ürün / Parça | Product |
+| field.dueDate | Termin | Due Date |
+| field.source | Kaynak | Source |
+| field.targetQuantity | Hedef Miktar | Target Quantity |
+| field.customer | Müşteri | Customer |
+| field.workOrderNo | İş Emri | Work Order No |
+| field.operation | Operasyon | Operation |
+| field.workCenter | İş Merkezi | Work Center |
+| field.producedTarget | Üretilen / Hedef | Produced / Target |
+| field.progress | İlerleme | Progress |
+| field.sequence | Sıra | Sequence |
+| field.shift | Vardiya | Shift |
+| field.actualQuantity | Gerçek Adet | Produced Quantity |
+| field.scrap | Fire | Scrap |
+| field.startDate | Başlangıç Tarihi | Start Date |
+| field.requestedShipDate | İstenen Teslim (Termin) | Requested Ship Date |
+| field.salesOrderNo | Satış Sipariş No | Sales Order No |
+| field.splitLabel | Split Etiketi | Split Label |
+| status.Aktif | Aktif | Active |
+| src.select / src.satis / src.uretim / src.stok | — Kaynak seçin — / Satış / Üretim / Stok | — Select source — / Sales / Production / Stock |
+| shift.Sabah / shift.Aksam / shift.Gece | Sabah / Akşam / Gece | Morning / Evening / Night |
+| ord.title | Üretim Siparişleri | Production Orders |
+| ord.subtitle | Satış siparişinden ya da stok tamamlamadan açılan üretim talepleri | Production requests opened from a sales order or stock replenishment |
+| ord.new / ord.newTitle | Yeni Sipariş | New Order |
+| ord.editTitle | Sipariş Düzenle | Edit Order |
+| ord.empty | Henüz sipariş yok. "Yeni Sipariş" ile başlayın. | No orders yet. Start with "New Order". |
+| ord.secOrder / ord.secDates | Sipariş / Tarihler & Müşteri | Order / Dates & Customer |
+| ord.selectProduct | Ürün seçin… | Select product… |
+| ord.noWorkOrders | Bağlı iş emri yok. | No linked work orders. |
+| ord.deleteTitle | Sipariş silinsin mi? | Delete this order? |
+| ord.deleteBody | "{no}" ve BAĞLI iş emirleri + üretim kayıtları silinecek. | "{no}" and its LINKED work orders + production records will be deleted. |
+| wo.subtitle | Üretim siparişinin rotadaki her operasyonu için bir iş emri açılır | A work order is opened for each operation on the order's route |
+| wo.new / wo.newTitle | İş Emri Aç | Open Work Order |
+| wo.editTitle | İş Emri Düzenle | Edit Work Order |
+| wo.open | Aç | Open |
+| wo.empty | Henüz iş emri yok. "İş Emri Aç" ile başlayın. | No work orders yet. Start with "Open Work Order". |
+| wo.selectOrder / wo.selectProduct / wo.selectOperation / wo.selectCenter | Sipariş / Ürün / Operasyon / İş merkezi seçin… | Select order / product / operation / work center… |
+| wo.noProduction | Üretim kaydı yok. | No production records. |
+| wo.deleteTitle | İş emri silinsin mi? | Delete this work order? |
+| wo.deleteBody | "{no}" ve BAĞLI üretim kayıtları silinecek. | "{no}" and its LINKED production records will be deleted. |
