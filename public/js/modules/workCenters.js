@@ -13,9 +13,10 @@ import { t } from '../core/i18n.js';
 const api = resource('work-centers');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
-export async function viewWorkCenters(container) {
+export async function viewWorkCenters(container, params) {
   const table = new DataTable(container, {
     title: () => t('menu.work-centers'),
+    focusId: params?.id,   // arama/çapraz bağlantı hedefi
     canWrite,
     addLabel: () => t('wc.new'),
     onAdd: () => openForm(null),

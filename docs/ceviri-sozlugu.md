@@ -564,3 +564,16 @@ Sipariş satırına/numarasına (veya chevron'a) tıklanınca detay paneli açı
 | ord.outOfTol | Tolerans dışı: {n} ölçüm | Out of tolerance: {n} measurements |
 | ord.noQuality | İlgili kalite kaydı yok. | No related quality records. |
 | ord.openWorkOrder / ord.openProduct | İş emrini aç / Ürün kodunu aç | Open work order / Open material code |
+
+### Ek: Global arama (Cmd/Ctrl+K)
+
+Üst şeritte arama düğmesi + kısayol: Mac `⌘K`, Windows/Linux `Ctrl K`, ayrıca `/` (bir girdi alanında değilken). Debounce ~200ms, ok tuşlarıyla gezinme, Enter seçim, Esc kapatma. Sonuçlar modüle göre gruplu (grup etiketi `t('menu.<type>')`); seçince `#<type>?id=<id>` ile hedef modül `focusId` ile açılır.
+
+BE: `GET api/search?q=` (SearchController + SearchRepository) — product_codes / orders / work_orders / work_centers / operations tablolarında LIKE, her tipten en fazla 5, `{type,id,label,meta}`. q < 2 karakter → boş. LIKE özel karakterleri kaçırılır (tenant filtresi her sorguda).
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| search.placeholder | Ürün, sipariş, iş emri ara… | Search products, orders, work orders… |
+| search.minChars | Aramak için en az 2 karakter yazın | Type at least 2 characters to search |
+
+Düğme etiketi `action.search`, grup başlıkları `menu.*`, "sonuç yok" `common.noResultsFor`.

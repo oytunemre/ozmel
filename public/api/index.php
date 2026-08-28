@@ -83,6 +83,8 @@ $routes = [
     'users'         => App\Controller\UserController::class,
     // Oturum sahibi — GET api/me -> {displayName, role, username}.
     'me'            => App\Controller\MeController::class,
+    // Global arama (Cmd/Ctrl+K) — GET api/search?q= -> [{type, id, label, meta}].
+    'search'        => App\Controller\SearchController::class,
 ];
 
 // Tek-satir konfig kaynaklari: id yok. GET tek nesne doner, POST ?op=guncelle gunceller.

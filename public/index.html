@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Özmel</title>
   <!-- ?v: onbellek kirici. app.css/modul degisince artir (build/versiyonlama yok). -->
-  <link rel="stylesheet" href="css/app.css?v=44">
+  <link rel="stylesheet" href="css/app.css?v=45">
   <link rel="icon" type="image/svg+xml" href="img/ozmel-ikon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
   <link rel="apple-touch-icon" href="img/favicon-180.png">
@@ -53,6 +53,10 @@
       <header class="topbar">
         <div class="crumb" id="crumb"></div>
         <div class="right">
+          <button class="topsearch" id="global-search" type="button">
+            <span class="ts-ico">⌕</span><span class="ts-label" id="ts-label">Ara…</span><span class="ts-kbd" id="ts-kbd">⌘K</span>
+          </button>
+          <div class="sep"></div>
           <div class="lang" id="lang">
             <button data-lang="tr" class="on">TR</button>
             <button data-lang="en">EN</button>
@@ -78,6 +82,7 @@
     // ile sorgusuz alıyor. Aynı URL = TEK modül örneği = TEK `lang`. (?v konursa AYRI örnek
     // oluşur; kabuk ile modül farklı dile düşer.) htaccess no-cache zaten tazeler.
     import { t, getLang, setLang, onLangChange } from './js/core/i18n.js';
+    import { initGlobalSearch } from './js/core/search.js';
     // Oturum jetonu: giriş ekranı localStorage'a yazar; geliştirmede ?token= ile de gelebilir.
     const params = new URLSearchParams(location.search);
     window.SESSION_TOKEN = params.get('token') || localStorage.getItem('sessionToken') || '';
@@ -233,7 +238,7 @@
           <div class="state-msg">${err && err.message ? err.message : err}</div></div>`;
       };
       try {
-        const mod = await import(`./js/modules/${m.file}?v=44`);
+        const mod = await import(`./js/modules/${m.file}?v=45`);
         // view fonksiyonu async — hatası sessiz kalmasın, ekranda göster.
         // params (ör. {id}) çapraz bağlantı odağı için modüle geçilir.
         const p = mod[m.fn](content, params);
@@ -244,6 +249,7 @@
     }
 
     paintChrome();
+    initGlobalSearch();   // üst şerit arama düğmesi + Cmd/Ctrl+K + "/" kısayolu
     window.addEventListener('hashchange', route);
     route();
   </script>

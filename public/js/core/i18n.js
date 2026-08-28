@@ -44,6 +44,7 @@ const DICT = {
     'action.hide': 'Gizle', 'action.show': 'Göster',
     'fk.select': 'Seçin…', 'fk.warn': '{total} kayıttan ilk {shown} gösteriliyor — aramayı daraltın.',
     'tag.placeholder': 'Yaz ve Enter…',
+    'search.placeholder': 'Ürün, sipariş, iş emri ara…', 'search.minChars': 'Aramak için en az 2 karakter yazın',
     // — sipariş durumları (Excel) —
     'status.Hammadde Bekleniyor': 'Hammadde Bekleniyor', 'status.Üretimde': 'Üretimde',
     'status.Kalite Kontrolde': 'Kalite Kontrolde', 'status.Sevke Hazır': 'Sevke Hazır',
@@ -371,6 +372,7 @@ const DICT = {
     'action.hide': 'Hide', 'action.show': 'Show',
     'fk.select': 'Select…', 'fk.warn': 'Showing first {shown} of {total} — narrow your search.',
     'tag.placeholder': 'Type and Enter…',
+    'search.placeholder': 'Search products, orders, work orders…', 'search.minChars': 'Type at least 2 characters to search',
     // — order statuses (Excel) —
     'status.Hammadde Bekleniyor': 'Awaiting Raw Material', 'status.Üretimde': 'In Production',
     'status.Kalite Kontrolde': 'In Quality Control', 'status.Sevke Hazır': 'Ready to Ship',

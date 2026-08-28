@@ -43,7 +43,7 @@ const progressBar = (done, target) => {
 };
 const go = (key, id) => { location.hash = `#${key}?id=${id}`; };   // hash router çapraz bağlantısı
 
-export async function viewOrders(container) {
+export async function viewOrders(container, params) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, ops, centers, woByOrder, producedByWo, statuses;
   try {
@@ -173,6 +173,7 @@ export async function viewOrders(container) {
   const table = new DataTable(container, {
     title: () => t('ord.title'),
     subtitle: () => t('ord.subtitle'),
+    focusId: params?.id,   // çapraz bağlantı/arama: #orders?id=… -> o siparişe git (detay açılır)
     canWrite,
     addLabel: () => t('ord.new'),
     onAdd: () => openForm(null),

@@ -13,9 +13,10 @@ import { t } from '../core/i18n.js';
 const api = resource('operations');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
-export async function viewOperations(container) {
+export async function viewOperations(container, params) {
   const table = new DataTable(container, {
     title: () => t('menu.operations'),
+    focusId: params?.id,   // arama/çapraz bağlantı hedefi
     canWrite,
     addLabel: () => t('op.new'),
     onAdd: () => openForm(null),
