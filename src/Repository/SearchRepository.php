@@ -37,12 +37,17 @@ final class SearchRepository
             ]
         ));
 
+        // orders / work_orders: kendi alanlarina EK OLARAK bagli urun koduyla da eslesir
+        // (product_code_id -> product_codes.code). JOIN kullanilir; boylece :t TEK KEZ
+        // baglanir (alt sorguda tekrar :t -> HY093 riskini onler). pc.code NULL guvenli.
         $out = array_merge($out, $this->run(
             'orders',
-            "SELECT id, order_no, customer, status FROM orders
-              WHERE tenant_id = :t AND (order_no LIKE :q1 OR customer LIKE :q2)
-              ORDER BY id DESC LIMIT 5",
-            ['t' => $t, 'q1' => $like, 'q2' => $like],
+            "SELECT o.id, o.order_no, o.customer, o.status
+               FROM orders o
+               LEFT JOIN product_codes pc ON pc.id = o.product_code_id AND pc.tenant_id = o.tenant_id
+              WHERE o.tenant_id = :t AND (o.order_no LIKE :q1 OR o.customer LIKE :q2 OR pc.code LIKE :q3)
+              ORDER BY o.id DESC LIMIT 5",
+            ['t' => $t, 'q1' => $like, 'q2' => $like, 'q3' => $like],
             static fn(array $r): array => [
                 'label' => (string) ($r['order_no'] ?? ('#' . $r['id'])),
                 'meta'  => (string) ($r['customer'] ?? $r['status'] ?? ''),
@@ -51,10 +56,12 @@ final class SearchRepository
 
         $out = array_merge($out, $this->run(
             'work-orders',
-            "SELECT id, wo_no, split_label, status FROM work_orders
-              WHERE tenant_id = :t AND (wo_no LIKE :q1 OR split_label LIKE :q2)
-              ORDER BY id DESC LIMIT 5",
-            ['t' => $t, 'q1' => $like, 'q2' => $like],
+            "SELECT w.id, w.wo_no, w.split_label, w.status
+               FROM work_orders w
+               LEFT JOIN product_codes pc ON pc.id = w.product_code_id AND pc.tenant_id = w.tenant_id
+              WHERE w.tenant_id = :t AND (w.wo_no LIKE :q1 OR w.split_label LIKE :q2 OR pc.code LIKE :q3)
+              ORDER BY w.id DESC LIMIT 5",
+            ['t' => $t, 'q1' => $like, 'q2' => $like, 'q3' => $like],
             static fn(array $r): array => [
                 'label' => (string) ($r['wo_no'] ?? ('#' . $r['id']))
                     . (!empty($r['split_label']) ? ' · ' . $r['split_label'] : ''),
