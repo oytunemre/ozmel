@@ -39,6 +39,9 @@ export class DataTable {
     this.search = '';
     this.page = 1;
     this.activeId = null;
+    // Çapraz bağlantı odağı: ilk yüklemeden sonra bu id'li satıra git (sayfayı ayarla,
+    // genişlet, vurgula). Bir kez uygulanır; dil değişiminde tekrarlanmaz.
+    this._focusId = this.o.focusId != null ? String(this.o.focusId) : null;
     this.expanded = new Set();   // genişletilmiş satır id'leri (opts.expand verilmişse)
     this.flagActive = false;     // flagFilter sayacı açık mı (yalnızca işaretli satırlar)
     this.facetActive = new Set();// facetFilter'da seçili değerler (boşsa: hepsi)
@@ -72,7 +75,26 @@ export class DataTable {
         return;
       }
     }
+    if (this._focusId != null) this._prepareFocus(this._focusId);
     this.paint();
+    if (this._focusId != null) { this._flashFocus(this._focusId); this._focusId = null; }
+  }
+
+  /** Odak satırını içeren sayfayı seç + (varsa) genişlet + aktif işaretle (paint ÖNCESİ). */
+  _prepareFocus(id) {
+    id = String(id);
+    const rows = this.filtered();
+    const idx = rows.findIndex(r => String(this.o.rowId(r)) === id);
+    if (idx < 0) return;
+    this.page = Math.floor(idx / this.o.pageSize) + 1;
+    this.activeId = id;
+    if (this.o.expand) this.expanded.add(id);
+  }
+
+  /** Odak satırını vurgula + görünüme kaydır (paint SONRASI). */
+  _flashFocus(id) {
+    const tr = this.body?.querySelector(`tbody tr[data-id="${cssEsc(String(id))}"]`);
+    if (tr) { flashRow(tr); tr.scrollIntoView({ block: 'center' }); }
   }
 
   /** Sunucudan tazeler (create/update/delete sonrasi). */
@@ -224,6 +246,16 @@ export class DataTable {
       tr.dataset.id = id;
       if (id === this.activeId) tr.classList.add('is-active');
       if (this.o.rowClass) { const rc = this.o.rowClass(row); if (rc) tr.classList.add(rc); }
+      // Satıra tıklayınca genişlet (or. sipariş no). Buton/bağlantı/aksiyon tıklamaları hariç
+      // (chevron da butondur -> kendi handler'ı çalışır, burada atlanır: çift toggle olmaz).
+      if (hasExpand && this.o.expandOnRowClick) {
+        tr.classList.add('row-expandable');
+        tr.addEventListener('click', (e) => {
+          if (e.target.closest('button, a, input, .actions')) return;
+          if (this.expanded.has(id)) this.expanded.delete(id); else this.expanded.add(id);
+          this.paint();
+        });
+      }
       if (hasExpand) tr.appendChild(this.expanderCell(id, row));
       for (const col of this.o.columns) {
         const td = document.createElement('td');

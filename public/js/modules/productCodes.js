@@ -32,7 +32,7 @@ const unitOptions = () => [
   { value: '', label: t('qc.unitPlaceholder') }, { value: 'adet', label: 'adet' }, { value: 'kg', label: 'kg' }
 ];
 
-export async function viewProductCodes(container) {
+export async function viewProductCodes(container, params) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
 
   // Çıkan operasyon FK'si için operasyonlar bir kez çekilir.
@@ -50,6 +50,7 @@ export async function viewProductCodes(container) {
 
   const table = new DataTable(container, {
     title: () => t('menu.product-codes'),
+    focusId: params?.id,   // çapraz bağlantı: #product-codes?id=… geldiğinde o satıra git
     canWrite,
     addLabel: () => t('pc.new'),
     onAdd: () => openForm(null),

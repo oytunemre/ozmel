@@ -16,7 +16,7 @@ const api = resource('work-orders');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 const shiftLabel = (s) => s ? t('shift.' + s) : '—';
 
-export async function viewWorkOrders(container) {
+export async function viewWorkOrders(container, params) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, ops, centers, orders, producedByWo, prodByWo;
   try {
@@ -47,6 +47,7 @@ export async function viewWorkOrders(container) {
   const table = new DataTable(container, {
     title: () => t('menu.work-orders'),
     subtitle: () => t('wo.subtitle'),
+    focusId: params?.id,   // çapraz bağlantı: #work-orders?id=… geldiğinde o satıra git
     canWrite,
     addLabel: () => t('wo.new'),
     onAdd: () => openForm(null),

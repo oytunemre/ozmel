@@ -413,7 +413,20 @@ textarea.input { min-height: 84px; resize: vertical; }
 .cd-field .cd-k { font-size: 11px; color: var(--color-neutral-600); text-transform: uppercase; letter-spacing: .04em; }
 .cd-field .cd-v { font-size: 13.5px; }
 .cd-field .cd-v.mono { font-family: var(--font-mono); }
-.cd-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cd-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+/* Sipariş detay paneli — bölüm başlıkları, çapraz bağlantı, tıklanabilir satır */
+.order-detail { padding: 4px 0 10px; }
+.order-detail .child-detail { padding-top: 2px; padding-bottom: 2px; }
+.cd-sectitle { font-family: var(--font-heading); font-size: 12.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .04em; color: var(--color-neutral-600);
+  margin: 14px 0 6px; padding: 0 16px; }
+.cd-sectitle.first { margin-top: 4px; }
+.xlink { color: var(--color-accent-800); text-decoration: none; border-bottom: 1px solid transparent; }
+.xlink:hover { border-bottom-color: currentColor; }
+.child-detail .cd-table tr.clickable { cursor: pointer; }
+.child-detail .cd-table tr.clickable:hover td { background: var(--color-neutral-100); }
+.table tbody tr.row-expandable { cursor: pointer; }
 
 /* — salt okunur panolar: Genel Bakış & Satış Raporları — */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Özmel</title>
   <!-- ?v: onbellek kirici. app.css/modul degisince artir (build/versiyonlama yok). -->
-  <link rel="stylesheet" href="css/app.css?v=43">
+  <link rel="stylesheet" href="css/app.css?v=44">
   <link rel="icon" type="image/svg+xml" href="img/ozmel-ikon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
   <link rel="apple-touch-icon" href="img/favicon-180.png">
@@ -146,12 +146,23 @@
     for (const [group, items] of GROUPS)
       for (const [key, file, fn] of items) BY_KEY[key] = { key, file, fn, group };
 
+    // Hash'i modül anahtarı + parametrelere ayırır: "#work-orders?id=5" -> { key, params:{id} }.
+    // Çapraz bağlantılar (sipariş detayından iş emri/ürün) bu ?id desenini kullanır.
+    function parseHash() {
+      const raw = location.hash.slice(1);
+      const qi = raw.indexOf('?');
+      const key = (qi < 0 ? raw : raw.slice(0, qi)) || 'work-centers';
+      const params = {};
+      if (qi >= 0) for (const [k, v] of new URLSearchParams(raw.slice(qi + 1))) params[k] = v;
+      return { key, params };
+    }
+
     const nav = document.getElementById('nav');
     const content = document.getElementById('content');
     const crumb = document.getElementById('crumb');
 
     function renderNav() {
-      const cur = location.hash.slice(1) || 'work-centers';
+      const cur = parseHash().key;
       nav.innerHTML = '';
       for (const [group, items] of GROUPS) {
         const g = document.createElement('div');
@@ -169,7 +180,7 @@
       }
     }
     function renderCrumb() {
-      const m = BY_KEY[location.hash.slice(1)] || BY_KEY['work-centers'];
+      const m = BY_KEY[parseHash().key] || BY_KEY['work-centers'];
       crumb.textContent = `${t('group.' + m.group)} / ${t('menu.' + m.key)}`;
     }
 
@@ -212,7 +223,7 @@
     });
 
     async function route() {
-      const key = location.hash.slice(1) || 'work-centers';
+      const { key, params } = parseHash();
       const m = BY_KEY[key] || BY_KEY['work-centers'];
       renderNav();
       renderCrumb();
@@ -222,9 +233,10 @@
           <div class="state-msg">${err && err.message ? err.message : err}</div></div>`;
       };
       try {
-        const mod = await import(`./js/modules/${m.file}?v=43`);
+        const mod = await import(`./js/modules/${m.file}?v=44`);
         // view fonksiyonu async — hatası sessiz kalmasın, ekranda göster.
-        const p = mod[m.fn](content);
+        // params (ör. {id}) çapraz bağlantı odağı için modüle geçilir.
+        const p = mod[m.fn](content, params);
         if (p && p.catch) p.catch(showErr);
       } catch (err) {
         showErr(err);

@@ -547,3 +547,20 @@ Tüm 26 modül artık i18n.js kullanıyor. Sözlük i18n.js DICT ile birebir.
 | db.detailOpenToday | {n}'i bugün başlamalı | {n} due to start today |
 | db.detailOpenNone | bugün başlayacak yok | none starting today |
 | db.detailOutParts | son 24 saat · {n} parça | last 24h · {n} parts |
+
+### Ek: Sipariş detay paneli + çapraz bağlantılar
+
+Sipariş satırına/numarasına (veya chevron'a) tıklanınca detay paneli açılır (genişleyen satır). İçerik: sipariş bilgileri (müşteri, ürün-linkli, hedef, başlangıç/teslim, kaynak, durum rozeti), sipariş geneli (kalan = hedef − toplam üretilen + ilerleme çubuğu), bağlı iş emirleri (bölme/operasyon/iş merkezi/hedef/üretilen/ilerleme/durum, satır tıklanınca İş Emirleri'ne gider), ilgili kalite kayıtları (first-off + saatlik sayısı, tolerans dışı uyarısı — tembel yüklenir).
+
+Çapraz bağlantı: hash router `#<modül>?id=<n>` desenini destekler; hedef DataTable `focusId` ile o satırı içeren sayfaya gider, satırı genişletir + vurgular. (Yeni BE ucu açılmadı; mevcut listelerden türetildi.)
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| ord.detailInfo | Sipariş Bilgileri | Order Details |
+| ord.detailSummary | Sipariş Geneli | Order Summary |
+| ord.detailQuality | Kalite Kayıtları | Quality Records |
+| ord.produced / ord.remaining | Üretilen / Kalan | Produced / Remaining |
+| ord.qFirstOff / ord.qHourly | First-Off / Saatlik | First-Off / Hourly |
+| ord.outOfTol | Tolerans dışı: {n} ölçüm | Out of tolerance: {n} measurements |
+| ord.noQuality | İlgili kalite kaydı yok. | No related quality records. |
+| ord.openWorkOrder / ord.openProduct | İş emrini aç / Ürün kodunu aç | Open work order / Open material code |
