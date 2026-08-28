@@ -20,14 +20,17 @@ final class SearchRepository
     public function search(string $term): array
     {
         $like = '%' . $this->escapeLike($term) . '%';
+        $t = $this->ctx->tenantId;
+        // ATTR_EMULATE_PREPARES kapaliyken ayni yer tutucu bir sorguda TEK KEZ kullanilabilir.
+        // Bu yuzden her LIKE'a ayri isim (:q1, :q2) verilir ve her sorgu kendi param'ini gecirir.
         $out = [];
 
         $out = array_merge($out, $this->run(
             'product-codes',
             "SELECT id, code, name, type FROM product_codes
-              WHERE tenant_id = :t AND (code LIKE :q OR name LIKE :q)
+              WHERE tenant_id = :t AND (code LIKE :q1 OR name LIKE :q2)
               ORDER BY code LIMIT 5",
-            $like,
+            ['t' => $t, 'q1' => $like, 'q2' => $like],
             static fn(array $r): array => [
                 'label' => trim(($r['code'] ?? '') . ' · ' . ($r['name'] ?? ''), ' ·'),
                 'meta'  => (string) ($r['type'] ?? ''),
@@ -37,9 +40,9 @@ final class SearchRepository
         $out = array_merge($out, $this->run(
             'orders',
             "SELECT id, order_no, customer, status FROM orders
-              WHERE tenant_id = :t AND (order_no LIKE :q OR customer LIKE :q)
+              WHERE tenant_id = :t AND (order_no LIKE :q1 OR customer LIKE :q2)
               ORDER BY id DESC LIMIT 5",
-            $like,
+            ['t' => $t, 'q1' => $like, 'q2' => $like],
             static fn(array $r): array => [
                 'label' => (string) ($r['order_no'] ?? ('#' . $r['id'])),
                 'meta'  => (string) ($r['customer'] ?? $r['status'] ?? ''),
@@ -49,9 +52,9 @@ final class SearchRepository
         $out = array_merge($out, $this->run(
             'work-orders',
             "SELECT id, wo_no, split_label, status FROM work_orders
-              WHERE tenant_id = :t AND (wo_no LIKE :q OR split_label LIKE :q)
+              WHERE tenant_id = :t AND (wo_no LIKE :q1 OR split_label LIKE :q2)
               ORDER BY id DESC LIMIT 5",
-            $like,
+            ['t' => $t, 'q1' => $like, 'q2' => $like],
             static fn(array $r): array => [
                 'label' => (string) ($r['wo_no'] ?? ('#' . $r['id']))
                     . (!empty($r['split_label']) ? ' · ' . $r['split_label'] : ''),
@@ -62,18 +65,18 @@ final class SearchRepository
         $out = array_merge($out, $this->run(
             'work-centers',
             "SELECT id, name FROM work_centers
-              WHERE tenant_id = :t AND name LIKE :q
+              WHERE tenant_id = :t AND name LIKE :q1
               ORDER BY name LIMIT 5",
-            $like,
+            ['t' => $t, 'q1' => $like],
             static fn(array $r): array => ['label' => (string) $r['name'], 'meta' => '']
         ));
 
         $out = array_merge($out, $this->run(
             'operations',
             "SELECT id, name FROM operations
-              WHERE tenant_id = :t AND name LIKE :q
+              WHERE tenant_id = :t AND name LIKE :q1
               ORDER BY name LIMIT 5",
-            $like,
+            ['t' => $t, 'q1' => $like],
             static fn(array $r): array => ['label' => (string) $r['name'], 'meta' => '']
         ));
 
@@ -81,13 +84,14 @@ final class SearchRepository
     }
 
     /**
+     * @param array<string,mixed> $params Sorgudaki yer tutucularla BİRE BİR eşleşir.
      * @param callable(array):array{label:string,meta:string} $map
      * @return list<array{type:string,id:int,label:string,meta:string}>
      */
-    private function run(string $type, string $sql, string $like, callable $map): array
+    private function run(string $type, string $sql, array $params, callable $map): array
     {
         $stmt = Db::pdo()->prepare($sql);
-        $stmt->execute(['t' => $this->ctx->tenantId, 'q' => $like]);
+        $stmt->execute($params);
         $rows = [];
         foreach ($stmt->fetchAll() as $r) {
             $m = $map($r);
