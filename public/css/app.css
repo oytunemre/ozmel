@@ -98,6 +98,7 @@ textarea.input { min-height: 84px; resize: vertical; }
 .tag-accent { background: var(--color-accent-100); color: var(--color-accent-800); }
 .tag-success { background: var(--color-success-fill); color: var(--color-success); }
 .tag-danger { background: var(--color-danger-fill); color: var(--color-danger); }
+.tag-warn { background: var(--color-warning-fill); color: var(--color-warning); }
 .tag + .tag { margin-left: 4px; }
 
 /* — app kabuk: koyu gruplu kenar cubugu + ust bar — */
@@ -318,17 +319,59 @@ textarea.input { min-height: 84px; resize: vertical; }
 .tree-actions { text-align: right; white-space: nowrap; }
 .tree-num { font-family: var(--font-mono); }
 
-/* — rotalar: ürüne göre gruplu — */
-.rgroup { border: 1px solid var(--color-divider); background: var(--color-surface); margin-bottom: 14px; }
-.rgroup-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; }
-.rgroup-head:hover { background: color-mix(in srgb, var(--color-text) 3%, transparent); }
-.rgroup-head .chev { color: var(--color-neutral-600); }
-.rgroup-head .code { font-family: var(--font-mono); font-size: 13px; color: var(--color-accent-800); }
-.rgroup-head .rname { font-weight: 500; }
-.rgroup-head .count { color: var(--color-neutral-600); font-size: 13px; }
-.rgroup-head .grow { flex: 1; }
-.rgroup table { border-top: 1px solid var(--color-divider); }
-.rgroup.collapsed table { display: none; }
+/* — rotalar: ürün seçici + zaman çizelgesi (referans v78 viewRoutes düzeni, v2 blueprint stili) — */
+.part-picker { display: flex; gap: var(--space-4); align-items: flex-start; }
+.part-list { width: 260px; flex: 0 0 260px; border: 1px solid var(--color-divider);
+  background: var(--color-surface); max-height: 640px; overflow-y: auto; }
+.part-list-item { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-divider);
+  cursor: pointer; font-size: 13px; }
+.part-list-item:last-child { border-bottom: none; }
+.part-list-item:hover { background: color-mix(in srgb, var(--color-text) 3%, transparent); }
+.part-list-item.active { background: var(--color-accent-100);
+  border-left: 3px solid var(--color-accent); padding-left: calc(var(--space-4) - 3px); }
+.part-list-item .pn { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; }
+.part-list-item .pmeta { font-size: 11px; color: var(--color-neutral-600); margin-top: 2px; }
+
+.timeline { flex: 1; min-width: 0; }
+.tl-cnc { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--color-neutral-500); margin: 18px 0 6px 40px; }
+.tl-cnc:first-child { margin-top: 0; }
+.tl-step { display: flex; gap: var(--space-4); }
+.tl-marker-col { display: flex; flex-direction: column; align-items: center; }
+.tl-num { min-width: 26px; height: 26px; padding: 0 5px; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600; flex: 0 0 auto; z-index: 2;
+  background: var(--color-surface); border: 2px solid var(--color-neutral-400);
+  color: var(--color-neutral-600); }          /* KARE (radius:0) — v2 blueprint */
+.tl-line { width: 2px; flex: 1; background: var(--color-neutral-400); margin: 2px 0; }
+.tl-step:last-child .tl-line { display: none; }
+.tl-content { padding-bottom: 22px; flex: 1; min-width: 0; }
+.tl-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
+.tl-title { font-weight: 600; font-size: 13.5px; }
+.tl-variants { margin: 4px 0 6px; }
+.tl-wc { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+.tl-wc-name { font-size: 13px; }
+.tl-wc-actions { margin-left: auto; white-space: nowrap; }
+.tl-wc.flash { animation: flash 1.6s ease-out; }
+.rt-note { font-size: 13px; color: var(--color-neutral-600); margin-top: 10px; }
+.rt-drawer-note { font-size: 12.5px; line-height: 1.5; color: var(--color-neutral-600); }
+
+/* — kapasiteler: makine durumu + veri uyarıları + kapasite düzenleme (timeline'ı Rotalar'dan devralır) — */
+.cap-machines { display: flex; flex-wrap: wrap; gap: 10px; }
+.cap-machine { border: 1px solid var(--color-divider); padding: 10px 14px; min-width: 200px; }
+.cap-machine-name { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+.cap-machine-row { display: flex; align-items: center; gap: 6px; font-size: 12.5px; margin-bottom: 3px; }
+.cap-machine-row .grow { margin-left: auto; }
+.cap-warn-row { display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+  border-bottom: 1px solid var(--color-divider); font-size: 13px; }
+.cap-warn-row:last-child { border-bottom: none; }
+.cap-warn-row .grow { margin-left: auto; }
+.tl-num.bottleneck { border-color: var(--color-danger); color: var(--color-danger); }
+.cap-edit-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; font-size: 12.5px; }
+.cap-edit-row .cap-active { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+.cap-input { width: 110px; }
+.cap-min-wrap { display: flex; align-items: center; gap: 5px; padding-left: 10px; border-left: 1px solid var(--color-divider); }
+.cap-min-input { width: 84px; }
+.cap-note { font-size: 13px; color: var(--color-neutral-600); margin-top: 10px; }
 
 /* — ilerleme çubuğu (iş emirleri) — */
 .progress { display: flex; align-items: center; gap: 8px; }

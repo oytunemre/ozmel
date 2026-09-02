@@ -26,7 +26,7 @@ final class Route
             'productCodeId' => (int) $row['product_code_id'],
             'operationId'   => (int) $row['operation_id'],
             'workCenterId'  => (int) $row['work_center_id'],
-            'sequence'      => (int) $row['sequence'],
+            'sequence'      => (float) $row['sequence'],
             'isActive'      => (bool) $row['is_active'],
             'variantLabel'  => $row['variant_label'] !== null ? (string) $row['variant_label'] : null,
             'variants'      => array_values(array_map('strval', $row['variants'] ?? [])),
@@ -54,7 +54,7 @@ final class Route
             $out['work_center_id'] = (int) $input['workCenterId'];
         }
         if (array_key_exists('sequence', $input)) {
-            $out['sequence'] = (int) $input['sequence'];
+            $out['sequence'] = (float) $input['sequence'];
         }
         if (array_key_exists('isActive', $input)) {
             $out['is_active'] = $input['isActive'] ? 1 : 0;

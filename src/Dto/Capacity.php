@@ -11,6 +11,7 @@ namespace App\Dto;
  * camelCase <-> snake_case sinirinin tek yeri.
  *   urun      -> productCodeId    (product_codes.id)
  *   isMerkezi -> workCenterId     (work_centers.id)
+ *   operasyon -> operationId      (operations.id; opsiyonel — eski kayitlar NULL)
  *   kapasite  -> capacityPerShift (vardiya basi)
  *   dakika    -> minutes (opsiyonel)
  */
@@ -22,6 +23,7 @@ final class Capacity
             'id'               => (int) $row['id'],
             'productCodeId'    => (int) $row['product_code_id'],
             'workCenterId'     => (int) $row['work_center_id'],
+            'operationId'      => $row['operation_id'] !== null ? (int) $row['operation_id'] : null,
             'capacityPerShift' => (float) $row['capacity_per_shift'],
             'minutes'          => $row['minutes'] !== null ? (float) $row['minutes'] : null,
             'updatedAt'        => (string) $row['updated_at'],
@@ -43,6 +45,11 @@ final class Capacity
         }
         if (array_key_exists('workCenterId', $input)) {
             $out['work_center_id'] = (int) $input['workCenterId'];
+        }
+        if (array_key_exists('operationId', $input)) {
+            // Bos ('' / null / 0) -> NULL (operasyonsuz eski kayit); aksi halde FK id.
+            $v = $input['operationId'];
+            $out['operation_id'] = ($v === null || $v === '' || (int) $v === 0) ? null : (int) $v;
         }
         if (array_key_exists('capacityPerShift', $input)) {
             $out['capacity_per_shift'] = (float) $input['capacityPerShift'];

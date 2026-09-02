@@ -55,8 +55,8 @@ final class CapacityController
         }
 
         $cols = Capacity::toColumns($input);
-        if ($this->repo->pairExists($cols['product_code_id'], $cols['work_center_id'])) {
-            Response::invalid(['_' => 'Bu urun-is merkezi cifti icin kapasite zaten tanimli']);
+        if ($this->repo->tripleExists($cols['product_code_id'], $cols['work_center_id'], $cols['operation_id'] ?? null)) {
+            Response::invalid(['_' => 'Bu urun-is merkezi-operasyon icin kapasite zaten tanimli']);
         }
 
         $id = $this->repo->create($cols);
@@ -79,12 +79,17 @@ final class CapacityController
 
         $cols = Capacity::toColumns($input);
 
-        // Cift degisebilir; guncelleme sonrasi etkin (urun, is merkezi) cakisiyor mu?
-        if (array_key_exists('product_code_id', $cols) || array_key_exists('work_center_id', $cols)) {
+        // Uclu degisebilir; guncelleme sonrasi etkin (urun, is merkezi, operasyon) cakisiyor mu?
+        if (array_key_exists('product_code_id', $cols)
+            || array_key_exists('work_center_id', $cols)
+            || array_key_exists('operation_id', $cols)) {
             $product = $cols['product_code_id'] ?? (int) $existing['product_code_id'];
             $wc      = $cols['work_center_id']  ?? (int) $existing['work_center_id'];
-            if ($this->repo->pairExists($product, $wc, $id)) {
-                Response::invalid(['_' => 'Bu urun-is merkezi cifti icin kapasite zaten tanimli']);
+            $op      = array_key_exists('operation_id', $cols)
+                ? $cols['operation_id']
+                : ($existing['operation_id'] !== null ? (int) $existing['operation_id'] : null);
+            if ($this->repo->tripleExists($product, $wc, $op, $id)) {
+                Response::invalid(['_' => 'Bu urun-is merkezi-operasyon icin kapasite zaten tanimli']);
             }
         }
 

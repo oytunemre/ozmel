@@ -458,12 +458,13 @@ if ($stoppedAt === null) {
 // --- routes (+ varyantSecenekleri) ---
 if ($stoppedAt === null)
 $runCollection('routes', $D['routes'] ?? [], function (array $r)
-        use ($repo, &$idMap, $str, $int, $bool, $resolveProduct, $resolveWorkCenter, $resolveOperation): string {
+        use ($repo, &$idMap, $str, $num, $bool, $resolveProduct, $resolveWorkCenter, $resolveOperation): string {
     $cols = [
         'product_code_id' => $resolveProduct($str($r['urun'] ?? null)),
         'operation_id'    => $resolveOperation($str($r['operasyon'] ?? null)),
         'work_center_id'  => $resolveWorkCenter($str($r['isMerkezi'] ?? null)),
-        'sequence'        => $int($r['sira'] ?? null) ?? 0,
+        // sira ondalikli (alt operasyon 1.1/1.2) — routes.sequence DECIMAL; $int TRUNCATE ederdi.
+        'sequence'        => $num($r['sira'] ?? null) ?? 0,
         'is_active'       => $bool($r['aktif'] ?? false),
         'variant_label'   => $str($r['varyantEtiketi'] ?? null),
     ];
@@ -485,14 +486,17 @@ $runCollection('routes', $D['routes'] ?? [], function (array $r)
 // --- capacities (capacity) ---
 if ($stoppedAt === null)
 $runCollection('capacities', $D['capacity'] ?? [], function (array $r)
-        use ($repo, &$idMap, $str, $num, $resolveProduct, $resolveWorkCenter): string {
+        use ($repo, &$idMap, $str, $num, $resolveProduct, $resolveWorkCenter, $resolveOperation): string {
     $wc = $resolveWorkCenter($str($r['isMerkezi'] ?? null));
     if ($wc === null) throw new EtlSkip('kapasite: is merkezi bos');
     $res = $repo['capacities']->etlUpsert($str($r['id'] ?? null), [
         'product_code_id'    => $resolveProduct($str($r['urun'] ?? null)),
         'work_center_id'     => $wc,
+        // operasyon opsiyonel: bos -> NULL (eski kayit); dolu -> operations id (gerekirse olusur).
+        'operation_id'       => $resolveOperation($str($r['operasyon'] ?? null)),
         'capacity_per_shift' => $num($r['kapasite'] ?? null) ?? 0,
-        'minutes'            => $num($r['dakika'] ?? null),
+        // v1 alan adi dakikaPerAdet (dakika DEGIL) — onceki eslemede yanlisti, minutes hep NULL kaliyordu.
+        'minutes'            => $num($r['dakikaPerAdet'] ?? null),
     ]);
     $idMap['capacities'][$r['id']] = $res['id'];
     return $res['action'];

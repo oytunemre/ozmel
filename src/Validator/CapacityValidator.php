@@ -17,6 +17,8 @@ final class CapacityValidator extends Validator
             $this->required($input, 'workCenterId', 'Is merkezi')
                  ->positiveInt($input, 'workCenterId', 'Is merkezi');
         }
+        // Operasyon opsiyonel (eski kayitlar operasyonsuz); verildiyse gecerli FK olmali.
+        $this->positiveInt($input, 'operationId', 'Operasyon');
         if ($isCreate || array_key_exists('capacityPerShift', $input)) {
             $this->required($input, 'capacityPerShift', 'Kapasite')
                  ->numeric($input, 'capacityPerShift', 'Kapasite');
