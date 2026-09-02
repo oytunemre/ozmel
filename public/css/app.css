@@ -356,10 +356,11 @@ textarea.input { min-height: 84px; resize: vertical; }
 .rt-drawer-note { font-size: 12.5px; line-height: 1.5; color: var(--color-neutral-600); }
 
 /* Rotalar v2: sabit iki kolon + panel içi kaydırma (yalnız Rotalar; .rt-picker ile
-   kapsanır — Kapasiteler aynı .part-picker/.tl-* sınıflarını kullandığından etkilenmez). */
-.content:has(.rt-picker) { display: flex; flex-direction: column; overflow: hidden; }
+   kapsanır — Kapasiteler aynı .part-picker/.tl-* sınıflarını kullandığından etkilenmez).
+   Yükseklik kendi içinde bağlanır (viewport eksi üst şerit/başlık/araç çubuğu) — paylaşılan
+   .content düzenine DOKUNULMAZ (aksi halde ana içerik/menü akışı bozuluyordu). */
 .rt-picker { display: grid; grid-template-columns: 272px minmax(0, 1fr); gap: var(--space-4);
-  align-items: stretch; flex: 1; min-height: 0; overflow: hidden; }
+  align-items: stretch; height: calc(100vh - 240px); min-height: 360px; overflow: hidden; }
 .rt-picker > .part-list { width: auto; flex: initial; max-height: none; min-height: 0; overflow-y: auto; }
 .rt-picker > .timeline { min-height: 0; overflow-y: auto; }
 /* Sıra kutusu: ana adım (tam sayı) dolu aksan + beyaz sayı; alt operasyon (kesirli) beyaz + hairline */
@@ -375,6 +376,16 @@ textarea.input { min-height: 84px; resize: vertical; }
 /* Arama sonucu boş — sol kolon */
 .rt-empty-search { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px; }
 .rt-empty-title { font-family: var(--font-heading); font-size: 14px; }
+/* Adım başlığı düğmeleri: sarmaz, satır sonuna hizalı, kompakt (başlık taşarsa ellipsis) */
+.rt-picker .tl-title-row { flex-wrap: nowrap; }
+.rt-picker .tl-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rt-picker .tl-title-row .btn { flex: none; white-space: nowrap; font-size: 12px; padding: 3px 8px; }
+.rt-picker .tl-title-row [data-act="alt"] { margin-left: auto; }
+/* İş merkezi satırı: ad ana bilgi; Düzenle/Sil sessiz ghost (hover'da niyet rengi) */
+.rt-picker .tl-wc-name { font-weight: 500; }
+.rt-picker .tl-wc-actions .btn { color: var(--color-neutral-600); font-size: 12px; }
+.rt-picker .tl-wc-actions .btn:hover { color: var(--color-accent); background: transparent; }
+.rt-picker .tl-wc-actions .btn.tl-del:hover { color: var(--color-danger); }
 
 /* — katlanabilir blueprint paneli (ortak — core/collapsible.js) — */
 /* Kutu + tıklanır başlık; Makine Durumu, Veri Kontrolü Uyarıları ve ileride başka

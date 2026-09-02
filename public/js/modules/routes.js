@@ -257,7 +257,7 @@ export async function viewRoutes(container, params) {
         actions.className = 'tl-wc-actions';
         actions.append(
           btn(t('action.edit'), 'btn-ghost', () => openRouteForm({ row: g })),
-          btn(t('action.delete'), 'btn-danger', () => remove(g))
+          btn(t('action.delete'), 'btn-ghost tl-del', () => remove(g))
         );
         row.appendChild(actions);
       }
