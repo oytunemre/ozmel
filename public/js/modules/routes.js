@@ -72,7 +72,9 @@ export async function viewRoutes(container, params) {
   function render() {
     const allIds = productIds();
     const shownIds = allIds.filter(productMatches);
-    if (!shownIds.includes(SELECTED_PRODUCT)) SELECTED_PRODUCT = shownIds[0] ?? null;
+    // Arama sonucu boşsa son seçili ürün KORUNUR (sağ panel onda kalır); sonuç doluysa
+    // ve seçim listede yoksa ilk eşleşene düşer.
+    if (shownIds.length && !shownIds.includes(SELECTED_PRODUCT)) SELECTED_PRODUCT = shownIds[0];
 
     container.innerHTML = `
       <div class="module-head">
@@ -93,15 +95,12 @@ export async function viewRoutes(container, params) {
       st.className = 'state';
       st.innerHTML = `<div class="state-title">${esc(t('rt.emptyTitle'))}</div><div class="state-msg">${esc(t('rt.empty'))}</div>`;
       container.appendChild(st);
-    } else if (shownIds.length === 0) {
-      const st = document.createElement('div');
-      st.className = 'state';
-      st.innerHTML = `<div class="state-title">${esc(t('common.noResults'))}</div><div class="state-msg">${esc(t('rt.noMatch'))}</div>`;
-      container.appendChild(st);
     } else {
+      // İki kolon sabit ızgara (272px | 1fr), sarmaz; kaydırma her panelin kendi içinde.
+      // Arama boşsa sol kolonda "Eşleşen ürün yok" + temizle, sağ panel son üründe kalır.
       const picker = document.createElement('div');
-      picker.className = 'part-picker';
-      picker.appendChild(partList(shownIds));
+      picker.className = 'part-picker rt-picker';
+      picker.appendChild(shownIds.length === 0 ? emptySearchPanel() : partList(shownIds));
       picker.appendChild(timeline());
       container.appendChild(picker);
     }
@@ -145,6 +144,22 @@ export async function viewRoutes(container, params) {
     return list;
   }
 
+  // Arama sonucu boş: sol kolon yerine "Eşleşen ürün yok" + "Aramayı temizle".
+  function emptySearchPanel() {
+    const el = document.createElement('div');
+    el.className = 'part-list rt-empty-search';
+    el.innerHTML = `<div class="rt-empty-title">${esc(t('rt.noMatchTitle'))}</div>`;
+    const b = document.createElement('button');
+    b.className = 'btn btn-secondary btn-sm';
+    b.textContent = t('rt.clearSearch');
+    b.addEventListener('click', () => {
+      search = ''; render();
+      const s = container.querySelector('#rt-search'); if (s) s.focus();
+    });
+    el.appendChild(b);
+    return el;
+  }
+
   // --- sağ panel: zaman çizelgesi ---
   function timeline() {
     const wrap = document.createElement('div');
@@ -162,9 +177,13 @@ export async function viewRoutes(container, params) {
         centers.label(a.workCenterId).localeCompare(centers.label(b.workCenterId), 'tr'));
     }
 
+    const opCount = new Set(steps.map(s => s.operationId)).size;   // farklı operasyon sayısı
     const panel = document.createElement('div');
     panel.className = 'panel';
-    panel.innerHTML = `<div class="panel-head"><h3 class="mono">${esc(p.code || '')}</h3><span class="sub">${esc(p.name || '')}</span></div>`;
+    panel.innerHTML = `<div class="panel-head">
+      <div class="rt-panel-title"><h3 class="mono">${esc(p.code || '')}</h3><span class="sub">${esc(p.name || '')}</span></div>
+      <span class="rt-panel-sum">${esc(t('rt.panelSummary', { steps: seqs.length, ops: opCount }))}</span>
+    </div>`;
     const body = document.createElement('div');
     body.className = 'panel-body';
 
@@ -202,7 +221,7 @@ export async function viewRoutes(container, params) {
 
     step.innerHTML = `
       <div class="tl-marker-col">
-        <div class="tl-num">${esc(fmtSeq(seq))}</div>
+        <div class="tl-num ${Number.isInteger(seq) ? 'tl-main' : 'tl-sub'}">${esc(fmtSeq(seq))}</div>
         <div class="tl-line"></div>
       </div>
       <div class="tl-content">
@@ -218,6 +237,14 @@ export async function viewRoutes(container, params) {
       </div>`;
 
     const content = step.querySelector('.tl-content');
+    // Aktif hat yok: bu (ürün, sıra) grubunda hiçbir hat is_active değil → kapasite
+    // hesaplanamaz. Adım yine görünür; sarı uyarı + Kapasiteler bağlantısı.
+    if (!group.some(g => g.isActive)) {
+      const warn = document.createElement('div');
+      warn.className = 'tl-warn';
+      warn.innerHTML = `${esc(t('rt.noActiveWarn'))} <a href="#capacities" class="rt-link">${esc(t('menu.capacities'))}</a>`;
+      content.appendChild(warn);
+    }
     for (const g of group) {
       const row = document.createElement('div');
       row.className = 'tl-wc';

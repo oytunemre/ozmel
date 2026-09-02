@@ -355,6 +355,27 @@ textarea.input { min-height: 84px; resize: vertical; }
 .rt-note { font-size: 13px; color: var(--color-neutral-600); margin-top: 10px; }
 .rt-drawer-note { font-size: 12.5px; line-height: 1.5; color: var(--color-neutral-600); }
 
+/* Rotalar v2: sabit iki kolon + panel içi kaydırma (yalnız Rotalar; .rt-picker ile
+   kapsanır — Kapasiteler aynı .part-picker/.tl-* sınıflarını kullandığından etkilenmez). */
+.content:has(.rt-picker) { display: flex; flex-direction: column; overflow: hidden; }
+.rt-picker { display: grid; grid-template-columns: 272px minmax(0, 1fr); gap: var(--space-4);
+  align-items: stretch; flex: 1; min-height: 0; overflow: hidden; }
+.rt-picker > .part-list { width: auto; flex: initial; max-height: none; min-height: 0; overflow-y: auto; }
+.rt-picker > .timeline { min-height: 0; overflow-y: auto; }
+/* Sıra kutusu: ana adım (tam sayı) dolu aksan + beyaz sayı; alt operasyon (kesirli) beyaz + hairline */
+.rt-picker .tl-num.tl-main { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-bg); }
+.rt-picker .tl-num.tl-sub { background: var(--color-surface); border: 1px solid var(--color-neutral-400); color: var(--color-neutral-600); }
+/* Panel başlığı özeti (N adım · M operasyon) */
+.rt-panel-title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.rt-panel-sum { font-family: var(--font-mono); font-size: 11.5px; color: var(--color-neutral-600); white-space: nowrap; }
+/* Aktif hat yok uyarısı (yalnız Rotalar üretir) */
+.tl-warn { margin: 5px 0 7px; padding: 6px 10px; font-size: 12.5px; line-height: 1.4;
+  color: var(--color-warning); background: var(--color-warning-fill); border: 1px solid var(--color-warning); }
+.tl-warn a { color: var(--color-warning); font-weight: 600; text-decoration: underline; }
+/* Arama sonucu boş — sol kolon */
+.rt-empty-search { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px; }
+.rt-empty-title { font-family: var(--font-heading); font-size: 14px; }
+
 /* — katlanabilir blueprint paneli (ortak — core/collapsible.js) — */
 /* Kutu + tıklanır başlık; Makine Durumu, Veri Kontrolü Uyarıları ve ileride başka
    ekranlar paylaşır. Panele özel içerik .cpanel-body içine gelir. */
