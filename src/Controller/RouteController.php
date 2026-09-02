@@ -54,7 +54,16 @@ final class RouteController
             Response::invalid($v->errors());
         }
 
-        $id = $this->repo->createWithVariants(Route::toColumns($input), Route::toVariants($input) ?? []);
+        try {
+            $id = $this->repo->createWithVariants(Route::toColumns($input), Route::toVariants($input) ?? []);
+        } catch (\PDOException $e) {
+            // 1062 = tekil kisit ihlali (034: urun+sira+is merkezi+operasyon). 500 yerine
+            // kullaniciya anlamli mesaj.
+            if (($e->errorInfo[1] ?? null) === 1062) {
+                Response::fail(409, 'Bu urun icin ayni sira, is merkezi ve operasyonda bir rota adimi zaten tanimli.', 'DUPLICATE');
+            }
+            throw $e;
+        }
         Response::created(Route::fromRow($this->repo->find($id)));
     }
 
@@ -69,6 +78,13 @@ final class RouteController
 
         try {
             $this->repo->updateWithVariants($id, Route::toColumns($input), Route::toVariants($input), $input['updatedAt'] ?? null);
+        } catch (\PDOException $e) {
+            // PDOException, RuntimeException'i genisletir — RuntimeException catch'inden ONCE.
+            // 1062 = tekil kisit ihlali (034).
+            if (($e->errorInfo[1] ?? null) === 1062) {
+                Response::fail(409, 'Bu urun icin ayni sira, is merkezi ve operasyonda bir rota adimi zaten tanimli.', 'DUPLICATE');
+            }
+            throw $e;
         } catch (RuntimeException $e) {
             if ($e->getMessage() === 'NOT_FOUND') {
                 Response::fail(404, 'Rota bulunamadi');
