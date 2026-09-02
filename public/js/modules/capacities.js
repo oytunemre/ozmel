@@ -14,6 +14,7 @@ import { toast, flashRow } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
 import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
 import { t, bindLang } from '../core/i18n.js';
+import { collapsiblePanel } from '../core/collapsible.js';
 
 const capApi = resource('capacities');
 const routesApi = resource('routes');
@@ -22,9 +23,8 @@ const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 // Seçili ürün modül düzeyinde tutulur (referans SELECTED_URUN_CAP deseni).
 let SELECTED_PRODUCT = null;
 
-// Makine Durumu paneli durumu. Katlama localStorage'da (varsayılan KAPALI);
-// sıralama ve kart genişletme oturum boyu modül düzeyinde tutulur.
-const MSTAT_LS = 'ozmel.cap.machineStatus.collapsed';
+// Makine Durumu paneli durumu. Katlama ortak collapsiblePanel bileşeninde (localStorage,
+// varsayılan KAPALI); sıralama ve kart genişletme oturum boyu modül düzeyinde tutulur.
 const MACHINE_ROW_LIMIT = 5;              // ilk N satır; kalanı "+N daha"ya toplanır (2-8 arası)
 let MACHINE_SORT = 'total';               // 'total' (kart toplamına göre azalan) | 'name'
 const MACHINE_EXPANDED = new Set();       // satır listesi açık iş merkezleri
@@ -219,45 +219,30 @@ export async function viewCapacities(container, params) {
   // --- Makine Durumu paneli (katlanabilir, salt okunur — açık iş emirlerinden) ---
   // Veri istemcide türetilir (listAll); ayrı bir uç/yükleme-hata durumu yoktur.
   function machinePanel(durum) {
-    const collapsed = localStorage.getItem(MSTAT_LS) !== '0';   // varsayılan KAPALI
     let ops_ = 0, total = 0;
     for (const list of durum.values()) { ops_ += list.length; for (const a of list) total += a.remaining; }
-
-    const panel = document.createElement('div');
-    panel.className = 'cap-mstat';
-    panel.innerHTML =
-      `<span class="mreg tl"></span><span class="mreg tr"></span><span class="mreg bl"></span><span class="mreg br"></span>
-       <div class="cap-mstat-head" role="button" tabindex="0" aria-expanded="${collapsed ? 'false' : 'true'}">
-         <span class="cap-mstat-caret">${collapsed ? '▸' : '▾'}</span>
-         <h3>${esc(t('cap.machineStatus'))}</h3>
-         <span class="cap-mstat-dot">·</span>
-         <span class="cap-mstat-sum">${esc(t('cap.machineSummary', { wc: durum.size, ops: ops_ }))}</span>
-         <span class="tag tag-neutral cap-mstat-ro">${esc(t('cap.machineStatusReadonly'))}</span>
-       </div>`;
-
-    if (!collapsed) {
-      const body = document.createElement('div');
-      body.className = 'cap-mstat-body';
-      if (durum.size === 0) {
-        body.innerHTML =
-          `<div class="cap-mstat-empty">
-             <div class="cap-mstat-empty-title">${esc(t('cap.machineEmpty'))}</div>
-             <div class="cap-mstat-empty-msg">${esc(t('cap.machineEmptyMsg'))}</div>
-           </div>`;
-      } else {
-        body.appendChild(machineStrip(total));
-        body.appendChild(machineGrid(durum));
-      }
-      panel.appendChild(body);
-    }
-
-    const head = panel.querySelector('.cap-mstat-head');
-    const toggle = () => { localStorage.setItem(MSTAT_LS, collapsed ? '0' : '1'); render(); };
-    head.addEventListener('click', toggle);
-    head.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    return collapsiblePanel({
+      key: 'cap.machineStatus',
+      title: t('cap.machineStatus'),
+      metaHTML: `<span class="cpanel-dot">·</span> ${esc(t('cap.machineSummary', { wc: durum.size, ops: ops_ }))}`,
+      rightHTML: `<span class="tag tag-neutral">${esc(t('cap.machineStatusReadonly'))}</span>`,
+      onToggle: render,
+      body: () => {
+        const frag = document.createDocumentFragment();
+        if (durum.size === 0) {
+          const e = document.createElement('div');
+          e.className = 'cap-mstat-empty';
+          e.innerHTML =
+            `<div class="cap-mstat-empty-title">${esc(t('cap.machineEmpty'))}</div>
+             <div class="cap-mstat-empty-msg">${esc(t('cap.machineEmptyMsg'))}</div>`;
+          frag.appendChild(e);
+        } else {
+          frag.appendChild(machineStrip(total));
+          frag.appendChild(machineGrid(durum));
+        }
+        return frag;
+      },
     });
-    return panel;
   }
 
   // Sıralama / açıklama şeridi
@@ -342,30 +327,40 @@ export async function viewCapacities(container, params) {
     return card;
   }
 
-  // --- Veri Kontrolü Uyarıları paneli ---
+  // --- Veri Kontrolü Uyarıları paneli (katlanabilir; yalnızca uyarı varken çağrılır) ---
   function warningsPanel(warnings) {
-    const panel = document.createElement('div');
-    panel.className = 'panel';
-    panel.style.marginBottom = '16px';
-    panel.innerHTML = `<div class="panel-head"><h3>${esc(t('cap.warnings'))}</h3><span class="tag tag-neutral">${warnings.length}</span></div>`;
-    const body = document.createElement('div');
-    body.className = 'panel-body';
-    body.style.padding = '0';
-    for (const w of warnings.slice(0, 30)) {
-      const badge = w.type === 'duplicate' ? `<span class="tag tag-danger">${esc(t('cap.warnDuplicate'))}</span>`
-        : w.type === 'orphan' ? `<span class="tag tag-warn">${esc(t('cap.warnOrphan'))}</span>`
-        : `<span class="tag tag-neutral">${esc(t('cap.warnMissing'))}</span>`;
-      const row = document.createElement('div');
-      row.className = 'cap-warn-row';
-      row.innerHTML = `${badge}<span class="msg">${esc(w.msg)}</span><span class="grow"></span>`;
-      if (w.type === 'orphan' && canWrite) {
-        row.appendChild(btn(t('cap.deleteRecord'), 'btn-danger', () => deleteOrphan(w.capId)));
-      }
-      row.appendChild(btn(t('cap.goToProduct'), 'btn-ghost', () => { SELECTED_PRODUCT = w.productCodeId; render(); }));
-      body.appendChild(row);
+    const c = { duplicate: 0, orphan: 0, missing: 0 };
+    for (const w of warnings) c[w.type] = (c[w.type] || 0) + 1;
+    const parts = [];
+    if (c.duplicate) parts.push(t('cap.warnCountDup', { n: c.duplicate }));
+    if (c.orphan) parts.push(t('cap.warnCountOrphan', { n: c.orphan }));
+    if (c.missing) parts.push(t('cap.warnCountMissing', { n: c.missing }));
+    return collapsiblePanel({
+      key: 'cap.dataWarnings',
+      title: t('cap.warnings'),
+      metaHTML: `<span class="cpanel-dot">·</span> ${esc(parts.join(' · '))}`,
+      rightHTML: `<span class="tag tag-neutral">${warnings.length}</span>`,
+      onToggle: render,
+      body: () => {
+        const frag = document.createDocumentFragment();
+        for (const w of warnings.slice(0, 30)) frag.appendChild(warnRow(w));
+        return frag;
+      },
+    });
+  }
+
+  function warnRow(w) {
+    const badge = w.type === 'duplicate' ? `<span class="tag tag-danger">${esc(t('cap.warnDuplicate'))}</span>`
+      : w.type === 'orphan' ? `<span class="tag tag-warn">${esc(t('cap.warnOrphan'))}</span>`
+      : `<span class="tag tag-neutral">${esc(t('cap.warnMissing'))}</span>`;
+    const row = document.createElement('div');
+    row.className = 'cap-warn-row';
+    row.innerHTML = `${badge}<span class="msg">${esc(w.msg)}</span><span class="grow"></span>`;
+    if (w.type === 'orphan' && canWrite) {
+      row.appendChild(btn(t('cap.deleteRecord'), 'btn-danger', () => deleteOrphan(w.capId)));
     }
-    panel.appendChild(body);
-    return panel;
+    row.appendChild(btn(t('cap.goToProduct'), 'btn-ghost', () => { SELECTED_PRODUCT = w.productCodeId; render(); }));
+    return row;
   }
 
   // --- sol panel: ürün listesi (Hedef = darboğaz kapasitesi) ---
