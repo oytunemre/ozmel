@@ -22,6 +22,13 @@ const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 // Seçili ürün modül düzeyinde tutulur (referans SELECTED_URUN_CAP deseni).
 let SELECTED_PRODUCT = null;
 
+// Makine Durumu paneli durumu. Katlama localStorage'da (varsayılan KAPALI);
+// sıralama ve kart genişletme oturum boyu modül düzeyinde tutulur.
+const MSTAT_LS = 'ozmel.cap.machineStatus.collapsed';
+const MACHINE_ROW_LIMIT = 5;              // ilk N satır; kalanı "+N daha"ya toplanır (2-8 arası)
+let MACHINE_SORT = 'total';               // 'total' (kart toplamına göre azalan) | 'name'
+const MACHINE_EXPANDED = new Set();       // satır listesi açık iş merkezleri
+
 export async function viewCapacities(container, params) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, ops, centers, routes, caps, workOrders, wh;
@@ -132,7 +139,7 @@ export async function viewCapacities(container, params) {
       const remaining = (w.targetQuantity || 0) - (producedByWo.get(w.id) || 0);
       if (remaining <= 0) continue;
       if (!byWc.has(w.workCenterId)) byWc.set(w.workCenterId, []);
-      byWc.get(w.workCenterId).push({ productCodeId: w.productCodeId, operationId: w.operationId, remaining });
+      byWc.get(w.workCenterId).push({ woId: w.id, woNo: w.woNo, productCodeId: w.productCodeId, operationId: w.operationId, remaining });
     }
     return byWc;
   }
@@ -173,7 +180,7 @@ export async function viewCapacities(container, params) {
 
     const warnings = computeDataWarnings();
     const durum = makineDurumu();
-    if (durum.size) container.appendChild(machinePanel(durum));
+    container.appendChild(machinePanel(durum));   // her zaman: katlanmış başlıkta özet, açıkken kart ızgarası
     if (warnings.length) container.appendChild(warningsPanel(warnings));
 
     // arama
@@ -209,31 +216,130 @@ export async function viewCapacities(container, params) {
     }
   }
 
-  // --- Makine Durumu paneli ---
+  // --- Makine Durumu paneli (katlanabilir, salt okunur — açık iş emirlerinden) ---
+  // Veri istemcide türetilir (listAll); ayrı bir uç/yükleme-hata durumu yoktur.
   function machinePanel(durum) {
+    const collapsed = localStorage.getItem(MSTAT_LS) !== '0';   // varsayılan KAPALI
+    let ops_ = 0, total = 0;
+    for (const list of durum.values()) { ops_ += list.length; for (const a of list) total += a.remaining; }
+
     const panel = document.createElement('div');
-    panel.className = 'panel';
-    panel.style.marginBottom = '16px';
-    panel.innerHTML = `<div class="panel-head"><h3>${esc(t('cap.machineStatus'))}</h3><span class="sub">${esc(t('cap.machineStatusSub'))}</span></div>`;
-    const body = document.createElement('div');
-    body.className = 'panel-body';
-    const wrap = document.createElement('div');
-    wrap.className = 'cap-machines';
-    for (const [wcId, list] of durum) {
-      const card = document.createElement('div');
-      card.className = 'cap-machine';
-      card.innerHTML = `<div class="cap-machine-name">${esc(centers.label(wcId))}</div>` +
-        list.map(a => `<div class="cap-machine-row">
-          <span class="mono">${esc(products.byId.get(a.productCodeId)?.code || '#' + a.productCodeId)}</span>
-          <span class="text-muted">${esc(a.operationId != null ? ops.label(a.operationId) : '')}</span>
-          <span class="grow"></span>
-          <span class="tag tag-neutral">${esc(t('cap.remaining', { n: fmtNum(a.remaining) }))}</span>
-        </div>`).join('');
-      wrap.appendChild(card);
+    panel.className = 'cap-mstat';
+    panel.innerHTML =
+      `<span class="mreg tl"></span><span class="mreg tr"></span><span class="mreg bl"></span><span class="mreg br"></span>
+       <div class="cap-mstat-head" role="button" tabindex="0" aria-expanded="${collapsed ? 'false' : 'true'}">
+         <span class="cap-mstat-caret">${collapsed ? '▸' : '▾'}</span>
+         <h3>${esc(t('cap.machineStatus'))}</h3>
+         <span class="cap-mstat-dot">·</span>
+         <span class="cap-mstat-sum">${esc(t('cap.machineSummary', { wc: durum.size, ops: ops_ }))}</span>
+         <span class="tag tag-neutral cap-mstat-ro">${esc(t('cap.machineStatusReadonly'))}</span>
+       </div>`;
+
+    if (!collapsed) {
+      const body = document.createElement('div');
+      body.className = 'cap-mstat-body';
+      if (durum.size === 0) {
+        body.innerHTML =
+          `<div class="cap-mstat-empty">
+             <div class="cap-mstat-empty-title">${esc(t('cap.machineEmpty'))}</div>
+             <div class="cap-mstat-empty-msg">${esc(t('cap.machineEmptyMsg'))}</div>
+           </div>`;
+      } else {
+        body.appendChild(machineStrip(total));
+        body.appendChild(machineGrid(durum));
+      }
+      panel.appendChild(body);
     }
-    body.appendChild(wrap);
-    panel.appendChild(body);
+
+    const head = panel.querySelector('.cap-mstat-head');
+    const toggle = () => { localStorage.setItem(MSTAT_LS, collapsed ? '0' : '1'); render(); };
+    head.addEventListener('click', toggle);
+    head.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
     return panel;
+  }
+
+  // Sıralama / açıklama şeridi
+  function machineStrip(total) {
+    const strip = document.createElement('div');
+    strip.className = 'cap-mstat-strip';
+    strip.innerHTML =
+      `<div class="cap-mstat-sort">
+         <button type="button" class="cap-sort-btn${MACHINE_SORT === 'total' ? ' on' : ''}" data-sort="total">${esc(t('cap.machineSortTotal'))}</button>
+         <button type="button" class="cap-sort-btn${MACHINE_SORT === 'name' ? ' on' : ''}" data-sort="name">${esc(t('cap.machineSortName'))}</button>
+       </div>
+       <span class="cap-mstat-hint">${esc(t('cap.machineRowHint'))}</span>
+       <span class="cap-mstat-strip-note">${esc(t('cap.machineTotalRemaining', { n: fmtTr(total) }))}</span>`;
+    strip.querySelectorAll('.cap-sort-btn').forEach(b => b.addEventListener('click', () => {
+      MACHINE_SORT = b.dataset.sort; render();
+    }));
+    return strip;
+  }
+
+  // Kart ızgarası
+  function machineGrid(durum) {
+    const cards = [...durum.entries()].map(([wcId, list]) => ({
+      wcId, name: centers.label(wcId), list,
+      total: list.reduce((s, a) => s + a.remaining, 0),
+    }));
+    const maxTotal = cards.reduce((m, c) => Math.max(m, c.total), 0) || 1;
+    cards.sort(MACHINE_SORT === 'name'
+      ? (a, b) => a.name.localeCompare(b.name, 'tr')
+      : (a, b) => b.total - a.total || a.name.localeCompare(b.name, 'tr'));
+
+    const grid = document.createElement('div');
+    grid.className = 'cap-mstat-grid';
+    for (const c of cards) grid.appendChild(machineCard(c, maxTotal));
+    return grid;
+  }
+
+  function machineCard(c, maxTotal) {
+    const share = c.total / maxTotal;
+    const width = Math.max(share * 100, 2);
+    const warn = share > 0.60;                              // yük payı eşiği — sarı, kritik yok
+    const expanded = MACHINE_EXPANDED.has(c.wcId);
+    const rows = expanded ? c.list : c.list.slice(0, MACHINE_ROW_LIMIT);
+    const hidden = c.list.length - rows.length;
+
+    const card = document.createElement('div');
+    card.className = 'cap-mstat-card';
+    card.innerHTML =
+      `<div class="cap-mstat-card-hd">
+         <div class="cap-mstat-card-top">
+           <span class="cap-mstat-card-name" title="${esc(c.name)}">${esc(c.name)}</span>
+           <span class="cap-mstat-card-ops">${esc(t('cap.machineOps', { n: c.list.length }))}</span>
+         </div>
+         <div class="cap-mstat-bar"><i class="${warn ? 'warn' : ''}" style="width:${width}%"></i></div>
+         <div class="cap-mstat-card-total mono">${esc(fmtTr(c.total))}</div>
+       </div>
+       <div class="cap-mstat-rows">
+         ${rows.map(a => {
+           const op = a.operationId != null ? ops.label(a.operationId) : '';
+           const code = products.byId.get(a.productCodeId)?.code || '#' + a.productCodeId;
+           const wo = a.woNo || ('#' + a.woId);
+           return `<a class="cap-mstat-row" href="#work-orders?id=${encodeURIComponent(a.woId)}">
+             <span class="cap-mstat-code" title="${esc(wo)} · ${esc(code)}">
+               <span class="cap-mstat-wo">${esc(wo)}</span><span class="mono cap-mstat-codev">${esc(code)}</span>
+             </span>
+             <span class="cap-mstat-op" title="${esc(op)}">${esc(op)}</span>
+             <span class="mono cap-mstat-rem">${esc(fmtTr(a.remaining))}</span>
+           </a>`;
+         }).join('')}
+       </div>`;
+
+    if (hidden > 0 || expanded) {
+      const more = document.createElement('button');
+      more.type = 'button';
+      more.className = 'cap-mstat-more';
+      more.textContent = expanded ? t('cap.machineLess') : t('cap.machineMoreOps', { n: hidden });
+      more.addEventListener('click', () => {
+        if (expanded) MACHINE_EXPANDED.delete(c.wcId); else MACHINE_EXPANDED.add(c.wcId);
+        render();
+      });
+      card.appendChild(more);
+    }
+    return card;
   }
 
   // --- Veri Kontrolü Uyarıları paneli ---
@@ -525,6 +631,8 @@ function csHoursLabel(dakika) {
 function fmtSeq(n) { return String(Math.round(Number(n) * 10) / 10); }
 // Miktar: gereksiz ondalık sıfırları at (204.000 -> 204, 2.5 -> 2.5).
 function fmtNum(n) { return String(Math.round(Number(n) * 1000) / 1000); }
+// tr-TR: binlik ayırıcı nokta, ondalık virgül (miktarlar için)
+function fmtTr(n) { return Number(n).toLocaleString('tr-TR', { maximumFractionDigits: 3 }); }
 
 function kpiCard(title, value, detail, small = false, danger = false) {
   const valStyle = small ? ' style="font-size:16px; word-break:break-word;"' : '';
