@@ -453,6 +453,57 @@ textarea.input { min-height: 84px; resize: vertical; }
 .wgrid td.cell.has { background: var(--color-accent-100); color: var(--color-accent-900); font-weight: 500; }
 .wgrid td.cell:hover { outline: 2px solid var(--color-accent); outline-offset: -2px; }
 
+/* — üretim planı v2: hafta şeridi + satır içi düzenlenen ızgara + üç özet — */
+.mp-weekbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.mp-weekbar .grow { flex: 1; }
+.mp-weeklabel { font-family: var(--font-heading); font-size: 17px; letter-spacing: 0.02em; }
+.mp-panel { border: 1px solid var(--color-divider); border-bottom: none; background: var(--color-surface); }
+.mp-panel-hd { display: flex; align-items: center; gap: 14px; padding: 10px 14px; flex-wrap: wrap; }
+.mp-panel-hd h3 { font-family: var(--font-heading); font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; }
+.mp-panel-hd .grow { flex: 1; }
+.mp-check { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--color-neutral-700); cursor: pointer; }
+.mp-group-toggle { display: flex; gap: 4px; }
+.mp-grp-btn { border: 1px solid var(--color-neutral-400); background: transparent; color: var(--color-neutral-700);
+  font: inherit; font-size: 12.5px; padding: 3px 12px; cursor: pointer; }
+.mp-grp-btn.on { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-bg); }
+
+.mp-grid table { table-layout: fixed; }
+.mp-grid th.mp-mcol, .mp-grid td.mp-mcol { width: 210px; text-align: left; white-space: normal; }
+.mp-grid th:not(.mp-mcol) { min-width: 130px; }
+.mp-grid td { vertical-align: top; }
+.mp-grid th.mp-today { background: var(--color-accent-200); }
+.mp-grid td.mp-today { background: var(--color-accent-100); }
+.mp-grid th.mp-weekend { background: var(--color-neutral-200); }
+.mp-grid td.mp-weekend { background: var(--color-neutral-100); }
+.mp-mname { font-weight: 500; }
+.mp-mop { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-neutral-600); }
+.mp-mcol.mp-indent { padding-left: 32px; }
+.mp-opgroup td { background: var(--color-neutral-100); text-align: left; cursor: pointer; user-select: none;
+  font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+.mp-caret { color: var(--color-neutral-600); }
+.mp-opcount { color: var(--color-neutral-500); }
+.mp-cell { text-align: left; }
+.mp-sel { width: 100%; height: 30px; font-family: var(--font-mono); font-size: 11.5px; padding: 0 4px;
+  border: 1px solid var(--color-neutral-300); background: var(--color-surface); }
+.mp-target { width: 100%; height: 26px; margin-top: 4px; font-family: var(--font-mono); font-size: 12px;
+  text-align: right; padding: 0 5px; border: 1px solid var(--color-neutral-300); background: var(--color-surface); }
+.mp-target.mp-over { border: 2px solid var(--color-danger); background: var(--color-danger-fill); }
+.mp-wonote { margin-top: 3px; font-family: var(--font-mono); font-size: 9.5px; color: var(--color-neutral-600); }
+.mp-capnote { margin-top: 2px; font-size: 10px; color: var(--color-danger); }
+.mp-sel:disabled, .mp-target:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.mp-summaries { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-top: 20px; }
+.mp-sum { border: 1px solid var(--color-divider); background: var(--color-surface); overflow: auto; }
+.mp-sum-title { padding: 9px 12px; border-bottom: 1px solid var(--color-divider);
+  font-family: var(--font-heading); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
+.mp-sum table { border-collapse: collapse; width: 100%; font-size: 12px; }
+.mp-sum th, .mp-sum td { border: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent); padding: 5px 7px; text-align: right; }
+.mp-sum th:first-child, .mp-sum td:first-child { text-align: left; white-space: nowrap; }
+.mp-sum th { background: var(--color-neutral-100); font-family: var(--font-heading); text-transform: uppercase;
+  font-size: 10px; letter-spacing: 0.04em; }
+.mp-sum-total { font-weight: 600; background: var(--color-neutral-100); }
+.mp-sum-empty { text-align: left; color: var(--color-neutral-600); font-size: 12.5px; }
+
 /* — tekrarlı satır editörü (ölçümler / karakteristikler) — */
 .rows-ed { border: 1px solid var(--color-divider); }
 .rows-ed .rows-head { display: grid; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--color-divider);
