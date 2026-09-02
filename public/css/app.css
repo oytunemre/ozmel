@@ -492,7 +492,7 @@ textarea.input { min-height: 84px; resize: vertical; }
 .mp-capnote { margin-top: 2px; font-size: 10px; color: var(--color-danger); }
 .mp-sel:disabled, .mp-target:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.mp-summaries { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-top: 20px; }
+.mp-summaries { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
 .mp-sum { border: 1px solid var(--color-divider); background: var(--color-surface); overflow: auto; }
 .mp-sum-title { padding: 9px 12px; border-bottom: 1px solid var(--color-divider);
   font-family: var(--font-heading); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
