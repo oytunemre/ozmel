@@ -14,21 +14,15 @@ import { resource, request } from '../core/api.js';
 import { errorState, esc } from '../core/states.js';
 import { toast } from '../core/toast.js';
 import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
-import { t, getLang, bindLang } from '../core/i18n.js';
+import { t, bindLang } from '../core/i18n.js';
 import { downtimeMinutes } from '../core/capacity.js';
 import { fmtTr, fmtDuration, fmtDateTR, fmtPct } from '../core/format.js';
+import { createPeriodStrip, thresholdClass, kpiCard, DAY_NAMES, fmtISO } from '../core/report.js';
 
 const TARGET_THRESHOLD = 90;   // hedefEsigi: ≥eşik success, ≥eşik−20 warning, altı danger
-const DAY_NAMES = () => getLang() === 'en'
-  ? ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-  : ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
-const MONTHS = () => getLang() === 'en'
-  ? ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-  : ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
 // Dönem durumu oturum boyu modül düzeyinde (modüle dönünce korunur).
-let MOD = 'gunluk';       // 'gunluk' | 'haftalik' | 'aylik'
-let ANCHOR = null;        // ISO tarih; null → bugün
+const period = createPeriodStrip('gunluk');
 
 export async function viewUretimRaporu(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
@@ -129,12 +123,12 @@ export async function viewUretimRaporu(container) {
   }
 
   function render() {
-    const dates = periodDates();
+    const dates = period.dates();
     const todayISO = fmtISO(new Date());
     const d = compute(dates);
 
     const scrapCls = d.scrapPct <= 2 ? 'success' : d.scrapPct <= 5 ? 'warning' : 'danger';
-    const overCls = d.overallPct === null ? '' : d.overallPct >= TARGET_THRESHOLD ? 'success' : d.overallPct >= TARGET_THRESHOLD - 20 ? 'warning' : 'danger';
+    const overCls = thresholdClass(d.overallPct, TARGET_THRESHOLD);
     const downCls = d.totalDowntime > 0 ? 'warning' : 'success';
 
     container.innerHTML = `
@@ -146,33 +140,13 @@ export async function viewUretimRaporu(container) {
         <button class="btn btn-secondary" id="ur-export">${esc(t('ur.export'))}</button>
       </div>
 
-      <div class="ur-bar">
-        <div class="ur-modes">
-          <button type="button" class="ur-mode${MOD === 'gunluk' ? ' on' : ''}" data-mod="gunluk">${esc(t('ur.daily'))}</button>
-          <button type="button" class="ur-mode${MOD === 'haftalik' ? ' on' : ''}" data-mod="haftalik">${esc(t('ur.weekly'))}</button>
-          <button type="button" class="ur-mode${MOD === 'aylik' ? ' on' : ''}" data-mod="aylik">${esc(t('ur.monthly'))}</button>
-        </div>
-        <div class="ur-nav">
-          <button class="btn btn-ghost btn-sm" id="ur-prev">← ${esc(t('ur.prev'))}</button>
-          <span class="ur-period">${esc(periodTitle(dates))}</span>
-          <button class="btn btn-ghost btn-sm" id="ur-next">${esc(t('ur.next'))} →</button>
-          <button class="btn btn-ghost btn-sm" id="ur-today">${esc(t('ur.today'))}</button>
-        </div>
-      </div>
+      ${period.barHTML(dates)}
 
       <div class="kpis" style="margin-top:16px;">
-        <div class="kpi"><div class="kpi-title">${esc(t('ur.kpiProduced'))}</div>
-          <div class="kpi-value accent">${esc(fmtTr(d.totalActual, '0'))}</div>
-          <div class="kpi-detail">${esc(t('ur.kpiPlannedFoot', { n: fmtTr(d.totalPlan, '0') }))}</div></div>
-        <div class="kpi"><div class="kpi-title">${esc(t('ur.kpiScrap'))}</div>
-          <div class="kpi-value ${scrapCls}">${esc(fmtPct(d.scrapPct))}</div>
-          <div class="kpi-detail">${esc(t('ur.kpiScrapFoot', { n: fmtTr(d.totalScrap, '0') }))}</div></div>
-        <div class="kpi"><div class="kpi-title">${esc(t('ur.kpiOverall'))}</div>
-          <div class="kpi-value ${overCls}">${d.overallPct !== null ? esc(fmtPct(d.overallPct)) : '—'}</div>
-          <div class="kpi-detail">${esc(t('ur.kpiRecordsFoot', { n: fmtTr(d.recCount, '0') }))}</div></div>
-        <div class="kpi"><div class="kpi-title">${esc(t('ur.kpiDowntime'))}</div>
-          <div class="kpi-value ${downCls}" style="font-size:24px;">${esc(fmtDuration(d.totalDowntime))}</div>
-          <div class="kpi-detail">${esc(t('ur.kpiReasonsFoot', { n: fmtTr(d.reasonCount, '0') }))}</div></div>
+        ${kpiCard({ title: t('ur.kpiProduced'), value: fmtTr(d.totalActual, '0'), cls: 'accent', detail: t('ur.kpiPlannedFoot', { n: fmtTr(d.totalPlan, '0') }) })}
+        ${kpiCard({ title: t('ur.kpiScrap'), value: fmtPct(d.scrapPct), cls: scrapCls, detail: t('ur.kpiScrapFoot', { n: fmtTr(d.totalScrap, '0') }) })}
+        ${kpiCard({ title: t('ur.kpiOverall'), value: d.overallPct !== null ? fmtPct(d.overallPct) : '—', cls: overCls, detail: t('ur.kpiRecordsFoot', { n: fmtTr(d.recCount, '0') }) })}
+        ${kpiCard({ title: t('ur.kpiDowntime'), value: fmtDuration(d.totalDowntime), cls: downCls, style: 'font-size:24px;', detail: t('ur.kpiReasonsFoot', { n: fmtTr(d.reasonCount, '0') }) })}
       </div>
 
       ${d.warns.length ? `
@@ -208,10 +182,7 @@ export async function viewUretimRaporu(container) {
 
     // olaylar
     container.querySelector('#ur-export').addEventListener('click', () => toast(t('ur.exportSoon'), 'info'));
-    container.querySelectorAll('.ur-mode').forEach(b => b.addEventListener('click', () => { MOD = b.dataset.mod; render(); }));
-    container.querySelector('#ur-prev').addEventListener('click', () => { shift(-1); render(); });
-    container.querySelector('#ur-next').addEventListener('click', () => { shift(1); render(); });
-    container.querySelector('#ur-today').addEventListener('click', () => { ANCHOR = null; render(); });
+    period.bind(container, render);
   }
 
   // Özet tablosu (makine / ürün): İLK · PLAN · GERÇEK · % · FİRE · DURUŞ
@@ -258,33 +229,4 @@ export async function viewUretimRaporu(container) {
     const cls = n >= TARGET_THRESHOLD ? 'tag-success' : n >= TARGET_THRESHOLD - 20 ? 'tag-warn' : 'tag-danger';
     return `<span class="tag ${cls}">${esc(fmtPct(n))}</span>`;
   }
-
-  // --- dönem tarih aralığı (yerel; toISOString YOK) ---
-  function periodDates() {
-    const anchor = ANCHOR ? parseISO(ANCHOR) : startOfDay(new Date());
-    if (MOD === 'gunluk') return [fmtISO(anchor)];
-    if (MOD === 'haftalik') { const b = mondayOf(anchor); return Array.from({ length: 7 }, (_, i) => fmtISO(addDays(b, i))); }
-    const y = anchor.getFullYear(), m = anchor.getMonth();
-    const n = new Date(y, m + 1, 0).getDate();
-    return Array.from({ length: n }, (_, i) => fmtISO(new Date(y, m, i + 1)));
-  }
-  function shift(dir) {
-    const anchor = ANCHOR ? parseISO(ANCHOR) : startOfDay(new Date());
-    if (MOD === 'gunluk') anchor.setDate(anchor.getDate() + dir);
-    else if (MOD === 'haftalik') anchor.setDate(anchor.getDate() + dir * 7);
-    else anchor.setMonth(anchor.getMonth() + dir);
-    ANCHOR = fmtISO(anchor);
-  }
-  function periodTitle(dates) {
-    if (MOD === 'gunluk') { const d = parseISO(dates[0]); return `${fmtDateTR(dates[0])} · ${DAY_NAMES()[d.getDay()]}`; }
-    if (MOD === 'haftalik') return `${fmtDateTR(dates[0])} — ${fmtDateTR(dates[dates.length - 1])}`;
-    const d = parseISO(dates[0]); return `${MONTHS()[d.getMonth()]} ${d.getFullYear()}`;
-  }
 }
-
-// --- yerel tarih yardımcıları ---
-function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
-function parseISO(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
-function mondayOf(d) { const x = startOfDay(d); const off = (x.getDay() + 6) % 7; x.setDate(x.getDate() - off); return x; }
-function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
-function fmtISO(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
