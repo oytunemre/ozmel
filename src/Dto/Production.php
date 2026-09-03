@@ -35,6 +35,7 @@ final class Production
             'operatorId'     => $row['operator_id'] !== null ? (int) $row['operator_id'] : null,
             'downtimeStart'  => self::hhmm($row['downtime_start'] ?? null),
             'downtimeEnd'    => self::hhmm($row['downtime_end'] ?? null),
+            'downtimeReasonId' => isset($row['downtime_reason_id']) && $row['downtime_reason_id'] !== null ? (int) $row['downtime_reason_id'] : null,
             'note'           => $row['note'] !== null ? (string) $row['note'] : null,
             'updatedAt'      => (string) $row['updated_at'],
         ];
@@ -79,6 +80,10 @@ final class Production
         if (array_key_exists('downtimeEnd', $input)) {
             $val = trim((string) $input['downtimeEnd']);
             $out['downtime_end'] = $val === '' ? null : $val;
+        }
+        if (array_key_exists('downtimeReasonId', $input)) {
+            $id = (int) $input['downtimeReasonId'];
+            $out['downtime_reason_id'] = $id > 0 ? $id : null;
         }
         if (array_key_exists('note', $input)) {
             $val = trim((string) $input['note']);

@@ -20,7 +20,8 @@ final class ProductionRepository extends BaseRepository
     {
         return [
             'work_order_id', 'date', 'shift', 'target_quantity', 'actual_quantity',
-            'scrap_quantity', 'operator_id', 'downtime_start', 'downtime_end', 'note',
+            'scrap_quantity', 'operator_id', 'downtime_start', 'downtime_end',
+            'downtime_reason_id', 'note',
         ];
     }
 }

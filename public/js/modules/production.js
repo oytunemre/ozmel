@@ -21,7 +21,7 @@ const shiftOptions = () => [
 
 export async function viewProduction(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
-  let products, woRows, woTarget, woLabel, operators, entries;
+  let products, woRows, woTarget, woLabel, operators, reasons, entries;
   try {
     products = await loadLookup('product-codes', mapProduct);
     const woData = (await resource('work-orders').listAll()).data;
@@ -29,6 +29,7 @@ export async function viewProduction(container) {
     woTarget = new Map(woData.map(w => [w.id, w.targetQuantity]));
     woLabel = new Map(woData.map(w => [w.id, w.woNo]));
     operators = await loadLookup('operators', (o) => ({ id: o.id, code: o.badgeNo, name: o.fullName }));
+    reasons = await loadLookup('downtime-reasons', (r) => ({ id: r.id, name: r.name, isActive: r.isActive }));
     entries = (await api.listAll()).data;
   } catch (err) {
     container.innerHTML = '';
@@ -70,6 +71,7 @@ export async function viewProduction(container) {
 
     const woFk = new FkSelect({ source: woSource, rows: woRows, placeholder: t('prod.selectWo') });
     const opFk = new FkSelect({ source: operators.source, rows: operators.rows, placeholder: t('prod.selectOp') });
+    const reasonFk = new FkSelect({ source: reasons.source, rows: reasons.rows.filter(r => r.isActive), placeholder: t('prod.selectReason') });
 
     const F = {};
     host.innerHTML = '';
@@ -92,6 +94,12 @@ export async function viewProduction(container) {
     F.operatorId = { read: () => opFk.getValue(), field: opField, err: errSpan(opField) };
     F.actualQuantity = input(t('prod.actualField'), 'number', '', host, true);
     F.scrapQuantity = input(t('prod.scrapField'), 'number', '', host);
+    // Duruş (opsiyonel): başlangıç + bitiş + neden. Biri girilirse diğeri de (BE doğrular).
+    F.downtimeStart = input(t('prod.downtimeStart'), 'time', '', host);
+    F.downtimeEnd = input(t('prod.downtimeEnd'), 'time', '', host);
+    const reasonField = field(t('prod.downtimeReason'), reasonFk.el, false);
+    host.appendChild(reasonField);
+    F.downtimeReasonId = { read: () => reasonFk.getValue(), field: reasonField, err: errSpan(reasonField) };
     F.note = textarea(t('field.note'), host);
 
     const actions = div('drawer-actions'); actions.style.cssText = 'border:0; padding:8px 0 0;';
@@ -101,7 +109,8 @@ export async function viewProduction(container) {
     host.appendChild(actions);
 
     function reset() {
-      for (const k of ['actualQuantity', 'scrapQuantity', 'note']) if (F[k].inp) F[k].inp.value = '';
+      for (const k of ['actualQuantity', 'scrapQuantity', 'downtimeStart', 'downtimeEnd', 'note']) if (F[k].inp) F[k].inp.value = '';
+      reasonFk.setValue(null);
       clearErrors();
     }
     function clearErrors() {

@@ -36,7 +36,15 @@ final class ProductionValidator extends Validator
         $this->numeric($input, 'targetQuantity', 'Hedef adet')
              ->positiveInt($input, 'operatorId', 'Operator')
              ->time($input, 'downtimeStart', 'Durus baslangic')
-             ->time($input, 'downtimeEnd', 'Durus bitis');
+             ->time($input, 'downtimeEnd', 'Durus bitis')
+             ->positiveInt($input, 'downtimeReasonId', 'Durus nedeni');
+
+        // Durus baslangic/bitis birlikte girilmeli (biri varsa digeri de).
+        $hasStart = isset($input['downtimeStart']) && trim((string) $input['downtimeStart']) !== '';
+        $hasEnd   = isset($input['downtimeEnd'])   && trim((string) $input['downtimeEnd'])   !== '';
+        if ($hasStart !== $hasEnd) {
+            $this->add($hasStart ? 'downtimeEnd' : 'downtimeStart', 'Durus baslangic ve bitis birlikte girilmeli');
+        }
 
         return $this;
     }

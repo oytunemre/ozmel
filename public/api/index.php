@@ -65,6 +65,7 @@ $routes = [
     'work-orders'   => App\Controller\WorkOrderController::class,
     'production'    => App\Controller\ProductionController::class,
     'machine-plans' => App\Controller\MachinePlanController::class,
+    'downtime-reasons' => App\Controller\DowntimeReasonController::class,
     'first-off-points' => App\Controller\FirstOffPointController::class,
     'first-off-records' => App\Controller\FirstOffRecordController::class,
     'hourly-points' => App\Controller\HourlyPointController::class,
