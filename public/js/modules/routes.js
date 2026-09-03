@@ -76,34 +76,56 @@ export async function viewRoutes(container, params) {
     // ve seçim listede yoksa ilk eşleşene düşer.
     if (shownIds.length && !shownIds.includes(SELECTED_PRODUCT)) SELECTED_PRODUCT = shownIds[0];
 
-    container.innerHTML = `
-      <div class="module-head">
-        <div>
-          <h2>${esc(t('menu.routes'))}</h2>
-          <div class="text-muted" style="font-size:13.5px; margin-top:6px;">${esc(t('rt.summary', { routes: rows.length, products: allIds.length }))}</div>
-        </div>
-        <div style="display:flex; gap:10px;">
-          <button class="btn btn-primary" id="rt-add"${canWrite ? '' : ' disabled title="' + esc(t('common.readonlyHint')) + '"'}>${esc(t('rt.new'))}</button>
-        </div>
+    // Doldurmalı iki kolon: .rt-root (flex kolon, height:100%) → başlık + gövde ızgarası.
+    // Arama SOL kolonun üstünde (tasarım). Paylaşılan .content düzenine dokunulmaz.
+    container.innerHTML = '';
+    const root = document.createElement('div');
+    root.className = 'rt-root';
+    const head = document.createElement('div');
+    head.className = 'module-head rt-head';
+    head.innerHTML = `
+      <div>
+        <h2>${esc(t('menu.routes'))}</h2>
+        <div class="text-muted" style="font-size:13.5px; margin-top:6px;">${esc(t('rt.summary', { routes: rows.length, products: allIds.length }))}</div>
       </div>
-      <div class="toolbar"><div class="search">
-        <input class="input" type="search" id="rt-search" placeholder="${esc(t('rt.search'))}" value="${esc(search)}">
-      </div></div>`;
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary" id="rt-add"${canWrite ? '' : ' disabled title="' + esc(t('common.readonlyHint')) + '"'}>${esc(t('rt.new'))}</button>
+      </div>`;
+    root.appendChild(head);
 
     if (allIds.length === 0) {
       const st = document.createElement('div');
       st.className = 'state';
       st.innerHTML = `<div class="state-title">${esc(t('rt.emptyTitle'))}</div><div class="state-msg">${esc(t('rt.empty'))}</div>`;
-      container.appendChild(st);
-    } else {
-      // İki kolon sabit ızgara (272px | 1fr), sarmaz; kaydırma her panelin kendi içinde.
-      // Arama boşsa sol kolonda "Eşleşen ürün yok" + temizle, sağ panel son üründe kalır.
-      const picker = document.createElement('div');
-      picker.className = 'part-picker rt-picker';
-      picker.appendChild(shownIds.length === 0 ? emptySearchPanel() : partList(shownIds));
-      picker.appendChild(timeline());
-      container.appendChild(picker);
+      root.appendChild(st);
+      container.appendChild(root);
+      wireAdd();
+      return;
     }
+
+    const body = document.createElement('div');
+    body.className = 'rt-body';
+    const left = document.createElement('div');
+    left.className = 'rt-col-left';
+    const searchWrap = document.createElement('div');
+    searchWrap.className = 'rt-search';
+    searchWrap.innerHTML = `<input class="input" type="search" id="rt-search" placeholder="${esc(t('rt.search'))}" value="${esc(search)}">`;
+    left.appendChild(searchWrap);
+    // Arama boşsa sol listede "Eşleşen ürün yok" + temizle; sağ panel son üründe kalır.
+    left.appendChild(shownIds.length === 0 ? emptySearchPanel() : partList(shownIds));
+
+    const right = document.createElement('div');
+    right.className = 'rt-col-right';
+    right.appendChild(timeline());
+    const note = document.createElement('div');
+    note.className = 'rt-note';
+    note.textContent = t('rt.footerNote');
+    right.appendChild(note);
+
+    body.appendChild(left);
+    body.appendChild(right);
+    root.appendChild(body);
+    container.appendChild(root);
 
     const s = container.querySelector('#rt-search');
     s.addEventListener('input', () => {
@@ -111,8 +133,7 @@ export async function viewRoutes(container, params) {
       const el = container.querySelector('#rt-search');
       el.focus(); el.setSelectionRange(el.value.length, el.value.length);
     });
-    const add = container.querySelector('#rt-add');
-    if (canWrite) add.addEventListener('click', () => openRouteForm({}));
+    wireAdd();
 
     // focusId: adımı vurgula + görünüme kaydır (mevcut flashRow deseni).
     if (focusRouteId) {
@@ -120,6 +141,11 @@ export async function viewRoutes(container, params) {
       if (el) { flashRow(el); el.scrollIntoView({ block: 'center' }); }
       focusRouteId = null;
     }
+  }
+
+  function wireAdd() {
+    const add = container.querySelector('#rt-add');
+    if (canWrite && add) add.addEventListener('click', () => openRouteForm({}));
   }
 
   // --- sol panel: ürün listesi ---
@@ -131,7 +157,7 @@ export async function viewRoutes(container, params) {
       const active = pid === SELECTED_PRODUCT ? ' active' : '';
       return `<div class="part-list-item${active}" data-pid="${esc(String(pid))}">
         <div class="pn">${esc(p.code || '#' + pid)}</div>
-        <div class="pmeta">${esc(p.name || '')}</div>
+        <div class="pname">${esc(p.name || '')}</div>
         <div class="pmeta">${esc(t('rt.stepCount', { n: stepCount(pid) }))}</div>
       </div>`;
     }).join('');
@@ -147,7 +173,7 @@ export async function viewRoutes(container, params) {
   // Arama sonucu boş: sol kolon yerine "Eşleşen ürün yok" + "Aramayı temizle".
   function emptySearchPanel() {
     const el = document.createElement('div');
-    el.className = 'part-list rt-empty-search';
+    el.className = 'rt-empty-search';
     el.innerHTML = `<div class="rt-empty-title">${esc(t('rt.noMatchTitle'))}</div>`;
     const b = document.createElement('button');
     b.className = 'btn btn-secondary btn-sm';
@@ -160,10 +186,8 @@ export async function viewRoutes(container, params) {
     return el;
   }
 
-  // --- sağ panel: zaman çizelgesi ---
+  // --- sağ panel: zaman çizelgesi (panel döner; alt not render()'da eklenir) ---
   function timeline() {
-    const wrap = document.createElement('div');
-    wrap.className = 'timeline';
     const p = products.byId.get(SELECTED_PRODUCT) || {};
 
     const steps = rows.filter(r => r.productCodeId === SELECTED_PRODUCT);
@@ -203,13 +227,7 @@ export async function viewRoutes(container, params) {
     });
 
     panel.appendChild(body);
-    wrap.appendChild(panel);
-
-    const note = document.createElement('div');
-    note.className = 'rt-note';
-    note.textContent = t('rt.footerNote');
-    wrap.appendChild(note);
-    return wrap;
+    return panel;
   }
 
   function stepEl(seq, group, rep) {
@@ -242,7 +260,7 @@ export async function viewRoutes(container, params) {
     if (!group.some(g => g.isActive)) {
       const warn = document.createElement('div');
       warn.className = 'tl-warn';
-      warn.innerHTML = `${esc(t('rt.noActiveWarn'))} <a href="#capacities" class="rt-link">${esc(t('menu.capacities'))}</a>`;
+      warn.innerHTML = `${esc(t('rt.noActiveWarn'))}<a href="#capacities" class="rt-link">${esc(t('cap.title'))}</a>${esc(t('rt.noActiveWarnPost'))}`;
       content.appendChild(warn);
     }
     for (const g of group) {
@@ -256,8 +274,8 @@ export async function viewRoutes(container, params) {
         const actions = document.createElement('span');
         actions.className = 'tl-wc-actions';
         actions.append(
-          btn(t('action.edit'), 'btn-ghost', () => openRouteForm({ row: g })),
-          btn(t('action.delete'), 'btn-ghost tl-del', () => remove(g))
+          btn(t('action.edit'), '', () => openRouteForm({ row: g })),
+          btn(t('action.delete'), 'tl-del', () => remove(g))
         );
         row.appendChild(actions);
       }

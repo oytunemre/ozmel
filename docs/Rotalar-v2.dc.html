@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="_ds/industry-bdd6e965-8fec-4d84-bee7-5711308065b5/styles.css">
+<script src="_ds/industry-bdd6e965-8fec-4d84-bee7-5711308065b5/_ds_bundle.js"></script>
+<style>
+  :root {
+    --color-success: #3f7a44; --color-success-fill: #e4efe4;
+    --color-warning: #b3801a; --color-warning-fill: #f6ecd9;
+    --color-danger:  #a33a32; --color-danger-fill:  #f5e2e0;
+  }
+  body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
+  a { color: var(--color-accent-700); text-decoration: none; }
+  a:hover { color: var(--color-accent-800); text-decoration: underline; }
+  input, select, textarea, button { font-family: var(--font-body); }
+  *:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+</style>
+</helmet>
+<dc-import name="Kabuk" active="routes" breadcrumb="Üretim / Rotalar" hint-size="100%,100%">
+
+  <div style="flex: none; padding: 22px 24px 14px; display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap;">
+    <div>
+      <h1 style="font-family: var(--font-heading); font-size: 38px; font-weight: 600; margin: 0; text-transform: uppercase; line-height: 1;">Ürün Rotaları</h1>
+      <div style="font-size: 13.5px; color: var(--color-neutral-600); margin-top: 6px;">Ürün → operasyon → iş merkezi → sıra · 159 rota adımı, 41 ürün</div>
+    </div>
+    <div style="margin-left: auto; display: flex; gap: 10px;">
+      <button type="button" style="height: 38px; padding: 0 18px; font-size: 14px; font-weight: 500; background: var(--color-accent); border: 1px solid var(--color-accent-700); color: #fff; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;" style-hover="background: var(--color-accent-600)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+        Yeni Rota Adımı
+      </button>
+    </div>
+  </div>
+
+  <div style="flex: 1; overflow: hidden; padding: 0 24px 24px; display: grid; grid-template-columns: 272px minmax(0, 1fr); gap: 20px; align-items: stretch; min-height: 0;">
+
+    <div style="min-width: 0; display: flex; flex-direction: column; min-height: 0;">
+      <div style="flex: none; padding-bottom: 10px;">
+        <input type="text" placeholder="Ürün kodu veya ad ara…" style="width: 100%; height: 38px; padding: 0 12px; font-size: 14px; border: 1px solid var(--color-neutral-400); background: #fff; box-sizing: border-box;">
+      </div>
+      <div style="flex: 1; overflow-y: auto; background: #fff; border: 1px solid var(--color-neutral-400); min-height: 0;">
+        <sc-for list="{{ urunler }}" as="u" hint-placeholder-count="8">
+          <div style="padding: 11px 13px; border-bottom: 1px solid var(--color-neutral-200); background: {{ u.bg }}; box-shadow: {{ u.bar }}; cursor: pointer;" style-hover="background: var(--color-accent-100)">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: var(--color-accent-800); font-weight: 500;">{{ u.kod }}</div>
+            <div style="font-size: 13px; color: var(--color-neutral-700); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ u.ad }}</div>
+            <div style="font-size: 12px; color: var(--color-neutral-600); margin-top: 1px;">{{ u.adim }} operasyon adımı</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="min-width: 0; display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+      <div style="flex: 1; background: #fff; border: 1px solid var(--color-neutral-400); display: flex; flex-direction: column; min-height: 0;">
+        <div style="flex: none; padding: 14px 18px; border-bottom: 1px solid var(--color-neutral-300); display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+          <h3 style="font-family: 'IBM Plex Mono', monospace; font-size: 19px; font-weight: 500; margin: 0; color: var(--color-accent-800);">221173</h3>
+          <span style="font-size: 13.5px; color: var(--color-neutral-700);">Kapak Grubu · Alüminyum</span>
+          <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--color-neutral-600);">10 adım · 8 operasyon</span>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding: 16px 18px 20px;">
+          <sc-for list="{{ adimlar }}" as="a" hint-placeholder-count="7">
+
+            <sc-if value="{{ a.grupBasligi }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-neutral-600); margin: {{ a.grupBosluk }} 0 6px 44px;">{{ a.grup }}</div>
+            </sc-if>
+
+            <div style="display: flex; gap: 14px; align-items: stretch;">
+              <div style="flex: none; width: 30px; display: flex; flex-direction: column; align-items: center;">
+                <div style="width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid {{ a.numaraKenar }}; background: {{ a.numaraZemin }}; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: {{ a.numaraRenk }};">{{ a.sira }}</div>
+                <div style="flex: 1; width: 1px; background: var(--color-neutral-300); margin: 4px 0;"></div>
+              </div>
+
+              <div style="flex: 1; min-width: 0; padding-bottom: 18px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 30px;">
+                  <span style="font-family: var(--font-heading); font-size: 18px; font-weight: 600; line-height: 1.15;">{{ a.operasyon }}</span>
+                  <span style="height: 28px; display: inline-flex; align-items: center; padding: 0 10px; margin-left: 4px; border: 1px solid transparent; color: var(--color-accent-700); font-size: 12.5px; cursor: pointer;" style-hover="background: var(--color-accent-100)">+ Alt Operasyon Ekle</span>
+                  <span style="height: 28px; display: inline-flex; align-items: center; padding: 0 10px; border: 1px solid transparent; color: var(--color-accent-700); font-size: 12.5px; cursor: pointer;" style-hover="background: var(--color-accent-100)">{{ a.varyantDugmesi }}</span>
+                </div>
+
+                <sc-if value="{{ a.varyantVar }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0 2px;">
+                    <span style="font-size: 12.5px; color: var(--color-neutral-600);">{{ a.varyantEtiketi }}:</span>
+                    <sc-for list="{{ a.varyantlar }}" as="v" hint-placeholder-count="2">
+                      <span style="height: 24px; display: inline-flex; align-items: center; padding: 0 9px; border: 1px solid var(--color-neutral-400); background: var(--color-neutral-100); font-size: 12.5px;">{{ v.ad }}</span>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-for list="{{ a.merkezler }}" as="m" hint-placeholder-count="2">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap;">
+                    <span style="height: 24px; display: inline-flex; align-items: center; padding: 0 9px; border: 1px solid {{ m.rozetKenar }}; background: {{ m.rozetZemin }}; color: {{ m.rozetRenk }}; font-size: 12.5px;">{{ m.rozet }}</span>
+                    <span style="font-size: 13.5px;">{{ m.ad }}</span>
+                    <span style="display: inline-flex; gap: 6px; margin-left: auto;">
+                      <span style="height: 28px; display: inline-flex; align-items: center; padding: 0 10px; border: 1px solid var(--color-neutral-400); background: #fff; font-size: 12.5px; cursor: pointer;" style-hover="background: var(--color-accent-200); border-color: var(--color-accent-500)">Düzenle</span>
+                      <span style="height: 28px; display: inline-flex; align-items: center; padding: 0 10px; border: 1px solid var(--color-danger); color: var(--color-danger); font-size: 12.5px; cursor: pointer;" style-hover="background: var(--color-danger-fill)">Sil</span>
+                    </span>
+                  </div>
+                </sc-for>
+
+                <sc-if value="{{ a.uyari }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: 8px; background: var(--color-warning-fill); border: 1px solid var(--color-warning); padding: 9px 12px; font-size: 13px; line-height: 1.5;">
+                    Bu operasyonda aktif hat seçilmemiş. Kapasite hesabı yapılamaz — <a href="#">Kapasite Yönetimi</a>'nden bir iş merkezini aktif işaretleyin.
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="flex: none; font-size: 13px; color: var(--color-neutral-700); line-height: 1.5;">Bir operasyonda birden fazla iş merkezi varsa, hangisinin "aktif" (kapasite hesabında kullanılacak) hat olduğunu <b>Kapasite Yönetimi</b> modülünden seçebilirsiniz.</div>
+    </div>
+  </div>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1600,&quot;height&quot;:950}}">
+class Component extends DCLogic {
+  renderVals() {
+    const urunler = [
+      ["221173", "Kapak Grubu · Alüminyum", 10],
+      ["208098", "Bağlantı Pimi Ø12", 6],
+      ["226181", "Gövde Sacı 2 mm", 5],
+      ["400543", "Knurl Mili", 7],
+      ["400555", "Mil Yatağı", 6],
+      ["400561", "Kapak Contası", 3],
+      ["412204", "Ara Pul 3 mm", 2],
+      ["418890", "Redüktör Gövdesi", 9]
+    ];
+
+    // [sıra, operasyon, [[iş merkezi, aktif]], grup, varyant]
+    const adimlarKaynak = [
+      ["1", "Cutting", [["Upcut Saw 1", true], ["Upcut Saw 2", false]], null, null],
+      ["2", "Countersink", [["Countersink Machine 1", true], ["Pillar Drill 3", false]], null, null],
+      ["3", "Marking", [["Mechanical Marking Machine", true]], null, null],
+      ["4", "Pressing", [["Press Machine -2: 100T Eccentric", true], ["Press Machine 5: 40T Eccentric", false]], null, null],
+      ["4.1", "Presle Delik Delme", [["Press Machine 5: 40T Eccentric", true]], null, null],
+      ["5", "CNC OPERASYON 1(Alın Alma ve 1.Knurl)", [["CNC Machining Workplace", true]], "CNC İşleme", null],
+      ["5.1", "CNC OPERASYON 2(Alın Alma ve 2.Knurl)", [["CNC Machining Workplace", true]], null, null],
+      ["6", "Yağlama", [["Yağlama Makinesi 1", false]], null, null],
+      ["7", "Kapak Takma", [["Kapak Takma İş Merkezi", true]], null, null],
+      ["8", "Packaging", [["Packaging Workplace", true], ["Paketleme Makinesi 1", false]], null, ["Poşet tipi", ["Şeffaf", "Baskılı"]]]
+    ];
+
+    return {
+      urunler: urunler.map(([kod, ad, adim]) => {
+        const secili = kod === "221173";
+        return {
+          kod, ad, adim,
+          bg: secili ? "var(--color-accent-200)" : "#fff",
+          bar: secili ? "inset 3px 0 0 var(--color-accent)" : "none"
+        };
+      }),
+      adimlar: adimlarKaynak.map(([sira, operasyon, merkezler, grup, varyant], i) => {
+        const alt = sira.indexOf(".") > -1;
+        const aktifVar = merkezler.some(m => m[1]);
+        return {
+          sira, operasyon,
+          grupBasligi: !!grup, grup: grup || "", grupBosluk: i === 0 ? "0" : "18px",
+          numaraZemin: alt ? "#fff" : "var(--color-accent)",
+          numaraKenar: alt ? "var(--color-neutral-400)" : "var(--color-accent-700)",
+          numaraRenk: alt ? "var(--color-neutral-700)" : "#fff",
+          varyantVar: !!varyant,
+          varyantEtiketi: varyant ? varyant[0] : "",
+          varyantlar: varyant ? varyant[1].map(ad => ({ ad })) : [],
+          varyantDugmesi: varyant ? "Varyant Seçeneklerini Düzenle" : "+ Varyant Seçenekleri Ekle",
+          uyari: !aktifVar,
+          merkezler: merkezler.map(([ad, aktif]) => ({
+            ad,
+            rozet: aktif ? "Aktif" : "Alternatif",
+            rozetZemin: aktif ? "var(--color-success-fill)" : "var(--color-neutral-100)",
+            rozetKenar: aktif ? "var(--color-success)" : "var(--color-neutral-400)",
+            rozetRenk: aktif ? "#2f5c33" : "var(--color-neutral-700)"
+          }))
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

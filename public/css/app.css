@@ -355,37 +355,73 @@ textarea.input { min-height: 84px; resize: vertical; }
 .rt-note { font-size: 13px; color: var(--color-neutral-600); margin-top: 10px; }
 .rt-drawer-note { font-size: 12.5px; line-height: 1.5; color: var(--color-neutral-600); }
 
-/* Rotalar v2: sabit iki kolon + panel içi kaydırma (yalnız Rotalar; .rt-picker ile
-   kapsanır — Kapasiteler aynı .part-picker/.tl-* sınıflarını kullandığından etkilenmez).
-   Yükseklik kendi içinde bağlanır (viewport eksi üst şerit/başlık/araç çubuğu) — paylaşılan
-   .content düzenine DOKUNULMAZ (aksi halde ana içerik/menü akışı bozuluyordu). */
-.rt-picker { display: grid; grid-template-columns: 272px minmax(0, 1fr); gap: var(--space-4);
-  align-items: stretch; height: calc(100vh - 240px); min-height: 360px; overflow: hidden; }
-.rt-picker > .part-list { width: auto; flex: initial; max-height: none; min-height: 0; overflow-y: auto; }
-.rt-picker > .timeline { min-height: 0; overflow-y: auto; }
-/* Sıra kutusu: ana adım (tam sayı) dolu aksan + beyaz sayı; alt operasyon (kesirli) beyaz + hairline */
-.rt-picker .tl-num.tl-main { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-bg); }
-.rt-picker .tl-num.tl-sub { background: var(--color-surface); border: 1px solid var(--color-neutral-400); color: var(--color-neutral-600); }
+/* Rotalar v2 (docs/Rotalar-v2.dc.html): iki kolonu DOLDURAN düzen — sol kolonda arama +
+   ürün listesi, sağda panel + alt not; yükseklik flex ile bağlanır (sihirli sayı yok).
+   Hepsi .rt-root altına kapsanır — Kapasiteler aynı .part-picker/.tl-* sınıflarını
+   kullandığından ETKİLENMEZ. Paylaşılan .content düzenine dokunulmaz: .rt-root
+   height:100% ile .content'i doldurur (kaydırma panellerin kendi içinde). */
+.rt-root { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+.rt-head { flex: none; }
+.rt-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 272px minmax(0, 1fr);
+  gap: 20px; align-items: stretch; overflow: hidden; }
+.rt-col-left { min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.rt-col-right { min-width: 0; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.rt-search { flex: none; padding-bottom: 10px; }
+.rt-root .part-list { flex: 1; min-height: 0; width: auto; max-height: none; }
+.rt-root .panel { flex: 1; min-height: 0; }
+/* Panel başlığı: veri metni BÜYÜK HARFE ÇEVRİLMEZ (kod/ad sunucudan geldiği gibi) */
+.rt-root .panel-head { flex: none; text-transform: none; padding: 14px 18px; }
+.rt-root .panel-head h3 { font-family: var(--font-mono); font-size: 19px; font-weight: 500; color: var(--color-accent-800); margin: 0; }
+.rt-root .panel-head .sub { font-family: var(--font-body); font-size: 13.5px; color: var(--color-neutral-700); }
+.rt-root .panel-body { flex: 1; min-height: 0; overflow-y: auto; }
+.rt-note { flex: none; font-size: 13px; color: var(--color-neutral-700); line-height: 1.5; margin-top: 0; }
+
+/* Sol liste öğesi (tasarım: seçili accent-200 + inset sol çubuk) */
+.rt-root .part-list-item { padding: 11px 13px; }
+.rt-root .part-list-item.active { background: var(--color-accent-200);
+  box-shadow: inset 3px 0 0 var(--color-accent); border-left: none; padding-left: 13px; }
+.rt-root .part-list-item .pn { font-size: 13.5px; color: var(--color-accent-800); font-weight: 500; }
+.rt-root .part-list-item .pname { font-size: 13px; color: var(--color-neutral-700);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rt-root .part-list-item .pmeta { font-size: 12px; color: var(--color-neutral-600); }
+
 /* Panel başlığı özeti (N adım · M operasyon) */
-.rt-panel-title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-.rt-panel-sum { font-family: var(--font-mono); font-size: 11.5px; color: var(--color-neutral-600); white-space: nowrap; }
+.rt-panel-title { display: flex; align-items: baseline; gap: 12px; min-width: 0; flex-wrap: wrap; }
+.rt-panel-sum { font-family: var(--font-mono); font-size: 12px; color: var(--color-neutral-600); white-space: nowrap; }
+
+/* Sıra kutusu (30×30, 1px): ana adım dolu aksan + beyaz; alt operasyon beyaz + hairline */
+.rt-root .tl-num { width: 30px; height: 30px; min-width: 30px; border-width: 1px; font-size: 12.5px; }
+.rt-root .tl-num.tl-main { background: var(--color-accent); border-color: var(--color-accent-700); color: #fff; }
+.rt-root .tl-num.tl-sub { background: #fff; border-color: var(--color-neutral-400); color: var(--color-neutral-700); }
+.rt-root .tl-line { width: 1px; background: var(--color-neutral-300); }
+.rt-root .tl-step { gap: 14px; align-items: stretch; }
+
+/* Adım başlığı + düğmeler (tasarım: satır içi, sarabilir; aksan-metin, hafif) */
+.rt-root .tl-title-row { flex-wrap: wrap; min-height: 30px; }
+.rt-root .tl-title { font-family: var(--font-heading); font-size: 18px; font-weight: 600; line-height: 1.15; }
+.rt-root .tl-title-row .btn { height: 28px; padding: 0 10px; font-family: var(--font-body); font-weight: 400;
+  font-size: 12.5px; color: var(--color-accent-700); border: 1px solid transparent; }
+.rt-root .tl-title-row .btn:hover { background: var(--color-accent-100); }
+
+/* İş merkezi satırı: rozet + ad + Düzenle (çerçeveli) / Sil (kırmızı çerçeveli) */
+.rt-root .tl-wc { gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+.rt-root .tl-wc-name { font-size: 13.5px; }
+.rt-root .tl-wc-actions { display: inline-flex; gap: 6px; }
+.rt-root .tl-wc-actions .btn { height: 28px; padding: 0 10px; font-family: var(--font-body); font-weight: 400;
+  font-size: 12.5px; background: #fff; border: 1px solid var(--color-neutral-400); color: var(--color-text); }
+.rt-root .tl-wc-actions .btn:hover { background: var(--color-accent-200); border-color: var(--color-accent-500); }
+.rt-root .tl-wc-actions .btn.tl-del { border-color: var(--color-danger); color: var(--color-danger); }
+.rt-root .tl-wc-actions .btn.tl-del:hover { background: var(--color-danger-fill); border-color: var(--color-danger); }
+
 /* Aktif hat yok uyarısı (yalnız Rotalar üretir) */
-.tl-warn { margin: 5px 0 7px; padding: 6px 10px; font-size: 12.5px; line-height: 1.4;
-  color: var(--color-warning); background: var(--color-warning-fill); border: 1px solid var(--color-warning); }
-.tl-warn a { color: var(--color-warning); font-weight: 600; text-decoration: underline; }
-/* Arama sonucu boş — sol kolon */
-.rt-empty-search { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px; }
+.tl-warn { margin-top: 8px; padding: 9px 12px; font-size: 13px; line-height: 1.5;
+  color: var(--color-text); background: var(--color-warning-fill); border: 1px solid var(--color-warning); }
+.tl-warn a { color: var(--color-accent-700); font-weight: 500; }
+
+/* Arama sonucu boş — sol kolon (liste yerine) */
+.rt-empty-search { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+  padding: 16px; background: var(--color-surface); border: 1px solid var(--color-neutral-400); }
 .rt-empty-title { font-family: var(--font-heading); font-size: 14px; }
-/* Adım başlığı düğmeleri: sarmaz, satır sonuna hizalı, kompakt (başlık taşarsa ellipsis) */
-.rt-picker .tl-title-row { flex-wrap: nowrap; }
-.rt-picker .tl-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rt-picker .tl-title-row .btn { flex: none; white-space: nowrap; font-size: 12px; padding: 3px 8px; }
-.rt-picker .tl-title-row [data-act="alt"] { margin-left: auto; }
-/* İş merkezi satırı: ad ana bilgi; Düzenle/Sil sessiz ghost (hover'da niyet rengi) */
-.rt-picker .tl-wc-name { font-weight: 500; }
-.rt-picker .tl-wc-actions .btn { color: var(--color-neutral-600); font-size: 12px; }
-.rt-picker .tl-wc-actions .btn:hover { color: var(--color-accent); background: transparent; }
-.rt-picker .tl-wc-actions .btn.tl-del:hover { color: var(--color-danger); }
 
 /* — katlanabilir blueprint paneli (ortak — core/collapsible.js) — */
 /* Kutu + tıklanır başlık; Makine Durumu, Veri Kontrolü Uyarıları ve ileride başka
