@@ -31,7 +31,8 @@ const EYE_OFF_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="
  * @returns {{ close: Function, el: HTMLElement }}
  */
 export function openDrawer(opts) {
-  const { title, fields, values = {}, submitLabel = () => t('action.save'), onSubmit, onSaved, onClose } = opts;
+  const { title, fields, values = {}, submitLabel = () => t('action.save'), onSubmit, onSaved, onClose,
+    onDelete = null, deleteLabel = () => t('action.delete') } = opts;
   let dirty = false;
 
   const backdrop = h('div', 'drawer-backdrop');
@@ -73,6 +74,14 @@ export function openDrawer(opts) {
   const actions = h('div', 'drawer-actions');
   const cancelBtn = h('button', 'btn btn-secondary', esc(t('action.cancel')));
   const saveBtn = h('button', 'btn btn-primary', esc(lbl(submitLabel)));
+  // Silme (opsiyonel) — düzenleme panelinde sola yaslı danger düğme; onay çağıranda.
+  let delBtn = null;
+  if (onDelete) {
+    delBtn = h('button', 'btn btn-danger', esc(lbl(deleteLabel)));
+    delBtn.type = 'button';
+    delBtn.style.marginRight = 'auto';   // cancel/save sağda, sil solda
+    actions.appendChild(delBtn);
+  }
   actions.append(cancelBtn, saveBtn);
   drawer.appendChild(actions);
 
@@ -81,6 +90,7 @@ export function openDrawer(opts) {
     titleEl.textContent = lbl(title);
     cancelBtn.textContent = t('action.cancel');
     if (!saveBtn.disabled) saveBtn.textContent = lbl(submitLabel);   // "Kaydediliyor…" sırasında dokunma
+    if (delBtn && !delBtn.disabled) delBtn.textContent = lbl(deleteLabel);
     for (const name in controls) controls[name].relabel?.();
   });
 
@@ -203,6 +213,18 @@ export function openDrawer(opts) {
 
   saveBtn.addEventListener('click', (e) => { e.preventDefault(); submit(); });
   form.addEventListener('submit', (e) => { e.preventDefault(); submit(); });
+  // Silme: onDelete onay + API'yi yönetir. false dönerse (iptal/hata) panel açık kalır;
+  // aksi halde panel kapanır. Silme sırasında düğmeler kilitlenir.
+  if (delBtn) delBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    delBtn.disabled = true; saveBtn.disabled = true;
+    let done = false;
+    try { done = await onDelete(); }
+    finally {
+      if (done === false) { delBtn.disabled = false; saveBtn.disabled = false; }
+      else { dirty = false; teardown(); }
+    }
+  });
   cancelBtn.addEventListener('click', requestClose);
   closeX.addEventListener('click', requestClose);
   backdrop.addEventListener('click', (e) => { if (e.target === backdrop) requestClose(); });

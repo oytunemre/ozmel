@@ -343,6 +343,20 @@ export async function viewTasks(container) {
       ],
       onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
       onSaved: async () => { toast(t(editing ? 'tsk.updated' : 'tsk.added'), 'success'); tasks = (await api.listAll()).data; render(); },
+      // Silme yalnız düzenlemede — drawer içinde, onay isteyerek (satırda ayrı sil sütunu yok).
+      ...(editing ? {
+        onDelete: async () => {
+          const ok = await confirmDialog({ title: t('tsk.deleteTitle'), body: t('tsk.deleteBody'), confirmLabel: t('action.delete'), danger: true });
+          if (!ok) return false;
+          try {
+            await api.remove(row.id);
+            toast(t('tsk.deleted'), 'success');
+            tasks = (await api.listAll()).data;
+            render();
+            return true;
+          } catch (err) { toast(err.message, 'danger'); return false; }
+        },
+      } : {}),
     });
   }
 
