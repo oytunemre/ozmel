@@ -11,10 +11,17 @@
 
 import { resource } from '../core/api.js';
 import { errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, mapNamed, outOfTolerance } from '../core/lookups.js';
+import { toast } from '../core/toast.js';
+import { loadLookup, mapProduct, mapNamed, outOfTolerance, fmtMeasure, FIRST_OFF_REASON_OPTIONS } from '../core/lookups.js';
 import { t, bindLang } from '../core/i18n.js';
 import { fmtDateTR, fmtTr } from '../core/format.js';
 import { fmtISO, startOfDay } from '../core/report.js';
+
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
+const SAMPLES = 6;   // "İlk 6 Parça" — sabit numune sütunu (tasarım)
+const PASS = 'Uygun', FAIL = 'Uygun Değil';
+// Sabit gerekçenin gösterim etiketi (değer BE'de TR kalır).
+const reasonLabel = (v) => { const k = 'reason.' + v; const s = t(k); return s === k ? v : s; };
 
 const LS = 'ozmel.gkr.';
 const TABS = [
@@ -52,6 +59,34 @@ export async function viewGunlukKalite(container) {
   let operation = Number(localStorage.getItem(LS + 'operation')) || null;
   let date = localStorage.getItem(LS + 'date') || fmtISO(startOfDay(new Date()));
   let shift = localStorage.getItem(LS + 'shift') || '1';
+
+  // First Off sekmesi alt-durumu: liste / form.
+  let foView = 'liste';
+  let foDraft = null;
+
+  const foApi = resource('first-off-records');
+  // (product, operation) için First Off nokta tanımları, nokta no'ya göre.
+  const foPointsFor = (pid, opId) => foPoints
+    .filter(p => p.productCodeId === pid && p.operationId === opId)
+    .sort((a, b) => (a.pointNo || 0) - (b.pointNo || 0));
+
+  const foSampleBad = (pt, v) => {
+    if (v == null || v === '') return false;
+    if (pt.type === 'nitel') return String(v).trim() === FAIL;
+    return outOfTolerance(v, pt.lowerLimit, pt.upperLimit);
+  };
+  const foPointResult = (pt, vals) => {
+    let dolu = 0, bad = 0;
+    for (const v of (vals || [])) { if (v == null || v === '') continue; dolu++; if (foSampleBad(pt, v)) bad++; }
+    return { dolu, bad };
+  };
+  const foDecision = (pts, valuesByPoint) => {
+    let any = false, bad = false;
+    for (const pt of pts) { const r = foPointResult(pt, valuesByPoint[pt.id] || []); if (r.dolu) any = true; if (r.bad) bad = true; }
+    return !any ? '' : bad ? FAIL : PASS;
+  };
+  const foToleransText = (pt) => pt.type === 'nitel' ? 'OK / NOK'
+    : `${fmtMeasure(pt.lowerLimit)} … ${fmtMeasure(pt.upperLimit)}${pt.unit ? ' ' + pt.unit : ''}`;
 
   // Operasyon listesi — üç kademeli geri çekilme (v78 urunOperasyonlari):
   // 1) routes'ta o ürünün operasyonları (sequence sırası) · 2) yoksa first_off_points'teki
@@ -129,14 +164,21 @@ export async function viewGunlukKalite(container) {
         ${TABS.map(([id, lbl]) => `<button type="button" class="gkr-tab${id === tab ? ' on' : ''}" data-tab="${id}">${esc(t(lbl))}</button>`).join('')}
       </div>
 
-      <div class="gkr-body">${tab === 'ozet' ? tabSummary() : placeholder()}</div>`;
+      <div class="gkr-body">${
+        tab === 'ozet' ? tabSummary()
+        : tab === 'firstoff' ? tabFirstOff()
+        : placeholder()
+      }</div>`;
 
-    // filtre olayları
-    container.querySelector('#gkr-product')?.addEventListener('change', (e) => { product = Number(e.target.value) || null; operation = null; save(); render(); });
-    container.querySelector('#gkr-operation')?.addEventListener('change', (e) => { operation = Number(e.target.value) || null; save(); render(); });
-    container.querySelector('#gkr-date')?.addEventListener('change', (e) => { date = e.target.value || date; save(); render(); });
+    // filtre olayları — bağlam değişince First Off formu listeye döner
+    const resetFo = () => { foView = 'liste'; foDraft = null; };
+    container.querySelector('#gkr-product')?.addEventListener('change', (e) => { product = Number(e.target.value) || null; operation = null; resetFo(); save(); render(); });
+    container.querySelector('#gkr-operation')?.addEventListener('change', (e) => { operation = Number(e.target.value) || null; resetFo(); save(); render(); });
+    container.querySelector('#gkr-date')?.addEventListener('change', (e) => { date = e.target.value || date; resetFo(); save(); render(); });
     container.querySelectorAll('.gkr-shift-btn').forEach(b => b.addEventListener('click', () => { shift = b.dataset.shift; save(); render(); }));
     container.querySelectorAll('.gkr-tab').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; save(); render(); }));
+
+    if (tab === 'firstoff') bindFirstOff();
   }
 
   // ---- Sekme 1: Günlük Özet — o tarihte fiilen kayıt girilen ürün/operasyonlar ----
@@ -222,7 +264,242 @@ export async function viewGunlukKalite(container) {
       </div>`;
   }
 
-  // Adım 3/4/5'te doldurulacak sekmeler için geçici yer tutucu.
+  // ---- Sekme 2: First Off (İlk Parça) — liste + form ----
+  function tabFirstOff() {
+    return foView === 'form' ? foFormHTML() : foListHTML();
+  }
+
+  function foListHTML() {
+    const pts = foPointsFor(product, operation);
+    const list = foRecords
+      .filter(r => r.productCodeId === product && r.operationId === operation && r.date === date)
+      .sort((a, b) => (a.checkTime || '').localeCompare(b.checkTime || ''));
+    const dash = t('common.dash');
+    const decChip = (k) => {
+      if (k === PASS) return `<span class="gkr-chip gkr-chip-success">${esc(PASS)}</span>`;
+      if (k === FAIL) return `<span class="gkr-chip gkr-chip-danger">${esc(FAIL)}</span>`;
+      return `<span class="gkr-chip gkr-chip-neutral">${esc(dash)}</span>`;
+    };
+    const rows = list.map(r => {
+      const valuesByPoint = {};
+      for (const m of (r.measurements || [])) valuesByPoint[m.pointId] = m.values || [];
+      const karar = r.overallResult || foDecision(pts, valuesByPoint);
+      const reasons = (r.reasons || []).map(reasonLabel).join(', ');
+      return `
+        <tr>
+          <td class="mono">${esc(r.checkTime || dash)}</td>
+          <td>${esc(r.operatorName || dash)}</td>
+          <td class="mono">${esc(r.woNo || dash)}</td>
+          <td class="gkr-fo-reason">
+            <div>${esc(reasons || dash)}</div>
+            ${r.note ? `<div class="gkr-fo-note">${esc(r.note)}</div>` : ''}
+          </td>
+          <td>${decChip(karar)}</td>
+          <td class="gkr-num">${canWrite ? `<button class="btn btn-ghost btn-sm" data-fo-edit="${r.id}">${esc(t('action.edit'))}</button>` : ''}</td>
+        </tr>`;
+    }).join('');
+    const head = `<th>${esc(t('gkr.foColTime'))}</th><th>${esc(t('gkr.foColOperator'))}</th><th>${esc(t('gkr.foColWo'))}</th><th>${esc(t('gkr.foColReason'))}</th><th>${esc(t('gkr.foColDecision'))}</th><th class="gkr-num"></th>`;
+    return `
+      <div class="panel">
+        <div class="gkr-panel-head">
+          <span class="gkr-panel-title">${esc(t('gkr.foListTitle'))}</span>
+          ${canWrite ? `<button class="btn btn-primary btn-sm" id="fo-new" style="margin-left:auto;">${esc(t('gkr.foNew'))}</button>` : ''}
+        </div>
+        <div class="gkr-tablewrap">
+          <table class="gkr-table" style="min-width:940px;">
+            <thead><tr>${head}</tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        ${list.length ? '' : `<div class="gkr-empty">${esc(t('gkr.foEmpty'))}</div>`}
+      </div>`;
+  }
+
+  function foFormHTML() {
+    const pts = foPointsFor(product, operation);
+    const d = foDraft;
+    const meta = [
+      { key: 'checkTime', label: t('gkr.foTime'), type: 'time' },
+      { key: 'operatorName', label: t('gkr.foOperator'), type: 'text' },
+      { key: 'woNo', label: t('gkr.foWo'), type: 'text' },
+      { key: 'sampleCount', label: t('gkr.foSampleCount'), type: 'number' },
+    ].map(f => `
+      <div class="gkr-f" style="min-width:0;">
+        <label>${esc(f.label)}</label>
+        <input type="${f.type}" class="input" data-fo-meta="${f.key}" value="${esc(d[f.key] == null ? '' : String(d[f.key]))}">
+      </div>`).join('');
+
+    const reasons = FIRST_OFF_REASON_OPTIONS.map(r => `
+      <button type="button" class="gkr-reason${d.reasons.has(r) ? ' on' : ''}" data-fo-reason="${esc(r)}">
+        <i class="gkr-reason-box"></i>${esc(reasonLabel(r))}
+      </button>`).join('');
+
+    const sampleHead = Array.from({ length: SAMPLES }, (_, i) => `<th class="gkr-num" style="width:80px;">${i + 1}</th>`).join('');
+    const rows = pts.map(pt => {
+      const vals = d.values[pt.id] || [];
+      const cells = Array.from({ length: SAMPLES }, (_, i) => {
+        const v = vals[i] == null ? '' : String(vals[i]);
+        if (pt.type === 'nitel') {
+          return `<td class="gkr-cell"><select class="gkr-scell" data-fo-cell="${pt.id}-${i}">
+            <option value=""${v === '' ? ' selected' : ''}>—</option>
+            <option value="${PASS}"${v === PASS ? ' selected' : ''}>OK</option>
+            <option value="${FAIL}"${v === FAIL ? ' selected' : ''}>NOK</option></select></td>`;
+        }
+        return `<td class="gkr-cell"><input type="number" step="any" class="gkr-scell mono" data-fo-cell="${pt.id}-${i}" value="${esc(v)}"></td>`;
+      }).join('');
+      return `
+        <tr>
+          <td>${esc(pt.characteristic)}</td>
+          <td class="mono text-muted">${esc(foToleransText(pt))}</td>
+          ${cells}
+          <td id="fo-res-${pt.id}">${foResultChip(pt, vals)}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+      <div class="panel">
+        <div class="gkr-panel-head">
+          <span class="gkr-panel-title">${esc(d.id ? t('gkr.foEditTitle') : t('gkr.foNewTitle'))}</span>
+          <button class="btn btn-secondary btn-sm" id="fo-back" style="margin-left:auto;">${esc(t('gkr.foBack'))}</button>
+        </div>
+        <div style="padding:18px;">
+          <div class="gkr-fo-meta">${meta}</div>
+
+          <div class="gkr-fo-sec">${esc(t('gkr.foReasonHead'))}</div>
+          <div class="gkr-reasons">${reasons}</div>
+
+          <div class="gkr-fo-sec">${esc(t('gkr.foSamplesHead'))}</div>
+          ${pts.length ? `<div class="gkr-tablewrap" style="border:1px solid var(--color-neutral-300);">
+            <table class="gkr-table gkr-fo-grid" style="min-width:900px;">
+              <thead><tr><th style="min-width:220px;">${esc(t('gkr.foPoint'))}</th><th style="width:150px;">${esc(t('gkr.foTolerance'))}</th>${sampleHead}<th style="width:140px;">${esc(t('gkr.foResult'))}</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table></div>`
+          : `<div class="text-muted" style="padding:12px 0;">${esc(t('gkr.foNoPoints'))}</div>`}
+
+          <div class="gkr-fo-bottom">
+            <div class="gkr-f" style="flex:1; min-width:0;">
+              <label>${esc(t('gkr.foNote'))}</label>
+              <input type="text" class="input" data-fo-meta="note" value="${esc(d.note || '')}" placeholder="${esc(t('gkr.foNotePlaceholder'))}">
+            </div>
+            <div class="gkr-fo-karar" id="fo-karar-box">
+              <div class="gkr-fo-karar-lbl">${esc(t('gkr.foAutoDecision'))}</div>
+              <div class="gkr-fo-karar-val" id="fo-karar"></div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:18px;">
+            <button class="btn btn-primary" id="fo-save"${canWrite ? '' : ' disabled'}>${esc(t('action.save'))}</button>
+            <button class="btn btn-secondary" id="fo-cancel">${esc(t('action.cancel'))}</button>
+          </div>
+          <div class="text-muted" style="font-size:12.5px; margin-top:8px;">${esc(t('gkr.foDecisionNote'))}</div>
+        </div>
+      </div>`;
+  }
+
+  function foResultChip(pt, vals) {
+    const r = foPointResult(pt, vals);
+    if (r.dolu === 0) return `<span class="gkr-chip gkr-chip-neutral">${esc(t('common.dash'))}</span>`;
+    if (r.bad > 0) return `<span class="gkr-chip gkr-chip-danger">${esc(t('gkr.foNonconf', { n: r.bad }))}</span>`;
+    return `<span class="gkr-chip gkr-chip-success">${esc(PASS)}</span>`;
+  }
+
+  // Form yeniden çizmeden hücre/sonuç/karar günceller (input odağı korunur).
+  function foRecompute() {
+    const pts = foPointsFor(product, operation);
+    for (const pt of pts) {
+      const vals = foDraft.values[pt.id] || [];
+      for (let i = 0; i < SAMPLES; i++) {
+        const cell = container.querySelector(`[data-fo-cell="${pt.id}-${i}"]`);
+        if (!cell) continue;
+        const bad = foSampleBad(pt, vals[i]);
+        cell.style.borderColor = bad ? 'var(--color-danger)' : '';
+        cell.style.background = bad ? 'var(--color-danger-fill)' : '';
+      }
+      const res = container.querySelector(`#fo-res-${pt.id}`);
+      if (res) res.innerHTML = foResultChip(pt, vals);
+    }
+    const karar = foDecision(pts, foDraft.values);
+    const box = container.querySelector('#fo-karar-box');
+    const val = container.querySelector('#fo-karar');
+    const color = karar === FAIL ? 'var(--color-danger)' : karar === PASS ? 'var(--color-success)' : 'var(--color-neutral-500)';
+    const fill = karar === FAIL ? 'var(--color-danger-fill)' : karar === PASS ? 'var(--color-success-fill)' : 'transparent';
+    if (val) { val.textContent = karar || t('common.dash'); val.style.color = color; }
+    if (box) { box.style.borderColor = color; box.style.background = fill; }
+  }
+
+  function bindFirstOff() {
+    if (foView === 'liste') {
+      container.querySelector('#fo-new')?.addEventListener('click', () => {
+        if (!canWrite) return;
+        foDraft = { id: null, checkTime: '', operatorName: '', woNo: '', sampleCount: SAMPLES, reasons: new Set(), note: '', values: {} };
+        foView = 'form'; render();
+      });
+      container.querySelectorAll('[data-fo-edit]').forEach(b => b.addEventListener('click', () => {
+        const rec = foRecords.find(r => r.id === Number(b.dataset.foEdit));
+        if (!rec) return;
+        const values = {};
+        for (const m of (rec.measurements || [])) values[m.pointId] = (m.values || []).map(v => v == null ? '' : v);
+        foDraft = {
+          id: rec.id, checkTime: rec.checkTime || '', operatorName: rec.operatorName || '', woNo: rec.woNo || '',
+          sampleCount: rec.sampleCount || SAMPLES, reasons: new Set(rec.reasons || []), note: rec.note || '', values,
+        };
+        foView = 'form'; render();
+      }));
+      return;
+    }
+    // form
+    container.querySelector('#fo-back')?.addEventListener('click', () => { foView = 'liste'; foDraft = null; render(); });
+    container.querySelector('#fo-cancel')?.addEventListener('click', () => { foView = 'liste'; foDraft = null; render(); });
+    container.querySelectorAll('[data-fo-meta]').forEach(inp => inp.addEventListener('input', () => {
+      foDraft[inp.dataset.foMeta] = inp.value;
+    }));
+    container.querySelectorAll('[data-fo-reason]').forEach(btn => btn.addEventListener('click', () => {
+      const r = btn.dataset.foReason;
+      if (foDraft.reasons.has(r)) { foDraft.reasons.delete(r); btn.classList.remove('on'); }
+      else { foDraft.reasons.add(r); btn.classList.add('on'); }
+    }));
+    container.querySelectorAll('[data-fo-cell]').forEach(cell => {
+      const [pid, i] = cell.dataset.foCell.split('-').map(Number);
+      const ev = cell.tagName === 'SELECT' ? 'change' : 'input';
+      cell.addEventListener(ev, () => {
+        if (!foDraft.values[pid]) foDraft.values[pid] = [];
+        foDraft.values[pid][i] = cell.value;
+        foRecompute();
+      });
+    });
+    container.querySelector('#fo-save')?.addEventListener('click', foSave);
+    foRecompute();
+  }
+
+  async function foSave() {
+    if (!canWrite) return;
+    const pts = foPointsFor(product, operation);
+    const payload = {
+      productCodeId: product, operationId: operation, date, shift,
+      checkTime: foDraft.checkTime || null,
+      operatorName: foDraft.operatorName || null,
+      woNo: foDraft.woNo || null,
+      sampleCount: foDraft.sampleCount === '' || foDraft.sampleCount == null ? null : Number(foDraft.sampleCount),
+      note: foDraft.note || null,
+      overallResult: foDecision(pts, foDraft.values) || null,
+      measurements: pts.map(pt => ({ pointId: pt.id, values: Array.from({ length: SAMPLES }, (_, i) => (foDraft.values[pt.id] || [])[i] ?? '') })),
+      reasons: [...foDraft.reasons],
+    };
+    const btn = container.querySelector('#fo-save');
+    if (btn) btn.disabled = true;
+    try {
+      if (foDraft.id) await foApi.update(foDraft.id, { ...payload, updatedAt: (foRecords.find(r => r.id === foDraft.id) || {}).updatedAt });
+      else await foApi.create(payload);
+      toast(t('toast.saved'), 'success');
+      foRecords = (await foApi.listAll()).data;
+      foView = 'liste'; foDraft = null; render();
+    } catch (err) {
+      if (btn) btn.disabled = false;
+      toast(err.message || t('err.GENERIC'), 'danger');
+    }
+  }
+
+  // Adım 4/5'te doldurulacak sekmeler için geçici yer tutucu.
   function placeholder() {
     return `<div class="panel"><div class="text-muted" style="padding:40px 24px; text-align:center;">${esc(t('gkr.soon'))}</div></div>`;
   }

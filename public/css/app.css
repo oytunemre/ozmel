@@ -1115,3 +1115,23 @@ textarea.input { min-height: 84px; resize: vertical; }
 .gkr-chip-danger { border-color: var(--color-danger); background: var(--color-danger-fill); color: var(--color-danger); font-family: var(--font-mono); }
 .gkr-chip-neutral { border-color: var(--color-neutral-400); background: var(--color-neutral-100); color: var(--color-neutral-600); }
 .gkr-empty { padding: 40px 24px; text-align: center; color: var(--color-neutral-600); font-size: 14.5px; }
+
+/* Günlük Kalite — First Off sekmesi (liste hücreleri + form: gerekçe kutucukları, numune ızgarası) */
+.gkr-fo-reason { font-size: 12.5px; color: var(--color-neutral-700); }
+.gkr-fo-note { font-style: italic; color: var(--color-neutral-600); margin-top: 3px; }
+.gkr-fo-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.gkr-fo-sec { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.13em; color: var(--color-neutral-600); margin: 22px 0 8px; }
+.gkr-reasons { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+.gkr-reason { display: flex; align-items: center; gap: 9px; padding: 9px 12px; font-size: 13.5px; text-align: left;
+  cursor: pointer; border: 1px solid var(--color-neutral-400); background: var(--color-surface); color: var(--color-text); font-family: var(--font-body); }
+.gkr-reason-box { width: 14px; height: 14px; flex: none; border: 1px solid var(--color-neutral-500); background: var(--color-surface); }
+.gkr-reason.on { border-color: var(--color-accent-500); background: var(--color-accent-100); }
+.gkr-reason.on .gkr-reason-box { border-color: var(--color-accent-700); background: var(--color-accent); }
+.gkr-fo-grid td { padding: 6px 10px; }
+.gkr-fo-grid td.gkr-cell { text-align: center; padding: 6px 6px; }
+.gkr-scell { width: 72px; height: 32px; padding: 0 6px; font-size: 12.5px; border: 1px solid var(--color-neutral-400); background: var(--color-surface); color: var(--color-text); }
+input.gkr-scell { text-align: right; font-family: var(--font-mono); }
+.gkr-fo-bottom { margin-top: 18px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: end; }
+.gkr-fo-karar { border: 1px solid var(--color-neutral-400); padding: 10px 14px; }
+.gkr-fo-karar-lbl { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.13em; color: var(--color-neutral-600); }
+.gkr-fo-karar-val { font-family: var(--font-heading); font-size: 24px; font-weight: 600; margin-top: 2px; }

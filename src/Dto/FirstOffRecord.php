@@ -18,7 +18,10 @@ namespace App\Dto;
  *   numuneAdedi  -> sampleCount
  *   kontrolSaati -> checkTime
  *   genelKarar   -> overallResult
- *   degerler{}   -> measurements (cocuk: first_off_measurements; {pointId,value,result})
+ *   degerler{}   -> measurements (cocuk: first_off_measurements). NOKTA BASINA COK NUMUNE:
+ *                   {pointId, values:[karisik...]} — her numune sayi (olcusel) ya da
+ *                   'Uygun'/'Uygun Değil' (nitel). DB'de her numune ayri satir (sequence).
+ *                   Geriye donuk: fromRow ayrica ilk numuneyi value/result olarak da verir.
  *   gerekce[]    -> reasons      (cocuk: first_off_reasons; string dizisi)
  */
 final class FirstOffRecord
@@ -36,6 +39,7 @@ final class FirstOffRecord
             'sampleCount'   => $row['sample_count'] !== null ? (int) $row['sample_count'] : null,
             'checkTime'     => self::hhmm($row['check_time'] ?? null),
             'overallResult' => $row['overall_result'] !== null ? (string) $row['overall_result'] : null,
+            'note'          => array_key_exists('note', $row) && $row['note'] !== null ? (string) $row['note'] : null,
             'measurements'  => self::measurementsFromRows($row['measurements'] ?? []),
             'reasons'       => array_values(array_map('strval', $row['reasons'] ?? [])),
             'updatedAt'     => (string) $row['updated_at'],
@@ -84,14 +88,20 @@ final class FirstOffRecord
             $val = trim((string) $input['overallResult']);
             $out['overall_result'] = $val === '' ? null : $val;
         }
+        if (array_key_exists('note', $input)) {
+            $val = trim((string) $input['note']);
+            $out['note'] = $val === '' ? null : $val;
+        }
         return $out;
     }
 
     /**
      * Olcumler (cocuk tabloya). `measurements` anahtari YOKSA null ("dokunma").
-     * Varsa her eleman {point_id, value, result}; point_id tekillestirilir (son kazanir).
+     * Her nokta icin {pointId, values:[karisik...]} bekler (numune basina ayri satir).
+     * Geriye donuk: eski {pointId, value, result} tek-numune sekli de kabul edilir.
+     * Her numune: sayi -> value sutunu, metin ('Uygun'/'Uygun Değil') -> result sutunu.
      *
-     * @return list<array{point_id:int,value:?float,result:?string}>|null
+     * @return list<array{point_id:int,sequence:int,value:?float,result:?string}>|null
      */
     public static function toMeasurements(array $input): ?array
     {
@@ -101,7 +111,19 @@ final class FirstOffRecord
         if (!is_array($input['measurements'])) {
             return [];
         }
-        $byPoint = [];
+        $out = [];
+        $seen = [];   // "point|seq" -> son kazanir
+        $push = static function (int $pointId, int $seq, mixed $sample) use (&$out, &$seen): void {
+            $isEmpty = $sample === null || (is_string($sample) && trim($sample) === '');
+            $numeric = !$isEmpty && is_numeric($sample);
+            $key = $pointId . '|' . $seq;
+            $seen[$key] = [
+                'point_id' => $pointId,
+                'sequence' => $seq,
+                'value'    => $numeric ? (float) $sample : null,
+                'result'   => (!$isEmpty && !$numeric) ? trim((string) $sample) : null,
+            ];
+        };
         foreach ($input['measurements'] as $m) {
             if (!is_array($m)) {
                 continue;
@@ -110,15 +132,21 @@ final class FirstOffRecord
             if ($pointId <= 0) {
                 continue;
             }
-            $value  = $m['value'] ?? null;
-            $result = array_key_exists('result', $m) ? trim((string) $m['result']) : '';
-            $byPoint[$pointId] = [
-                'point_id' => $pointId,
-                'value'    => ($value === null || (is_string($value) && trim($value) === '')) ? null : (float) $value,
-                'result'   => $result === '' ? null : $result,
-            ];
+            if (array_key_exists('values', $m) && is_array($m['values'])) {
+                $i = 0;
+                foreach ($m['values'] as $sample) { $push($pointId, $i, $sample); $i++; }
+            } else {
+                // Eski tek-numune sekli: value ya da result.
+                $legacy = array_key_exists('value', $m) && $m['value'] !== null && $m['value'] !== ''
+                    ? $m['value'] : ($m['result'] ?? null);
+                $push($pointId, 0, $legacy);
+            }
         }
-        return array_values($byPoint);
+        // Bos numuneleri (value ve result null) atma — yalnizca dolu satirlar yazilir.
+        foreach ($seen as $row) {
+            if ($row['value'] !== null || $row['result'] !== null) $out[] = $row;
+        }
+        return $out;
     }
 
     /**
@@ -143,14 +171,29 @@ final class FirstOffRecord
         return $clean;
     }
 
-    /** DB satirlarindan API olcum sekli. */
+    /**
+     * DB satirlarindan API olcum sekli. Nokta basina numuneler `values` dizisinde
+     * (sequence sirasi; sayi->value, metin->result). Geriye donuk uyum icin ilk
+     * numune ayrica value/result olarak da verilir (eski First-Off ekrani icin).
+     * Satirlar Repository'de point_id, sequence sirali gelir.
+     */
     private static function measurementsFromRows(array $rows): array
     {
-        return array_map(static fn(array $r): array => [
-            'pointId' => (int) $r['point_id'],
-            'value'   => $r['value'] !== null ? (float) $r['value'] : null,
-            'result'  => $r['result'] !== null ? (string) $r['result'] : null,
-        ], $rows);
+        $byPoint = [];
+        foreach ($rows as $r) {
+            $pid = (int) $r['point_id'];
+            if (!isset($byPoint[$pid])) {
+                $byPoint[$pid] = ['pointId' => $pid, 'values' => [], 'value' => null, 'result' => null];
+            }
+            $sample = $r['value'] !== null ? (float) $r['value']
+                : ($r['result'] !== null ? (string) $r['result'] : null);
+            $byPoint[$pid]['values'][] = $sample;
+            if ($byPoint[$pid]['value'] === null && $byPoint[$pid]['result'] === null) {
+                $byPoint[$pid]['value']  = $r['value'] !== null ? (float) $r['value'] : null;
+                $byPoint[$pid]['result'] = $r['result'] !== null ? (string) $r['result'] : null;
+            }
+        }
+        return array_values($byPoint);
     }
 
     /** TIME sutunu 'HH:MM:SS' doner; API'de 'HH:MM'. Null ise null. */

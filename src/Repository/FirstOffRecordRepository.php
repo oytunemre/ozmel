@@ -35,7 +35,7 @@ final class FirstOffRecordRepository extends BaseRepository
     {
         return [
             'product_code_id', 'operation_id', 'date', 'shift', 'operator_name',
-            'wo_no', 'sample_count', 'check_time', 'overall_result',
+            'wo_no', 'sample_count', 'check_time', 'overall_result', 'note',
         ];
     }
 
@@ -113,13 +113,13 @@ final class FirstOffRecordRepository extends BaseRepository
         });
     }
 
-    /** @return list<array{point_id:int,value:?string,result:?string}> */
+    /** @return list<array{point_id:int,sequence:int,value:?string,result:?string}> */
     public function measurementsFor(int $recordId): array
     {
         $stmt = $this->pdo()->prepare(
-            "SELECT point_id, value, result FROM `{$this->measurementsTable()}`
+            "SELECT point_id, sequence, value, result FROM `{$this->measurementsTable()}`
               WHERE record_id = :r AND tenant_id = :t
-              ORDER BY point_id"
+              ORDER BY point_id, sequence"
         );
         $stmt->execute(['r' => $recordId, 't' => $this->ctx->tenantId]);
         return $stmt->fetchAll();
@@ -148,9 +148,9 @@ final class FirstOffRecordRepository extends BaseRepository
         }
         $ph = implode(',', array_fill(0, count($recordIds), '?'));
         $stmt = $this->pdo()->prepare(
-            "SELECT record_id, point_id, value, result FROM `{$this->measurementsTable()}`
+            "SELECT record_id, point_id, sequence, value, result FROM `{$this->measurementsTable()}`
               WHERE tenant_id = ? AND record_id IN ($ph)
-              ORDER BY point_id"
+              ORDER BY point_id, sequence"
         );
         $stmt->execute([$this->ctx->tenantId, ...$recordIds]);
 
@@ -158,6 +158,7 @@ final class FirstOffRecordRepository extends BaseRepository
         foreach ($stmt->fetchAll() as $r) {
             $out[(int) $r['record_id']][] = [
                 'point_id' => (int) $r['point_id'],
+                'sequence' => (int) $r['sequence'],
                 'value'    => $r['value'],
                 'result'   => $r['result'],
             ];
@@ -190,8 +191,9 @@ final class FirstOffRecordRepository extends BaseRepository
     }
 
     /**
-     * Olcumleri sil-ve-yeniden-yaz. Transaction icinde cagrilir.
-     * @param list<array{point_id:int,value:?float,result:?string}> $measurements
+     * Olcumleri sil-ve-yeniden-yaz. Transaction icinde cagrilir. Numune basina ayri
+     * satir (sequence). Eski tek-numune sekli sequence=0 ile gelir (DTO uyumlu tutar).
+     * @param list<array{point_id:int,sequence?:int,value:?float,result:?string}> $measurements
      */
     private function replaceMeasurements(int $recordId, array $measurements): void
     {
@@ -205,14 +207,15 @@ final class FirstOffRecordRepository extends BaseRepository
         }
         $ins = $this->pdo()->prepare(
             "INSERT INTO `{$this->measurementsTable()}`
-                (tenant_id, record_id, point_id, value, result, created_by, updated_by)
-             VALUES (:t, :r, :p, :v, :res, :cb, :ub)"
+                (tenant_id, record_id, point_id, sequence, value, result, created_by, updated_by)
+             VALUES (:t, :r, :p, :s, :v, :res, :cb, :ub)"
         );
         foreach ($measurements as $m) {
             $ins->execute([
                 't'   => $this->ctx->tenantId,
                 'r'   => $recordId,
                 'p'   => $m['point_id'],
+                's'   => $m['sequence'] ?? 0,
                 'v'   => $m['value'],
                 'res' => $m['result'],
                 'cb'  => $this->ctx->userId,
