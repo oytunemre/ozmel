@@ -1009,3 +1009,69 @@ textarea.input { min-height: 84px; resize: vertical; }
 .site-c-actions { white-space: nowrap; }
 .site-acts { display: flex; gap: 8px; justify-content: flex-end; }
 .site-empty { padding: 44px 24px; text-align: center; color: var(--color-neutral-600); font-size: 14.5px; }
+
+/* Görev Takibi v2 — 5 KPI + sekme şeridi + sekme tabloları/pano/hatırlatma kartları */
+.gt-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px; margin-bottom: 18px; }
+.gt-kpi { background: var(--color-surface); border: 1px solid var(--color-neutral-400); border-top: 3px solid var(--color-accent-500); padding: 14px 16px 16px; }
+.gt-kpi-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.13em; color: var(--color-neutral-600); }
+.gt-kpi-value { font-family: var(--font-heading); font-size: 38px; font-weight: 600; line-height: 1.05; margin-top: 6px; }
+
+.gt-tabs { display: flex; border-bottom: 1px solid var(--color-neutral-400); margin-bottom: 20px; }
+.gt-tab { height: 40px; padding: 0 18px; font-size: 14px; cursor: pointer; background: transparent;
+  border: 1px solid var(--color-neutral-400); border-bottom: 0; border-left: 0; color: var(--color-neutral-600);
+  font-family: var(--font-body); margin-bottom: -1px; }
+.gt-tab:first-child { border-left: 1px solid var(--color-neutral-400); }
+.gt-tab.on { background: var(--color-surface); color: var(--color-text); font-weight: 500; }
+
+.gt-panel { margin-bottom: 20px; }
+.gt-panel-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--color-neutral-300); display: flex; align-items: baseline; gap: 12px; }
+.gt-panel-title { font-family: var(--font-heading); font-size: 19px; font-weight: 600; }
+.gt-panel-sub { font-size: 13px; color: var(--color-neutral-600); }
+
+.gt-tablewrap { overflow-x: auto; }
+.gt-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.gt-tasks { min-width: 1240px; }
+.gt-table thead th { text-align: left; padding: 9px 12px; font-family: var(--font-mono); font-size: 10.5px;
+  letter-spacing: 0.12em; color: var(--color-neutral-700); font-weight: 500; background: var(--color-neutral-100);
+  border-bottom: 1px solid var(--color-neutral-300); white-space: nowrap; }
+.gt-table th.gt-num { text-align: right; }
+.gt-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--color-neutral-200); vertical-align: middle; }
+.gt-table td.gt-num { text-align: right; }
+.gt-table td.gt-strong { font-weight: 500; }
+.gt-table tbody tr:hover { background: var(--color-accent-100); }
+.gt-row-late { background: var(--color-danger-fill); }
+.gt-row-click { cursor: pointer; }
+.gt-notes { font-size: 12.5px; }
+.gt-acts { display: flex; gap: 8px; justify-content: flex-end; }
+
+.gt-chip { display: inline-block; padding: 2px 8px; font-size: 12.5px; border: 1px solid; white-space: nowrap; }
+.gt-chip-ok { border-color: var(--color-success); background: var(--color-success-fill); color: var(--color-success); }
+.gt-chip-warn { border-color: var(--color-warning); background: var(--color-warning-fill); color: var(--color-warning); }
+.gt-chip-bad { border-color: var(--color-danger); background: var(--color-danger-fill); color: var(--color-danger); font-family: var(--font-mono); }
+.gt-chip-neutral { border-color: var(--color-neutral-400); background: var(--color-neutral-100); color: var(--color-neutral-600); }
+
+.gt-prog { display: flex; align-items: center; gap: 8px; }
+.gt-prog-bar { display: block; flex: 1; height: 10px; background: var(--color-neutral-200); position: relative; min-width: 40px; }
+.gt-prog-bar > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--color-accent-500); }
+.gt-prog-pct { flex: none; font-size: 12.5px; }
+
+.gt-board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.gt-dist { padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 12px; }
+.gt-dist-row { display: grid; grid-template-columns: minmax(90px, 140px) minmax(50px, 1fr) 54px; gap: 12px; align-items: center; }
+.gt-dist-label { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gt-dist-n { font-size: 13px; text-align: right; }
+.gt-bar { display: block; height: 12px; background: var(--color-neutral-200); position: relative; }
+.gt-bar > i { position: absolute; left: 0; top: 0; bottom: 0; }
+.gt-sumcards { padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+.gt-sumcard { display: flex; align-items: baseline; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--color-neutral-200); }
+.gt-sumcard:last-child { border-bottom: 0; padding-bottom: 0; }
+.gt-sumcard-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.13em; color: var(--color-neutral-600); }
+.gt-sumcard-sub { font-size: 13px; color: var(--color-neutral-700); margin-top: 3px; }
+.gt-sumcard-val { margin-left: auto; flex: none; font-family: var(--font-heading); font-size: 34px; font-weight: 600; line-height: 1; }
+
+.gt-rems { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 16px; }
+.gt-rem { border: 1px solid var(--color-neutral-300); }
+.gt-rem-head { padding: 10px 14px; background: var(--color-neutral-100); border-bottom: 1px solid var(--color-neutral-300); display: flex; align-items: center; gap: 12px; }
+.gt-rem-msg { margin: 0; padding: 14px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.7; white-space: pre-wrap; color: var(--color-text); }
+
+@media (max-width: 1100px) { .gt-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .gt-board { grid-template-columns: 1fr; } }

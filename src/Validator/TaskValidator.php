@@ -20,6 +20,7 @@ final class TaskValidator extends Validator
              ->maxLength($input, 'priority', 32, 'Oncelik')
              ->date($input, 'dueDate', 'Termin')
              ->maxLength($input, 'status', 32, 'Durum')
+             ->inList($input, 'status', ['Başlamadı', 'Devam Ediyor', 'Beklemede', 'Tamamlandı'], 'Durum')
              ->numeric($input, 'completionRatio', 'Tamamlanma orani');
 
         // Tamamlanma orani 0–1 arasi kesir (yuzde degil).

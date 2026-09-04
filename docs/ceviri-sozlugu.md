@@ -75,9 +75,8 @@ baktığında tanıdık kelimeleri görmeli.
 | Satış Raporları | Sales Reports |
 | Tanımlar | Definitions |
 | Kod Tanımları | Material Codes |
-| Görev Kişileri | Task Assignees |
 | Denetim Soruları | Audit Questions |
-| Görevler | Tasks |
+| Görev Takibi | Task Tracking |
 | Terimler | Terms |
 | Çalışma Saatleri | Working Hours |
 | Kullanıcılar | Users |
@@ -553,7 +552,9 @@ Modül anahtarları (özet): `pc.*` Kod Tanımları (secDrawing/secMeasures/secS
 ### Parti G: Satınalma Girişleri, Görevler, Üretim Planı, Satış Raporları, Genel Bakış
 
 - `prc.*` Satınalma Girişleri (requestCol, request, requestHelp…). Bağlı istekte malzeme NULL ise etiket `common.notSelected`.
-- `tsk.*` Görevler + `ts.*` görev durumu enum (Başlamadı/Devam Ediyor/Tamamlandı → Not Started/In Progress/Completed; BE'de TR saklanır).
+- `tsk.*` Görev drawer alanları (ekle/düzenle) + `ts.*` görev durumu enum + `prio.*` öncelik enum (BE'de TR saklanır, gösterim çevrilir — sipariş durumu deseni). Bkz. **Görev Takibi v2** aşağıda.
+
+**Görev Takibi v2 (yenileme, `docs/gorev-takibi-brief.md`, tasarım `Gorev-Takibi-v2.dc.html`):** `tasks.js` düz tablodan **beş sekmeli** çalışma alanına dönüştü (sekme durumu `localStorage: ozmel.gt.tab`). Sekmeler: **Görevler** (11 kolon; üç kademeli sıralama — geciken üstte, tamamlanmamış önce, termin sırası; geciken satır danger-fill; tamamlanma çubuğu; kalan gün rozeti; satıra tıkla → düzenle), **Kişi Özeti** (anaSorumlu=primaryAssigneeId bazında toplam/açık/tamamlanan/geciken/yardımcı olduğu), **Pano** (durum dağılımı + yaklaşan/geciken kartları), **Günlük Hatırlatma** (açık görevi olan kişiye hazır WhatsApp mesajı + `navigator.clipboard` Kopyala; telefon `core/phone.js:formatPhone`), **Kişiler** (eski `taskPeople.js`'in yerini alır — İsim/E-posta(mailto)/Telefon/Açık Görev + ekle/düzenle/sil drawer). Üstte 5 KPI (toplam/başlamadı/devam/tamamlandı/geciken) + "+ Yeni Görev". Türetilen: `kalanGun = termin − bugün` (yerel), `gecikti = durum≠Tamamlandı && kalanGun<0`. **Yeni `Beklemede` durumu** eklendi (`TASK_STATUS_OPTIONS` + `ts.Beklemede` + `TaskValidator` inList; veride 0 kayıt, Pano'da 0 sayıyla görünür) — **migration gerekmedi** (`tasks.status` VARCHAR, ENUM değil; tüm alanlar `022_tasks`'ta mevcut). Öncelik select (`prio.*`: Yüksek/Orta/Düşük). **`taskPeople.js` silindi, `menu.task-people` menü öğesi kaldırıldı** (Kişiler sekmesi devraldı; `task-people` API/tablo/`tp.*` anahtarları duruyor — tasks + dashboard kullanıyor). Yeni `gt.*` + `prio.*` + `ts.Beklemede` anahtarları; `menu.tasks` → "Görev Takibi".
 - `mp.*` Üretim Planı (haftalık ızgara; gün kısaltmaları dile göre Pzt…/Mon…). bindLang ile canlı; seçili hafta korunur.
 - `sr.*` Satış Raporları (salt okunur; ay kısaltmaları dile göre). bindLang ile canlı; filtreler + son sonuç korunur, veri yeniden çekilmez. Sayı biçimi (tr-TR) korunur.
 - `db.*` Genel Bakış (eski sürüm — GET `/dashboard`; artık FE kullanmıyor, aşağıdaki `gb.*` sürümüyle değişti). Anahtarlar geriye dönük bırakıldı.

@@ -101,7 +101,14 @@ export const ORDER_STATUS_OPTIONS = [
 export const TASK_STATUS_OPTIONS = [
   { value: 'Başlamadı', label: 'Başlamadı' },
   { value: 'Devam Ediyor', label: 'Devam Ediyor' },
+  { value: 'Beklemede', label: 'Beklemede' },
   { value: 'Tamamlandı', label: 'Tamamlandı' }
+];
+// Görev önceliği — BE'de TR; ekranda prio.* ile gösterilir (kısıt yalnızca arayüzde).
+export const TASK_PRIORITY_OPTIONS = [
+  { value: 'Yüksek', label: 'Yüksek' },
+  { value: 'Orta', label: 'Orta' },
+  { value: 'Düşük', label: 'Düşük' }
 ];
 export const INSPECTION_RESULT_OPTIONS = [
   { value: '', label: '— Sonuç —' },
