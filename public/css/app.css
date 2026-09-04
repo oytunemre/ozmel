@@ -1075,3 +1075,43 @@ textarea.input { min-height: 84px; resize: vertical; }
 .gt-rem-msg { margin: 0; padding: 14px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.7; white-space: pre-wrap; color: var(--color-text); }
 
 @media (max-width: 1100px) { .gt-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .gt-board { grid-template-columns: 1fr; } }
+
+/* Günlük Kalite Raporları v2 — filtre çubuğu + sekmeler + Günlük Özet tablosu */
+.gkr-filter { background: var(--color-surface); border: 1px solid var(--color-neutral-400); padding: 12px 16px;
+  display: flex; align-items: flex-end; gap: 16px; flex-wrap: nowrap; overflow-x: auto; margin-bottom: 16px; }
+.gkr-f { flex: none; }
+.gkr-f label { display: block; font-size: 12px; color: var(--color-neutral-700); margin-bottom: 4px; }
+.gkr-f .input { height: 36px; }
+.gkr-f select.input { min-width: 160px; }
+.gkr-shift { display: flex; border: 1px solid var(--color-neutral-400); }
+.gkr-shift-btn { width: 40px; height: 36px; font-size: 14px; border: 0; border-left: 1px solid var(--color-neutral-400);
+  cursor: pointer; background: transparent; color: var(--color-text); font-family: var(--font-body); }
+.gkr-shift-btn:first-child { border-left: 0; }
+.gkr-shift-btn.on { background: var(--color-accent-900); color: #fff; font-weight: 500; }
+.gkr-summary { margin-left: auto; flex: none; font-size: 12px; color: var(--color-neutral-600); white-space: nowrap; }
+
+.gkr-tabs { display: flex; border-bottom: 1px solid var(--color-neutral-400); margin-bottom: 20px; }
+.gkr-tab { height: 40px; padding: 0 18px; font-size: 14px; cursor: pointer; background: transparent;
+  border: 1px solid var(--color-neutral-400); border-bottom: 0; border-left: 0; color: var(--color-neutral-600);
+  font-family: var(--font-body); margin-bottom: -1px; white-space: nowrap; }
+.gkr-tab:first-child { border-left: 1px solid var(--color-neutral-400); }
+.gkr-tab.on { background: var(--color-surface); color: var(--color-text); font-weight: 500; }
+
+.gkr-panel-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--color-neutral-300); display: flex; align-items: baseline; gap: 12px; }
+.gkr-panel-title { font-family: var(--font-heading); font-size: 19px; font-weight: 600; }
+.gkr-panel-sub { font-size: 13px; color: var(--color-neutral-600); }
+.gkr-tablewrap { overflow-x: auto; }
+.gkr-table { width: 100%; min-width: 1080px; border-collapse: collapse; font-size: 14px; }
+.gkr-table thead th { text-align: left; padding: 9px 18px; font-family: var(--font-mono); font-size: 10.5px;
+  letter-spacing: 0.12em; color: var(--color-neutral-700); font-weight: 500; background: var(--color-neutral-100);
+  border-bottom: 1px solid var(--color-neutral-300); white-space: nowrap; }
+.gkr-table th.gkr-num { text-align: right; }
+.gkr-table tbody td { padding: 10px 18px; border-bottom: 1px solid var(--color-neutral-200); vertical-align: middle; }
+.gkr-table td.gkr-num { text-align: right; }
+.gkr-table td.gkr-hours { font-size: 12.5px; color: var(--color-neutral-700); }
+.gkr-table tbody tr:hover { background: var(--color-accent-100); }
+.gkr-chip { display: inline-block; padding: 2px 8px; font-size: 12.5px; border: 1px solid; }
+.gkr-chip-success { border-color: var(--color-success); background: var(--color-success-fill); color: var(--color-success); }
+.gkr-chip-danger { border-color: var(--color-danger); background: var(--color-danger-fill); color: var(--color-danger); font-family: var(--font-mono); }
+.gkr-chip-neutral { border-color: var(--color-neutral-400); background: var(--color-neutral-100); color: var(--color-neutral-600); }
+.gkr-empty { padding: 40px 24px; text-align: center; color: var(--color-neutral-600); font-size: 14.5px; }

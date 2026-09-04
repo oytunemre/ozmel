@@ -16,7 +16,7 @@ const DICT = {
     // — menü —
     'menu.dashboard': 'Genel Bakış', 'menu.incoming-inspections': 'Giriş Kalite Kontrolleri',
     'menu.first-off-points': 'First-Off Noktaları', 'menu.first-off-records': 'First-Off Kayıtları',
-    'menu.sites': 'Tedarikçi & Site',
+    'menu.sites': 'Tedarikçi & Site', 'menu.gunluk-kalite': 'Günlük Kalite Raporları',
     'menu.hourly-points': 'Saatlik Noktalar', 'menu.hourly-records': 'Saatlik Kayıtlar',
     'menu.kalite-kontrol': 'Kalite Kontrol',
     'menu.work-centers': 'İş Merkezleri', 'menu.operations': 'Operasyonlar',
@@ -458,6 +458,16 @@ const DICT = {
     'gt.msgOverdue': '{n} gün gecikti', 'gt.msgRemaining': 'kalan {n} gün',
     'gt.peopleTitle': 'KİŞİLER', 'gt.peopleSub': 'Görev atanabilecek kişiler ve iletişim bilgileri', 'gt.newPerson': '+ Yeni Kişi',
     'gt.colName': 'İSİM', 'gt.colEmail': 'E-POSTA', 'gt.colPhone': 'TELEFON', 'gt.colOpen': 'AÇIK GÖREV',
+    // Günlük Kalite Raporları v2 (beş modül tek ekran — filtre + 4 sekme)
+    'gkr.subtitle': 'Siparişten bağımsız günlük kontroller — First Off, saatlik kontrol ve giriş kalite kontrolü',
+    'gkr.filterProduct': 'Ürün', 'gkr.filterOperation': 'Operasyon', 'gkr.shiftN': 'Vardiya {n}',
+    'gkr.tabSummary': 'Günlük Özet', 'gkr.tabFirstOff': 'First Off (İlk Parça)', 'gkr.tabHourly': 'Saatlik Kontrol', 'gkr.tabIncoming': 'Giriş Kalite Kontrol',
+    'gkr.summaryTitle': 'GÜNLÜK ÖZET', 'gkr.summarySub': '{date} — o gün fiilen kontrol edilen ürün / operasyonlar',
+    'gkr.colProduct': 'ÜRÜN', 'gkr.colOperation': 'OPERASYON', 'gkr.colFirstOff': 'FIRST OFF', 'gkr.colDecisions': 'KARAR DAĞILIMI',
+    'gkr.colHours': 'DOLU SAATLER', 'gkr.colMeasurements': 'SAATLİK ÖLÇÜM', 'gkr.colNonconf': 'UYGUNSUZ',
+    'gkr.decNone': 'First Off yok', 'gkr.decDist': '{ok} uygun · {bad} uygun değil',
+    'gkr.summaryEmpty': 'Bu tarihte hiçbir ürün / operasyon için kayıt girilmemiş.',
+    'gkr.soon': 'Bu bölüm bir sonraki adımda eklenecek.',
     // Tedarikçi & Site Yönetimi (basit CRUD — sıralanabilir tablo + drawer)
     'site.subtitle': '{sites} site · {countries} ülke · kolon başlığına tıklayarak sıralayın',
     'site.new': '+ Yeni Site', 'site.searchPlaceholder': 'Tedarikçi, sorumlu, ülke, site kodu…',
@@ -544,7 +554,7 @@ const DICT = {
     // — menu —
     'menu.dashboard': 'Dashboard', 'menu.incoming-inspections': 'Incoming Inspections',
     'menu.first-off-points': 'First-Off Points', 'menu.first-off-records': 'First-Off Records',
-    'menu.sites': 'Supplier & Site',
+    'menu.sites': 'Supplier & Site', 'menu.gunluk-kalite': 'Daily Quality Reports',
     'menu.hourly-points': 'Hourly Points', 'menu.hourly-records': 'Hourly Records',
     'menu.kalite-kontrol': 'Quality Control',
     'menu.work-centers': 'Work Centers', 'menu.operations': 'Operations',
@@ -986,6 +996,16 @@ const DICT = {
     'gt.msgOverdue': '{n} days overdue', 'gt.msgRemaining': '{n} days left',
     'gt.peopleTitle': 'PEOPLE', 'gt.peopleSub': 'People that tasks can be assigned to, with contact details', 'gt.newPerson': '+ New Person',
     'gt.colName': 'NAME', 'gt.colEmail': 'EMAIL', 'gt.colPhone': 'PHONE', 'gt.colOpen': 'OPEN TASKS',
+    // Daily Quality Reports v2 (five modules on one screen — filter + 4 tabs)
+    'gkr.subtitle': 'Order-independent daily checks — First Off, hourly control and incoming inspection',
+    'gkr.filterProduct': 'Product', 'gkr.filterOperation': 'Operation', 'gkr.shiftN': 'Shift {n}',
+    'gkr.tabSummary': 'Daily Summary', 'gkr.tabFirstOff': 'First Off', 'gkr.tabHourly': 'Hourly Control', 'gkr.tabIncoming': 'Incoming Inspection',
+    'gkr.summaryTitle': 'DAILY SUMMARY', 'gkr.summarySub': '{date} — products / operations actually checked that day',
+    'gkr.colProduct': 'PRODUCT', 'gkr.colOperation': 'OPERATION', 'gkr.colFirstOff': 'FIRST OFF', 'gkr.colDecisions': 'DECISIONS',
+    'gkr.colHours': 'FILLED HOURS', 'gkr.colMeasurements': 'HOURLY MEAS.', 'gkr.colNonconf': 'NONCONF.',
+    'gkr.decNone': 'No First Off', 'gkr.decDist': '{ok} pass · {bad} fail',
+    'gkr.summaryEmpty': 'No records entered for any product / operation on this date.',
+    'gkr.soon': 'This section will be added in the next step.',
     // Supplier & Site Management (simple CRUD — sortable table + drawer)
     'site.subtitle': '{sites} sites · {countries} countries · click a column header to sort',
     'site.new': '+ New Site', 'site.searchPlaceholder': 'Supplier, contact, country, site code…',
