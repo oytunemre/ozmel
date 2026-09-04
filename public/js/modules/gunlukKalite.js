@@ -31,10 +31,11 @@ const FIXED_HOURS = ['10:30', '12:00', '15:00', '18:00'];   // Saatlik sabit saa
 
 export async function viewGunlukKalite(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
-  let products, ops, foPoints, hrPoints, routes, foRecords, hrRecords;
+  let products, ops, centers, foPoints, hrPoints, routes, foRecords, hrRecords;
   try {
     products = await loadLookup('product-codes', mapProduct);
     ops = await loadLookup('operations', mapNamed);
+    centers = await loadLookup('work-centers', mapNamed);
     foPoints = (await resource('first-off-points').listAll()).data;
     hrPoints = (await resource('hourly-points').listAll()).data;
     routes = (await resource('routes').listAll()).data;
@@ -87,6 +88,18 @@ export async function viewGunlukKalite(container) {
   };
   const foToleransText = (pt) => pt.type === 'nitel' ? 'OK / NOK'
     : `${fmtMeasure(pt.lowerLimit)} … ${fmtMeasure(pt.upperLimit)}${pt.unit ? ' ' + pt.unit : ''}`;
+
+  // Saatlik: sabit saatler + (product, operation) için nokta tanımları + iş merkezi + taslak.
+  const hrApi = resource('hourly-records');
+  let saatlikDraft = {};   // { [hour]: { recId, updatedAt, personel, values:{[pointId]:[...]} } }
+  const hrPointsFor = (pid, opId) => hrPoints
+    .filter(p => p.productCodeId === pid && p.operationId === opId)
+    .sort((a, b) => a.id - b.id);
+  const workCenterFor = (pid, opId) => {
+    const rs = routes.filter(r => r.productCodeId === pid && r.operationId === opId);
+    const r = rs.find(x => x.isActive) || rs[0];
+    return r ? centers.label(r.workCenterId) : null;
+  };
 
   // Operasyon listesi — üç kademeli geri çekilme (v78 urunOperasyonlari):
   // 1) routes'ta o ürünün operasyonları (sequence sırası) · 2) yoksa first_off_points'teki
@@ -167,6 +180,7 @@ export async function viewGunlukKalite(container) {
       <div class="gkr-body">${
         tab === 'ozet' ? tabSummary()
         : tab === 'firstoff' ? tabFirstOff()
+        : tab === 'saatlik' ? tabHourly()
         : placeholder()
       }</div>`;
 
@@ -179,6 +193,7 @@ export async function viewGunlukKalite(container) {
     container.querySelectorAll('.gkr-tab').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; save(); render(); }));
 
     if (tab === 'firstoff') bindFirstOff();
+    if (tab === 'saatlik') bindHourly();
   }
 
   // ---- Sekme 1: Günlük Özet — o tarihte fiilen kayıt girilen ürün/operasyonlar ----
@@ -499,7 +514,145 @@ export async function viewGunlukKalite(container) {
     }
   }
 
-  // Adım 4/5'te doldurulacak sekmeler için geçici yer tutucu.
+  // ---- Sekme 3: Saatlik Kontrol — 4 saat bloğu, her biri kendi kaydı ----
+  function tabHourly() {
+    const pts = hrPointsFor(product, operation);
+    const wc = workCenterFor(product, operation);
+    // Taslağı mevcut kayıtlardan kur (seçili product/op/date/shift/hour eşleşmesi).
+    saatlikDraft = {};
+    for (const hour of FIXED_HOURS) {
+      const rec = hrRecords.find(r => r.productCodeId === product && r.operationId === operation
+        && r.date === date && r.shift === shift && r.hour === hour);
+      const values = {};
+      for (const m of (rec?.measurements || [])) values[m.pointId] = (m.values || []).map(v => v == null ? '' : v);
+      saatlikDraft[hour] = { recId: rec?.id ?? null, updatedAt: rec?.updatedAt ?? null, personel: rec?.personnelName || '', values };
+    }
+
+    const blocks = FIXED_HOURS.map(hour => hourBlockHTML(hour, pts)).join('');
+    return `
+      <div class="panel">
+        <div class="gkr-panel-head">
+          <span class="gkr-panel-title">${esc(t('gkr.saTitle'))}</span>
+          ${wc ? `<span class="gkr-wc" style="margin-left:auto;">${esc(wc)}</span>` : ''}
+        </div>
+        <div style="padding:18px; display:flex; flex-direction:column; gap:24px;">
+          ${pts.length ? blocks : `<div class="text-muted">${esc(t('gkr.saNoPoints'))}</div>`}
+        </div>
+      </div>`;
+  }
+
+  function hourBlockHTML(hour, pts) {
+    const draft = saatlikDraft[hour];
+    const sampleHead = Array.from({ length: SAMPLES }, (_, i) => `<th class="gkr-num" style="width:80px;">${i + 1}</th>`).join('');
+    const rows = pts.map(pt => {
+      const vals = draft.values[pt.id] || [];
+      const cells = Array.from({ length: SAMPLES }, (_, i) => {
+        const v = vals[i] == null ? '' : String(vals[i]);
+        if (pt.type === 'nitel') {
+          return `<td class="gkr-cell"><select class="gkr-scell" data-sa-cell="${hour}|${pt.id}|${i}">
+            <option value=""${v === '' ? ' selected' : ''}>—</option>
+            <option value="${PASS}"${v === PASS ? ' selected' : ''}>OK</option>
+            <option value="${FAIL}"${v === FAIL ? ' selected' : ''}>NOK</option></select></td>`;
+        }
+        return `<td class="gkr-cell"><input type="number" step="any" class="gkr-scell mono" data-sa-cell="${hour}|${pt.id}|${i}" value="${esc(v)}"></td>`;
+      }).join('');
+      return `
+        <tr>
+          <td>${esc(pt.measureLocation)}</td>
+          <td class="mono text-muted">${esc(foToleransText(pt))}</td>
+          ${cells}
+          <td id="sa-res-${cssId(hour)}-${pt.id}">${foResultChip(pt, vals)}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+      <div class="gkr-hblock" data-sa-block="${hour}">
+        <div class="gkr-hblock-head">
+          <span class="gkr-hblock-hour">${esc(hour)}</span>
+          <input type="text" class="input gkr-hblock-personel" data-sa-personel="${hour}" value="${esc(draft.personel)}" placeholder="${esc(t('gkr.saPersonnel'))}">
+          <span class="gkr-chip" id="sa-badge-${cssId(hour)}"></span>
+          ${canWrite ? `<button class="btn btn-primary btn-sm" data-sa-save="${hour}">${esc(t('action.save'))}</button>` : ''}
+        </div>
+        <div class="gkr-tablewrap" style="margin-top:10px;">
+          <table class="gkr-table gkr-fo-grid" style="min-width:880px;">
+            <thead><tr><th style="min-width:200px;">${esc(t('gkr.saLocation'))}</th><th style="width:140px;">${esc(t('gkr.saNominal'))}</th>${sampleHead}<th style="width:140px;">${esc(t('gkr.foResult'))}</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  // Bir saat bloğu için hücre renkleri + satır sonuçları + durum rozetini günceller.
+  function hourRecompute(hour, pts) {
+    const draft = saatlikDraft[hour];
+    let dolu = 0, bad = 0;
+    for (const pt of pts) {
+      const vals = draft.values[pt.id] || [];
+      for (let i = 0; i < SAMPLES; i++) {
+        const cell = container.querySelector(`[data-sa-cell="${hour}|${pt.id}|${i}"]`);
+        if (cell) { const b = foSampleBad(pt, vals[i]); cell.style.borderColor = b ? 'var(--color-danger)' : ''; cell.style.background = b ? 'var(--color-danger-fill)' : ''; }
+      }
+      const r = foPointResult(pt, vals); dolu += r.dolu; bad += r.bad;
+      const res = container.querySelector(`#sa-res-${cssId(hour)}-${pt.id}`);
+      if (res) res.innerHTML = foResultChip(pt, vals);
+    }
+    const badge = container.querySelector(`#sa-badge-${cssId(hour)}`);
+    if (badge) {
+      let txt, cls;
+      if (dolu === 0) { txt = t('gkr.saNoRecord'); cls = 'gkr-chip-neutral'; }
+      else if (bad > 0) { txt = t('gkr.saSomeBad', { bad, total: dolu }); cls = 'gkr-chip-danger'; }
+      else { txt = t('gkr.saAllOk', { n: dolu }); cls = 'gkr-chip-success'; }
+      badge.textContent = txt;
+      badge.className = 'gkr-chip ' + cls;
+    }
+  }
+
+  function bindHourly() {
+    const pts = hrPointsFor(product, operation);
+    for (const hour of FIXED_HOURS) hourRecompute(hour, pts);
+
+    container.querySelectorAll('[data-sa-personel]').forEach(inp => inp.addEventListener('input', () => {
+      saatlikDraft[inp.dataset.saPersonel].personel = inp.value;
+    }));
+    container.querySelectorAll('[data-sa-cell]').forEach(cell => {
+      const [hour, pid, i] = cell.dataset.saCell.split('|');
+      const ev = cell.tagName === 'SELECT' ? 'change' : 'input';
+      cell.addEventListener(ev, () => {
+        const d = saatlikDraft[hour];
+        if (!d.values[pid]) d.values[pid] = [];
+        d.values[pid][Number(i)] = cell.value;
+        hourRecompute(hour, pts);
+      });
+    });
+    if (canWrite) container.querySelectorAll('[data-sa-save]').forEach(b =>
+      b.addEventListener('click', () => saveHourBlock(b.dataset.saSave, b)));
+  }
+
+  async function saveHourBlock(hour, btn) {
+    const pts = hrPointsFor(product, operation);
+    const d = saatlikDraft[hour];
+    const payload = {
+      productCodeId: product, operationId: operation, date, shift, hour,
+      personnelName: d.personel || null,
+      measurements: pts.map(pt => ({ pointId: pt.id, values: Array.from({ length: SAMPLES }, (_, i) => (d.values[pt.id] || [])[i] ?? '') })),
+    };
+    if (btn) btn.disabled = true;
+    try {
+      if (d.recId) await hrApi.update(d.recId, { ...payload, updatedAt: d.updatedAt });
+      else await hrApi.create(payload);
+      toast(t('toast.saved'), 'success');
+      hrRecords = (await hrApi.listAll()).data;
+      render();
+    } catch (err) {
+      if (btn) btn.disabled = false;
+      toast(err.message || t('err.GENERIC'), 'danger');
+    }
+  }
+
+  // Saat metni CSS id'de kullanılamaz (":") — güvenli anahtar.
+  function cssId(hour) { return String(hour).replace(/[^0-9]/g, ''); }
+
+  // Adım 5'te doldurulacak sekme için geçici yer tutucu.
   function placeholder() {
     return `<div class="panel"><div class="text-muted" style="padding:40px 24px; text-align:center;">${esc(t('gkr.soon'))}</div></div>`;
   }

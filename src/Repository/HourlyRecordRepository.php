@@ -96,7 +96,7 @@ final class HourlyRecordRepository extends BaseRepository
     public function measurementsFor(int $recordId): array
     {
         $stmt = $this->pdo()->prepare(
-            "SELECT point_id, sequence, value FROM `{$this->measurementsTable()}`
+            "SELECT point_id, sequence, value, result FROM `{$this->measurementsTable()}`
               WHERE record_id = :r AND tenant_id = :t
               ORDER BY point_id, sequence"
         );
@@ -115,7 +115,7 @@ final class HourlyRecordRepository extends BaseRepository
         }
         $ph = implode(',', array_fill(0, count($recordIds), '?'));
         $stmt = $this->pdo()->prepare(
-            "SELECT record_id, point_id, sequence, value FROM `{$this->measurementsTable()}`
+            "SELECT record_id, point_id, sequence, value, result FROM `{$this->measurementsTable()}`
               WHERE tenant_id = ? AND record_id IN ($ph)
               ORDER BY point_id, sequence"
         );
@@ -127,6 +127,7 @@ final class HourlyRecordRepository extends BaseRepository
                 'point_id' => (int) $r['point_id'],
                 'sequence' => (int) $r['sequence'],
                 'value'    => $r['value'],
+                'result'   => $r['result'],
             ];
         }
         return $out;
@@ -148,18 +149,19 @@ final class HourlyRecordRepository extends BaseRepository
         }
         $ins = $this->pdo()->prepare(
             "INSERT INTO `{$this->measurementsTable()}`
-                (tenant_id, record_id, point_id, sequence, value, created_by, updated_by)
-             VALUES (:t, :r, :p, :s, :v, :cb, :ub)"
+                (tenant_id, record_id, point_id, sequence, value, result, created_by, updated_by)
+             VALUES (:t, :r, :p, :s, :v, :res, :cb, :ub)"
         );
         foreach ($measurements as $m) {
             $ins->execute([
-                't'  => $this->ctx->tenantId,
-                'r'  => $recordId,
-                'p'  => $m['point_id'],
-                's'  => $m['sequence'],
-                'v'  => $m['value'],
-                'cb' => $this->ctx->userId,
-                'ub' => $this->ctx->userId,
+                't'   => $this->ctx->tenantId,
+                'r'   => $recordId,
+                'p'   => $m['point_id'],
+                's'   => $m['sequence'],
+                'v'   => $m['value'],
+                'res' => $m['result'] ?? null,
+                'cb'  => $this->ctx->userId,
+                'ub'  => $this->ctx->userId,
             ]);
         }
     }

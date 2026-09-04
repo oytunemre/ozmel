@@ -112,10 +112,14 @@ final class HourlyRecord
             $values = is_array($m['values'] ?? null) ? $m['values'] : [];
             $seq = 0;
             foreach ($values as $v) {
+                // Numune ölçüsel ise value, nitel (OK/NOK -> 'Uygun'/'Uygun Değil') ise result.
+                $empty   = $v === null || (is_string($v) && trim($v) === '');
+                $numeric = !$empty && is_numeric($v);
                 $rows[] = [
                     'point_id' => $pointId,
                     'sequence' => $seq++,
-                    'value'    => ($v === null || (is_string($v) && trim($v) === '')) ? null : (float) $v,
+                    'value'    => $numeric ? (float) $v : null,
+                    'result'   => (!$empty && !$numeric) ? trim((string) $v) : null,
                 ];
             }
         }
@@ -134,7 +138,9 @@ final class HourlyRecord
             if (!isset($byPoint[$pid])) {
                 $byPoint[$pid] = ['pointId' => $pid, 'values' => []];
             }
-            $byPoint[$pid]['values'][] = $r['value'] !== null ? (float) $r['value'] : null;
+            // Ölçüsel -> sayı, nitel -> result metni (karışık dizi; First Off ile aynı).
+            $byPoint[$pid]['values'][] = $r['value'] !== null ? (float) $r['value']
+                : (($r['result'] ?? null) !== null ? (string) $r['result'] : null);
         }
         return array_values($byPoint);
     }

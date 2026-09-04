@@ -480,6 +480,10 @@ const DICT = {
     'gkr.foNote': 'Not', 'gkr.foNotePlaceholder': 'Varsa açıklama',
     'gkr.foAutoDecision': 'İLK PARÇA KARARI (OTOMATİK)', 'gkr.foNonconf': '{n} uygunsuz',
     'gkr.foDecisionNote': 'İlk Parça Kararı elle seçilmez — girilen ölçümlere göre otomatik hesaplanır (herhangi bir numune tolerans dışıysa "Uygun Değil" olur).',
+    // Saatlik Kontrol sekmesi
+    'gkr.saTitle': 'SAATLİK KONTROL', 'gkr.saNoPoints': 'Bu ürün/operasyon için tanımlı saatlik nokta yok.',
+    'gkr.saPersonnel': 'Personel adı', 'gkr.saLocation': 'ÖLÇÜM YERİ', 'gkr.saNominal': 'NOMİNAL',
+    'gkr.saNoRecord': 'kayıt yok', 'gkr.saAllOk': '{n} ölçüm · uygun', 'gkr.saSomeBad': '{bad} uygunsuz / {total} ölçüm',
     // Tedarikçi & Site Yönetimi (basit CRUD — sıralanabilir tablo + drawer)
     'site.subtitle': '{sites} site · {countries} ülke · kolon başlığına tıklayarak sıralayın',
     'site.new': '+ Yeni Site', 'site.searchPlaceholder': 'Tedarikçi, sorumlu, ülke, site kodu…',
@@ -1030,6 +1034,10 @@ const DICT = {
     'gkr.foNote': 'Note', 'gkr.foNotePlaceholder': 'Optional note',
     'gkr.foAutoDecision': 'FIRST PART DECISION (AUTOMATIC)', 'gkr.foNonconf': '{n} nonconforming',
     'gkr.foDecisionNote': 'The First Part decision is not chosen manually — it is computed from the entered measurements (if any sample is out of tolerance it becomes "Uygun Değil").',
+    // Hourly Control tab
+    'gkr.saTitle': 'HOURLY CONTROL', 'gkr.saNoPoints': 'No hourly points defined for this product/operation.',
+    'gkr.saPersonnel': 'Personnel name', 'gkr.saLocation': 'MEASURE LOCATION', 'gkr.saNominal': 'NOMINAL',
+    'gkr.saNoRecord': 'no record', 'gkr.saAllOk': '{n} measurements · pass', 'gkr.saSomeBad': '{bad} nonconf / {total} meas.',
     // Supplier & Site Management (simple CRUD — sortable table + drawer)
     'site.subtitle': '{sites} sites · {countries} countries · click a column header to sort',
     'site.new': '+ New Site', 'site.searchPlaceholder': 'Supplier, contact, country, site code…',
