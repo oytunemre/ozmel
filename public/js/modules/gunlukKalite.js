@@ -16,6 +16,7 @@ import { loadLookup, mapProduct, mapNamed, outOfTolerance, fmtMeasure, FIRST_OFF
 import { t, bindLang } from '../core/i18n.js';
 import { fmtDateTR, fmtTr } from '../core/format.js';
 import { fmtISO, startOfDay } from '../core/report.js';
+import { viewIncomingInspections } from './incomingInspections.js';   // Giriş Kalite sekmesi — mevcut modül yeniden kullanılır (taşındı)
 
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 const SAMPLES = 6;   // "İlk 6 Parça" — sabit numune sütunu (tasarım)
@@ -181,6 +182,7 @@ export async function viewGunlukKalite(container) {
         tab === 'ozet' ? tabSummary()
         : tab === 'firstoff' ? tabFirstOff()
         : tab === 'saatlik' ? tabHourly()
+        : tab === 'giris' ? '<div id="gkr-giris"></div>'
         : placeholder()
       }</div>`;
 
@@ -194,6 +196,13 @@ export async function viewGunlukKalite(container) {
 
     if (tab === 'firstoff') bindFirstOff();
     if (tab === 'saatlik') bindHourly();
+    // Giriş Kalite: mevcut modülü alt kaba göm (iç içe karakteristik editörü korunur).
+    // Bu sekmede operasyon filtresi gizli; tarih filtresi görünür ama gömülü modül
+    // kendi listesini/aramasını yönetir (bkz. teslim notu).
+    if (tab === 'giris') {
+      const mount = container.querySelector('#gkr-giris');
+      if (mount) viewIncomingInspections(mount);
+    }
   }
 
   // ---- Sekme 1: Günlük Özet — o tarihte fiilen kayıt girilen ürün/operasyonlar ----

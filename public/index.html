@@ -109,13 +109,13 @@
       ['general', [['dashboard', 'dashboard.js', 'viewDashboard']]],
       ['supplierQuality', [
         ['sites', 'tedarikciSite.js', 'viewTedarikciSite'],
-        ['incoming-inspections', 'incomingInspections.js', 'viewIncomingInspections'],
-        ['first-off-points', 'firstOffPoints.js', 'viewFirstOffPoints'],
-        ['first-off-records', 'firstOffRecords.js', 'viewFirstOffRecords'],
-        ['hourly-points', 'hourlyPoints.js', 'viewHourlyPoints'],
-        ['hourly-records', 'hourlyRecords.js', 'viewHourlyRecords'],
         ['gunluk-kalite', 'gunlukKalite.js', 'viewGunlukKalite'],
         ['kalite-kontrol', 'kaliteKontrol.js', 'viewKaliteKontrol'],
+        // Nokta tanımları geçici olarak menüde kalıyor — sekme-içi "Kontrol Noktaları"
+        // drawer'ı eklenince (sonraki adım) kaldırılacak. Kayıt/kontrol ekranları
+        // (Giriş Kalite, First-Off Kayıtları, Saatlik Kayıtlar) Günlük Kalite'ye taşındı.
+        ['first-off-points', 'firstOffPoints.js', 'viewFirstOffPoints'],
+        ['hourly-points', 'hourlyPoints.js', 'viewHourlyPoints'],
       ]],
       ['production', [
         ['work-centers', 'workCenters.js', 'viewWorkCenters'],
@@ -246,7 +246,7 @@
           <div class="state-msg">${err && err.message ? err.message : err}</div></div>`;
       };
       try {
-        const mod = await import(`./js/modules/${m.file}?v=63`);
+        const mod = await import(`./js/modules/${m.file}?v=64`);
         // view fonksiyonu async — hatası sessiz kalmasın, ekranda göster.
         // params (ör. {id}) çapraz bağlantı odağı için modüle geçilir.
         const p = mod[m.fn](content, params);
