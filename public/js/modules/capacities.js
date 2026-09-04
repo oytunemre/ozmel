@@ -15,6 +15,7 @@ import { confirmDialog, errorState, esc } from '../core/states.js';
 import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
 import { t, bindLang } from '../core/i18n.js';
 import { collapsiblePanel } from '../core/collapsible.js';
+import { createCapacityHelpers, groupBySeq } from '../core/bottleneck.js';
 
 const capApi = resource('capacities');
 const routesApi = resource('routes');
@@ -57,78 +58,17 @@ export async function viewCapacities(container, params) {
     else if (products.byId.has(Number(focusCapId))) SELECTED_PRODUCT = Number(focusCapId);
   }
 
+  // Kapasite çözümleme/darboğaz/uyarılar ortak yardımcıdan (core/bottleneck.js). caps/routes
+  // getirici geçilir — reload() bunları yeniden atadığında yardımcı güncel veriyi okur.
+  const { getCapacity, productBottleneck, computeDataWarnings } =
+    createCapacityHelpers({ caps: () => caps, routes: () => routes, wh, products, ops, centers, t });
+
   render();
   bindLang(container, render);
-
-  // --- kapasite çözümleme (referans getCapacity: operasyon tam eşleşme, yoksa operasyonsuz) ---
-  function getCapacity(productId, wcId, opId) {
-    let rec = null;
-    if (opId != null) rec = caps.find(c => c.productCodeId === productId && c.workCenterId === wcId && c.operationId === opId);
-    if (!rec) rec = caps.find(c => c.productCodeId === productId && c.workCenterId === wcId && c.operationId == null) || null;
-    if (!rec) return null;
-    let capacity = rec.capacityPerShift;
-    // Dakika/adet girilmişse kapasite HER ZAMAN o anki çalışma saatlerinden canlı hesaplanır.
-    if (rec.minutes) {
-      const o = csOzet(wh);
-      if (o && o.total > 0 && rec.minutes > 0) capacity = Math.floor(o.total / rec.minutes);
-    }
-    return { ...rec, capacity };
-  }
 
   // Bir adımın kapasitesini düzenlemek için GERÇEK kayıt (operasyon tam eşleşme; canlı kopya değil).
   function exactCap(productId, wcId, opId) {
     return caps.find(c => c.productCodeId === productId && c.workCenterId === wcId && c.operationId === opId) || null;
-  }
-
-  function productBottleneck(productId) {
-    const bySeq = groupBySeq(routes.filter(r => r.productCodeId === productId));
-    let bottleneck = null;
-    const missing = [];
-    for (const [seq, group] of bySeq) {
-      const active = group.find(g => g.isActive) || group[0];
-      const cap = getCapacity(productId, active.workCenterId, active.operationId);
-      if (!cap) { missing.push({ seq, active }); continue; }
-      if (bottleneck === null || cap.capacity < bottleneck.capacity) {
-        bottleneck = { seq, workCenterId: active.workCenterId, operationId: active.operationId, capacity: cap.capacity };
-      }
-    }
-    return { bottleneck, missing, stepCount: bySeq.size };
-  }
-
-  function computeDataWarnings() {
-    const warnings = [];
-    // duplicate: aynı (ürün, iş merkezi, operasyon) için >1 kayıt
-    const seen = new Map();
-    for (const c of caps) {
-      const k = `${c.productCodeId}|${c.workCenterId}|${c.operationId ?? ''}`;
-      if (!seen.has(k)) seen.set(k, []);
-      seen.get(k).push(c);
-    }
-    for (const list of seen.values()) {
-      if (list.length > 1) {
-        const c0 = list[0];
-        warnings.push({ type: 'duplicate', productCodeId: c0.productCodeId,
-          msg: t('cap.warnDuplicateMsg', { product: products.label(c0.productCodeId), wc: centers.label(c0.workCenterId), n: list.length }) });
-      }
-    }
-    // orphan: kapasite var ama o iş merkezini/operasyonu kullanan rota adımı yok
-    for (const c of caps) {
-      const used = routes.some(r => r.productCodeId === c.productCodeId && r.workCenterId === c.workCenterId
-        && (c.operationId == null || r.operationId === c.operationId));
-      if (!used) {
-        const opTxt = c.operationId != null ? ` (${ops.label(c.operationId)})` : '';
-        warnings.push({ type: 'orphan', productCodeId: c.productCodeId, capId: c.id,
-          msg: t('cap.warnOrphanMsg', { product: products.label(c.productCodeId), wc: centers.label(c.workCenterId), op: opTxt }) });
-      }
-    }
-    // missing: rota adımı var ama kapasitesi tanımsız
-    for (const r of routes) {
-      if (getCapacity(r.productCodeId, r.workCenterId, r.operationId)) continue;
-      const activeTxt = r.isActive ? t('cap.activeSuffix') : '';
-      warnings.push({ type: 'missing', productCodeId: r.productCodeId,
-        msg: t('cap.warnMissingMsg', { product: products.label(r.productCodeId), wc: centers.label(r.workCenterId), op: ops.label(r.operationId), active: activeTxt }) });
-    }
-    return warnings;
   }
 
   // Makine Durumu: açık (Aktif) iş emirlerinden, kalan>0 olanlar iş merkezine göre.
@@ -589,13 +529,7 @@ export async function viewCapacities(container, params) {
 }
 
 // --- modül düzeyi saf yardımcılar ---
-
-// sequence -> [routes], sayısal sıraya göre.
-function groupBySeq(rows) {
-  const m = new Map();
-  for (const r of rows) { if (!m.has(r.sequence)) m.set(r.sequence, []); m.get(r.sequence).push(r); }
-  return new Map([...m.entries()].sort((a, b) => a[0] - b[0]));
-}
+// (groupBySeq artık core/bottleneck.js'ten; getCapacity/productBottleneck/computeDataWarnings de.)
 
 // Çalışma saati özeti: günlük net dakika (referans csOzet). "HH:MM" -> dakika.
 function toMin(hhmm) {

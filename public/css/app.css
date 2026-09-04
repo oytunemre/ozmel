@@ -943,3 +943,52 @@ textarea.input { min-height: 84px; resize: vertical; }
 .kk-nitel-pass.on { background: var(--color-accent); border-color: var(--color-accent-700); color: #fff; font-weight: 500; }
 .kk-nitel-fail.on { background: var(--color-danger); border-color: var(--color-danger); color: #fff; font-weight: 500; }
 .kk-num:disabled, .kk-nitel-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Genel Bakış v2 — 5 KPI + geciken görev tablosu + darboğaz listesi + MRP özeti */
+.gb-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px; margin-bottom: 20px; }
+.gb-kpi { background: var(--color-surface); border: 1px solid var(--color-neutral-400); border-top: 3px solid var(--color-accent-500); padding: 15px 16px 17px; }
+.gb-kpi-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.13em; color: var(--color-neutral-600); }
+.gb-kpi-value { font-family: var(--font-heading); font-size: 40px; font-weight: 600; line-height: 1.05; margin-top: 8px; }
+.gb-kpi-sub { font-size: 13px; color: var(--color-neutral-700); margin-top: 4px; }
+
+.gb-panel { margin-bottom: 20px; }
+.gb-panel-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--color-neutral-300); display: flex; align-items: baseline; gap: 12px; }
+.gb-panel-title { font-family: var(--font-heading); font-size: 19px; font-weight: 600; }
+.gb-panel-sub { font-size: 13px; color: var(--color-neutral-600); }
+.gb-badge-bad { flex: none; padding: 2px 8px; font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--color-danger); background: var(--color-danger-fill); color: var(--color-danger); }
+.gb-note { padding: 10px 18px 14px; font-size: 12.5px; color: var(--color-neutral-600); }
+
+.gb-tablewrap { overflow-x: auto; }
+.gb-table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 14px; }
+.gb-table thead th { text-align: left; padding: 9px 18px; font-family: var(--font-mono); font-size: 10.5px;
+  letter-spacing: 0.12em; color: var(--color-neutral-700); font-weight: 500; background: var(--color-neutral-100);
+  border-bottom: 1px solid var(--color-neutral-300); }
+.gb-table th.gb-c-who, .gb-table th.gb-c-due { width: 130px; }
+.gb-table th.gb-c-delay { width: 110px; text-align: right; }
+.gb-table tbody td { padding: 10px 18px; border-bottom: 1px solid var(--color-neutral-200); }
+.gb-table td.gb-c-who, .gb-table td.gb-c-due { font-family: var(--font-mono); font-size: 13px; }
+.gb-table td.gb-c-delay { text-align: right; }
+.gb-table tbody tr:hover { background: var(--color-accent-100); }
+
+.gb-bn-body { padding: 14px 18px 8px; display: flex; flex-direction: column; gap: 10px; }
+.gb-bn-row { display: grid; grid-template-columns: 160px minmax(0, 1fr) 240px 70px; gap: 14px; align-items: center; }
+.gb-bn-code { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gb-bn-station { font-size: 12.5px; color: var(--color-neutral-600); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gb-bn-cap { font-size: 13px; text-align: right; }
+.gb-bar { display: block; height: 12px; background: var(--color-neutral-200); position: relative; }
+.gb-bar > i { position: absolute; left: 0; top: 0; bottom: 0; }
+
+.gb-mrp { padding: 16px 18px 18px; display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; }
+.gb-mrp-nums { display: flex; flex-direction: column; gap: 14px; }
+.gb-mrp-lbl { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.13em; color: var(--color-neutral-600); }
+.gb-mrp-val { font-family: var(--font-heading); font-size: 30px; font-weight: 600; line-height: 1.1; margin-top: 3px; }
+.gb-mrp-list { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.gb-risk-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) 200px 60px; gap: 14px; align-items: center; }
+.gb-risk-row > a { font-size: 13px; }
+.gb-risk-reason { font-size: 12.5px; color: var(--color-neutral-600); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gb-risk-pct { font-size: 13px; text-align: right; }
+
+@media (max-width: 1100px) {
+  .gb-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gb-mrp { grid-template-columns: 1fr; }
+}
