@@ -102,6 +102,8 @@ $repo = [
     'purchase_requests' => new App\Repository\PurchaseRequestRepository($ctx),
     'purchase_receipts' => new App\Repository\PurchaseReceiptRepository($ctx),
     'incoming_inspections' => new App\Repository\IncomingInspectionRepository($ctx),
+    'control_plans'        => new App\Repository\ControlPlanRepository($ctx),
+    'quality_measurements' => new App\Repository\QualityMeasurementRepository($ctx),
 ];
 
 // --- deger yardimcilari ------------------------------------------------------
@@ -822,6 +824,60 @@ $runCollection('incoming_inspections', $D['girisKaliteKontrolleri'] ?? [], funct
         ];
     }
     $repo['incoming_inspections']->updateWithChildren($inspId, [], $chars, null);
+    return $res['action'];
+});
+
+// --- Kalite Kontrol: kontrolPlani -> control_plans, kaliteOlcumleri -> quality_measurements
+// operasyon/isMerkezi MEVCUT kayitlara eslenir; yoksa NULL (oto-olusturma YOK — rota disi
+// "Hammadde Kabul" gibi degerler operasyon tablosunu kirletmesin). numuneAdedi cogunlukla
+// serbest metin ("FR-09 Ölçüm Frekans Tablosu") -> sample_size VARCHAR, $str ile alinir.
+$opByName = $repo['operations']->etlMapBy('name');
+$wcByName = $repo['work_centers']->etlMapBy('name');
+$runCollection('control_plans', $D['kontrolPlani'] ?? [], function (array $r)
+        use ($repo, &$idMap, $str, $num, $resolveProduct, $opByName, $wcByName): string {
+    $opName = $str($r['operasyon'] ?? null);
+    $wcName = $str($r['isMerkezi'] ?? null);
+    $res = $repo['control_plans']->etlUpsert($str($r['id'] ?? null), [
+        'product_code_id'   => $resolveProduct($str($r['urun'] ?? null)),
+        'sequence_label'    => $str($r['sira'] ?? null),
+        'operation_id'      => $opName !== null ? ($opByName[$opName] ?? null) : null,
+        'operation_label'   => $opName,   // ham metin — rota disi degerlerde grup basligi icin
+        'work_center_id'    => $wcName !== null ? ($wcByName[$wcName] ?? null) : null,
+        'characteristic'    => $str($r['karakteristik'] ?? null) ?? '',
+        'specification_raw' => $str($r['spesifikasyonRaw'] ?? null),
+        'type'              => $str($r['tip'] ?? null) ?? 'olcusel',
+        'lower_limit'       => $num($r['altLimit'] ?? null),
+        'upper_limit'       => $num($r['ustLimit'] ?? null),
+        'nominal'           => $num($r['nominal'] ?? null),
+        'unit'              => $str($r['birim'] ?? null),
+        'measure_method'    => $str($r['olcumYontemi'] ?? null),
+        'sample_size'       => $str($r['numuneAdedi'] ?? null),
+        'check_frequency'   => $str($r['kontrolSikligi'] ?? null),
+        'record_form'       => $str($r['kayitForm'] ?? null),
+        'action_on_fail'    => $str($r['aksiyon'] ?? null),
+    ]);
+    $idMap['control_plans'][$r['id']] = $res['id'];
+    return $res['action'];
+});
+
+$runCollection('quality_measurements', $D['kaliteOlcumleri'] ?? [], function (array $r)
+        use ($repo, &$idMap, $str, $num): string {
+    $orderLegacy = $str($r['orderId'] ?? null);
+    $planLegacy  = $str($r['kontrolPlaniId'] ?? null);
+    $orderId = $orderLegacy !== null ? ($idMap['orders'][$orderLegacy] ?? null) : null;
+    $planId  = $planLegacy  !== null ? ($idMap['control_plans'][$planLegacy] ?? null) : null;
+    if ($orderId === null) throw new EtlSkip("siparis cozulemedi: $orderLegacy");
+    if ($planId === null)  throw new EtlSkip("kontrol plani maddesi cozulemedi: $planLegacy");
+    $res = $repo['quality_measurements']->etlUpsert($str($r['id'] ?? null), [
+        'order_id'        => $orderId,
+        'control_plan_id' => $planId,
+        'measured_at'     => $str($r['tarih'] ?? null),
+        'shift'           => $str($r['vardiya'] ?? null),
+        'value'           => $num($r['deger'] ?? null),
+        'result'          => $str($r['sonuc'] ?? null),
+        'operator'        => $str($r['operator'] ?? null),
+        'note'            => $str($r['not'] ?? null),
+    ]);
     return $res['action'];
 });
 

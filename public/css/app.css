@@ -883,3 +883,63 @@ textarea.input { min-height: 84px; resize: vertical; }
 .stok-stage-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 10px; }
 .stok-stage-lbl { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--color-neutral-600); }
 .stok-stage-val { font-size: 20px; margin-top: 3px; }
+
+/* Kalite Kontrol — sol sipariş listesi + sağ plan maddeleri (ölçüsel kumpas + nitel butonlar) */
+.kk-head { align-items: flex-end; }
+.kk-shift { display: flex; align-items: center; gap: 10px; }
+.kk-shift-lbl { font-size: 13.5px; color: var(--color-neutral-600); }
+.kk-shift-seg { display: flex; border: 1px solid var(--color-neutral-400); }
+.kk-shift-btn { width: 42px; height: 38px; font-size: 14px; border: 0; border-left: 1px solid var(--color-neutral-400);
+  cursor: pointer; background: transparent; color: var(--color-text); font-family: var(--font-body); }
+.kk-shift-btn:first-child { border-left: 0; }
+.kk-shift-btn.on { background: var(--color-accent-900); color: #fff; font-weight: 500; }
+
+.kk-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; align-items: start; }
+.kk-orders { overflow: hidden; }
+.kk-orders-head, .kk-items-head { background: var(--color-neutral-100); }
+.kk-orders-head { padding: 10px 14px; border-bottom: 1px solid var(--color-neutral-300);
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.12em; color: var(--color-neutral-700); }
+.kk-orders-body { max-height: 620px; overflow-y: auto; }
+.kk-ord { padding: 12px 14px; border-bottom: 1px solid var(--color-neutral-200); cursor: pointer; border-left: 3px solid transparent; }
+.kk-ord:hover { background: var(--color-accent-100); }
+.kk-ord.on { background: var(--color-accent-100); border-left-color: var(--color-accent); }
+.kk-ord-code { font-size: 13.5px; font-weight: 500; }
+.kk-ord-meta { font-size: 12.5px; color: var(--color-neutral-600); margin-top: 2px; }
+.kk-ord-prog { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.kk-ord-prog .mono { font-family: var(--font-mono); font-size: 12px; color: var(--color-neutral-700); }
+.kk-badge-bad { padding: 1px 6px; font-size: 11.5px; border: 1px solid var(--color-danger); background: var(--color-danger-fill); color: var(--color-danger); }
+
+.kk-items { min-width: 0; }
+.kk-items-head { padding: 14px 20px 12px; border-bottom: 1px solid var(--color-neutral-300); display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.kk-h-code { font-size: 17px; font-weight: 500; }
+.kk-h-name { font-size: 13.5px; color: var(--color-neutral-600); }
+.kk-h-order { font-family: var(--font-mono); font-size: 12.5px; }
+.kk-h-sum { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--color-neutral-600); }
+.kk-items-body { padding: 4px 20px 24px; }
+.kk-group { padding-top: 18px; }
+.kk-group-head { font-family: var(--font-heading); font-size: 15px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--color-neutral-700); padding-bottom: 7px; border-bottom: 1px solid var(--color-neutral-300); }
+.kk-item { display: flex; align-items: center; gap: 18px; padding: 11px 0; border-bottom: 1px solid var(--color-neutral-200); }
+.kk-item-info { flex: 1; min-width: 180px; }
+.kk-item-char { font-size: 14px; font-weight: 500; }
+.kk-item-spec { font-size: 12.5px; color: var(--color-neutral-600); margin-top: 2px; }
+
+.kk-olcusel { flex: none; display: flex; align-items: center; gap: 12px; }
+.kk-num { width: 104px; height: 38px; padding: 0 10px; font-size: 14px; border: 1px solid var(--color-neutral-400);
+  background: #fff; color: var(--color-text); text-align: right; }
+.kk-bar { display: block; position: relative; width: 140px; height: 26px; }
+.kk-bar-track { position: absolute; left: 0; right: 0; top: 12px; height: 2px; background: var(--color-neutral-300); }
+.kk-bar-nominal { position: absolute; top: 5px; height: 16px; width: 1px; background: var(--color-neutral-600); }
+.kk-bar-marker { position: absolute; top: 3px; height: 20px; width: 3px; transform: translateX(-1px); }
+.kk-res-wrap { flex: none; width: 104px; font-size: 13px; }
+.kk-res { display: inline-block; padding: 2px 8px; border: 1px solid; }
+.kk-res-pass { border-color: var(--color-success); background: var(--color-success-fill); color: var(--color-success); }
+.kk-res-fail { border-color: var(--color-danger); background: var(--color-danger-fill); color: var(--color-danger); }
+.kk-res-none { border-color: transparent; color: var(--color-neutral-500); }
+
+.kk-nitel { flex: none; display: flex; align-items: center; gap: 8px; width: 262px; justify-content: flex-end; }
+.kk-nitel-btn { height: 38px; padding: 0 16px; font-size: 14px; cursor: pointer; border: 1px solid var(--color-neutral-400);
+  background: transparent; color: var(--color-text); font-family: var(--font-body); }
+.kk-nitel-pass.on { background: var(--color-accent); border-color: var(--color-accent-700); color: #fff; font-weight: 500; }
+.kk-nitel-fail.on { background: var(--color-danger); border-color: var(--color-danger); color: #fff; font-weight: 500; }
+.kk-num:disabled, .kk-nitel-btn:disabled { opacity: 0.6; cursor: not-allowed; }
