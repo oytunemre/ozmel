@@ -992,3 +992,20 @@ textarea.input { min-height: 84px; resize: vertical; }
   .gb-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gb-mrp { grid-template-columns: 1fr; }
 }
+
+/* Tedarikçi & Site Yönetimi — sıralanabilir tablo (kolon başlığı tıklanır) + iki satırlı SQE/SQM */
+.site-tablewrap { border: 1px solid var(--color-neutral-400); background: var(--color-surface); overflow-x: auto; }
+.site-table { width: 100%; min-width: 1120px; border-collapse: collapse; font-size: 14px; }
+.site-table thead th { text-align: left; padding: 9px 14px; font-family: var(--font-mono); font-size: 10.5px;
+  letter-spacing: 0.12em; color: var(--color-neutral-700); font-weight: 500; background: var(--color-neutral-100);
+  border-bottom: 1px solid var(--color-neutral-300); white-space: nowrap; position: sticky; top: 0; }
+.site-table th.site-th { cursor: pointer; }
+.site-table th.site-th:hover { color: var(--color-accent-800); }
+.site-table th.site-th.on { color: var(--color-accent-800); }
+.site-table tbody td { padding: 10px 14px; border-bottom: 1px solid var(--color-neutral-200); vertical-align: top; }
+.site-table td.site-c-supplier { font-weight: 500; }
+.site-table tbody tr:hover { background: var(--color-accent-100); }
+.site-mail { font-family: var(--font-mono); font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
+.site-c-actions { white-space: nowrap; }
+.site-acts { display: flex; gap: 8px; justify-content: flex-end; }
+.site-empty { padding: 44px 24px; text-align: center; color: var(--color-neutral-600); font-size: 14.5px; }

@@ -71,6 +71,7 @@ $routes = [
     'hourly-points' => App\Controller\HourlyPointController::class,
     'hourly-records' => App\Controller\HourlyRecordController::class,
     'incoming-inspections' => App\Controller\IncomingInspectionController::class,
+    'sites'         => App\Controller\SiteController::class,
     'control-plans' => App\Controller\ControlPlanController::class,
     'quality-measurements' => App\Controller\QualityMeasurementController::class,
     'audits'        => App\Controller\AuditController::class,

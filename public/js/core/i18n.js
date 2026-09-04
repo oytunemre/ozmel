@@ -16,6 +16,7 @@ const DICT = {
     // — menü —
     'menu.dashboard': 'Genel Bakış', 'menu.incoming-inspections': 'Giriş Kalite Kontrolleri',
     'menu.first-off-points': 'First-Off Noktaları', 'menu.first-off-records': 'First-Off Kayıtları',
+    'menu.sites': 'Tedarikçi & Site',
     'menu.hourly-points': 'Saatlik Noktalar', 'menu.hourly-records': 'Saatlik Kayıtlar',
     'menu.kalite-kontrol': 'Kalite Kontrol',
     'menu.work-centers': 'İş Merkezleri', 'menu.operations': 'Operasyonlar',
@@ -432,6 +433,17 @@ const DICT = {
     'gb.mrpSub': 'Termin riski taşıyan siparişler — ilerleme / hedef',
     'gb.riskBehind': 'Termin gerisinde — {n} gün', 'gb.riskCapacity': 'Kapasite yetersiz', 'gb.riskMaterial': 'Hammadde eksiği',
     'gb.noRisk': 'Termin riski taşıyan sipariş yok.',
+    // Tedarikçi & Site Yönetimi (basit CRUD — sıralanabilir tablo + drawer)
+    'site.subtitle': '{sites} site · {countries} ülke · kolon başlığına tıklayarak sıralayın',
+    'site.new': '+ Yeni Site', 'site.searchPlaceholder': 'Tedarikçi, sorumlu, ülke, site kodu…',
+    'site.counter': '{shown} / {total} kayıt',
+    'site.colSupplier': 'TEDARİKÇİ', 'site.colTrigoRE': 'TRİGO RE', 'site.colSqe': 'SQE', 'site.colSqm': 'SQM',
+    'site.colCountry': 'ÜLKE', 'site.colCity': 'ŞEHİR', 'site.colCode': 'SİTE KODU',
+    'site.noResults': 'Arama sonucu bulunamadı.', 'site.empty': 'Henüz site eklenmemiş. "Yeni Site" ile başlayın.',
+    'site.newTitle': 'Yeni Site', 'site.editTitle': 'Site Düzenle',
+    'site.deleteTitle': 'Site silinsin mi?', 'site.deleteBody': '"{name}" silinecek.',
+    'site.supplier': 'Tedarikçi', 'site.trigoRE': 'Trigo RE', 'site.sqe': 'SQE', 'site.sqeEmail': 'SQE E-posta',
+    'site.sqm': 'SQM', 'site.sqmEmail': 'SQM E-posta', 'site.country': 'Ülke', 'site.city': 'Şehir', 'site.siteCode': 'Site Kodu',
     // Stok Durumu (salt görüntüleme — hammadde net stoğu + sipariş bazında WIP)
     'stok.subtitle': 'Hammadde net stoğu ve sipariş bazında üretim akışı (WIP)',
     'stok.rawTitle': 'Hammadde Stok Durumu',
@@ -507,6 +519,7 @@ const DICT = {
     // — menu —
     'menu.dashboard': 'Dashboard', 'menu.incoming-inspections': 'Incoming Inspections',
     'menu.first-off-points': 'First-Off Points', 'menu.first-off-records': 'First-Off Records',
+    'menu.sites': 'Supplier & Site',
     'menu.hourly-points': 'Hourly Points', 'menu.hourly-records': 'Hourly Records',
     'menu.kalite-kontrol': 'Quality Control',
     'menu.work-centers': 'Work Centers', 'menu.operations': 'Operations',
@@ -923,6 +936,17 @@ const DICT = {
     'gb.mrpSub': 'Orders at delivery risk — progress / target',
     'gb.riskBehind': 'Behind schedule — {n} days', 'gb.riskCapacity': 'Insufficient capacity', 'gb.riskMaterial': 'Material shortage',
     'gb.noRisk': 'No orders at delivery risk.',
+    // Supplier & Site Management (simple CRUD — sortable table + drawer)
+    'site.subtitle': '{sites} sites · {countries} countries · click a column header to sort',
+    'site.new': '+ New Site', 'site.searchPlaceholder': 'Supplier, contact, country, site code…',
+    'site.counter': '{shown} / {total} records',
+    'site.colSupplier': 'SUPPLIER', 'site.colTrigoRE': 'TRIGO RE', 'site.colSqe': 'SQE', 'site.colSqm': 'SQM',
+    'site.colCountry': 'COUNTRY', 'site.colCity': 'CITY', 'site.colCode': 'SITE CODE',
+    'site.noResults': 'No results found.', 'site.empty': 'No sites yet. Start with "New Site".',
+    'site.newTitle': 'New Site', 'site.editTitle': 'Edit Site',
+    'site.deleteTitle': 'Delete this site?', 'site.deleteBody': '"{name}" will be deleted.',
+    'site.supplier': 'Supplier', 'site.trigoRE': 'Trigo RE', 'site.sqe': 'SQE', 'site.sqeEmail': 'SQE Email',
+    'site.sqm': 'SQM', 'site.sqmEmail': 'SQM Email', 'site.country': 'Country', 'site.city': 'City', 'site.siteCode': 'Site Code',
     // Stock Status (read-only — raw material net stock + per-order WIP)
     'stok.subtitle': 'Raw material net stock and per-order production flow (WIP)',
     'stok.rawTitle': 'Raw Material Stock Status',

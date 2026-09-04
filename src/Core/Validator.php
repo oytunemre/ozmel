@@ -89,6 +89,16 @@ class Validator
         return $this;
     }
 
+    /** E-posta bicimi. Bos ('' / null) gecerlidir — zorunluluk ayri kontrol edilir. */
+    public function email(array $data, string $field, string $label): static
+    {
+        if (isset($data[$field]) && trim((string) $data[$field]) !== ''
+            && !filter_var(trim((string) $data[$field]), FILTER_VALIDATE_EMAIL)) {
+            $this->errors[$field] = "$label gecerli bir e-posta olmali";
+        }
+        return $this;
+    }
+
     /** @param list<string> $allowed */
     public function inList(array $data, string $field, array $allowed, string $label): static
     {

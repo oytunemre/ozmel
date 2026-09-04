@@ -104,6 +104,7 @@ $repo = [
     'incoming_inspections' => new App\Repository\IncomingInspectionRepository($ctx),
     'control_plans'        => new App\Repository\ControlPlanRepository($ctx),
     'quality_measurements' => new App\Repository\QualityMeasurementRepository($ctx),
+    'sites'                => new App\Repository\SiteRepository($ctx),
 ];
 
 // --- deger yardimcilari ------------------------------------------------------
@@ -877,6 +878,23 @@ $runCollection('quality_measurements', $D['kaliteOlcumleri'] ?? [], function (ar
         'result'          => $str($r['sonuc'] ?? null),
         'operator'        => $str($r['operator'] ?? null),
         'note'            => $str($r['not'] ?? null),
+    ]);
+    return $res['action'];
+});
+
+// --- Tedarikci & Site: sites -> sites (dogrudan camelCase -> snake_case) ---
+$runCollection('sites', $D['sites'] ?? [], function (array $r)
+        use ($repo, $str): string {
+    $res = $repo['sites']->etlUpsert($str($r['id'] ?? null), [
+        'supplier'  => $str($r['supplier'] ?? null) ?? '',
+        'trigo_re'  => $str($r['trigoRE'] ?? null),
+        'sqe'       => $str($r['sqe'] ?? null),
+        'sqe_email' => $str($r['sqeEmail'] ?? null),
+        'sqm'       => $str($r['sqm'] ?? null),
+        'sqm_email' => $str($r['sqmEmail'] ?? null),
+        'country'   => $str($r['country'] ?? null),
+        'city'      => $str($r['city'] ?? null),
+        'site_code' => $str($r['siteCode'] ?? null),
     ]);
     return $res['action'];
 });
