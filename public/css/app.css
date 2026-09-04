@@ -829,3 +829,57 @@ textarea.input { min-height: 84px; resize: vertical; }
 .pano-day-pct { font-family: var(--font-mono); font-size: 13px; margin-top: 6px; }
 
 .pano-foot { font-size: 13px; color: var(--color-neutral-600); text-align: center; padding-top: 4px; }
+
+/* Stok Durumu — hammadde tablosu (iki satırlı hücreler) + WIP aşama zinciri (numaralı) */
+.stok-panel { margin-bottom: 22px; }
+.stok-panel-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--color-neutral-300); }
+.stok-panel-title { font-family: var(--font-heading); font-size: 20px; font-weight: 600; }
+.stok-panel-sub { font-size: 13px; color: var(--color-neutral-600); margin-top: 2px; }
+.stok-tablewrap { overflow-x: auto; }
+.stok-table { width: 100%; min-width: 1180px; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
+.stok-table thead th { text-align: left; padding: 9px 14px; font-family: var(--font-mono); font-size: 10.5px;
+  letter-spacing: 0.12em; color: var(--color-neutral-700); font-weight: 500; background: var(--color-neutral-100);
+  border-bottom: 1px solid var(--color-neutral-300); }
+.stok-table th.stok-c-prod { width: 200px; padding-left: 18px; }
+.stok-table th.stok-num { text-align: right; width: 150px; }
+.stok-table th:nth-child(2) { width: 140px; }
+.stok-table th:nth-child(6) { width: 120px; }
+.stok-table tbody td { padding: 11px 14px; border-bottom: 1px solid var(--color-neutral-200); vertical-align: top; white-space: nowrap; }
+.stok-table td.stok-c-prod { padding-left: 18px; }
+.stok-table td.stok-num { text-align: right; }
+.stok-table td.stok-orders { padding-right: 18px; font-size: 12.5px; color: var(--color-neutral-600); white-space: normal; }
+.stok-table tbody tr:hover { background: var(--color-accent-100); }
+.stok-table .mono { font-family: var(--font-mono); font-size: 13px; }
+.stok-sub { font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
+.stok-ellip { overflow: hidden; text-overflow: ellipsis; }
+.stok-badge { display: inline-block; padding: 2px 7px; font-size: 12px; border: 1px solid; }
+.stok-badge-danger { border-color: var(--color-danger); background: var(--color-danger-fill); color: var(--color-danger); }
+.stok-badge-warning { border-color: var(--color-warning); background: var(--color-warning-fill); color: var(--color-warning); }
+
+.stok-wip-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; color: var(--color-neutral-600); margin: 6px 0 12px; }
+.stok-wip { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; align-items: start; }
+.stok-ordlist { overflow: hidden; }
+.stok-ordlist-head { padding: 10px 14px; border-bottom: 1px solid var(--color-neutral-300); background: var(--color-neutral-100);
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.12em; color: var(--color-neutral-700); }
+.stok-ordlist-body { max-height: 460px; overflow-y: auto; }
+.stok-ord { padding: 11px 14px; border-bottom: 1px solid var(--color-neutral-200); cursor: pointer; border-left: 3px solid transparent; }
+.stok-ord:hover { background: var(--color-accent-100); }
+.stok-ord.on { background: var(--color-accent-100); border-left-color: var(--color-accent); }
+.stok-ord-no { font-size: 13.5px; font-weight: 500; }
+.stok-ord-meta { font-size: 12.5px; color: var(--color-neutral-600); margin-top: 2px; }
+.stok-stages { min-width: 0; }
+.stok-stages-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--color-neutral-300); display: flex; align-items: baseline; gap: 12px; }
+.stok-stages-code { font-size: 16px; font-weight: 500; }
+.stok-stages-sub { font-size: 13px; color: var(--color-neutral-600); }
+.stok-stages-body { padding: 6px 18px 18px; }
+.stok-stage { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; }
+.stok-stage-mark { display: flex; flex-direction: column; align-items: center; padding-top: 14px; }
+.stok-stage-num { width: 30px; height: 30px; flex: none; display: grid; place-items: center; font-family: var(--font-mono); font-size: 13px; border: 1px solid; }
+.stok-stage-line { flex: 1; width: 1px; background: var(--color-neutral-300); min-height: 18px; }
+.stok-stage-body { padding: 14px 0; border-bottom: 1px solid var(--color-neutral-200); min-width: 0; }
+.stok-stage-titlerow { display: flex; align-items: baseline; gap: 10px; }
+.stok-stage-name { font-family: var(--font-heading); font-size: 20px; font-weight: 600; }
+.stok-stage-note { font-size: 12.5px; color: var(--color-neutral-600); }
+.stok-stage-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 10px; }
+.stok-stage-lbl { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--color-neutral-600); }
+.stok-stage-val { font-size: 20px; margin-top: 3px; }
