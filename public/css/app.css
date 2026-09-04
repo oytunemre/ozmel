@@ -25,6 +25,11 @@
   --color-warning: #b3801a; --color-warning-fill: #f6ecd9;
   --color-danger:  #a33a32; --color-danger-fill:  #f5e2e0;
 
+  /* Üretim Panosu (TV) — eşik tonları AYRI: iyi/orta arası 30 puan, uzaktan daha az kırmızı */
+  --pano-iyi: #3f7a44; --pano-iyi-zemin: #e4efe4;
+  --pano-orta: #b3801a; --pano-orta-zemin: #f6ecd9;
+  --pano-kotu: #a33a32; --pano-kotu-zemin: #f5e2e0;
+
   --font-heading: "Barlow Condensed", system-ui, sans-serif;
   --font-body: "Barlow", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -774,3 +779,53 @@ textarea.input { min-height: 84px; resize: vertical; }
 .rep-empty h3 { font-family: var(--font-heading); font-size: 26px; font-weight: 600; text-transform: uppercase; margin: 0; }
 .rep-empty p { margin: 0; font-size: 14.5px; color: var(--color-neutral-700); max-width: 52ch; line-height: 1.6; }
 .rep-empty .acts { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; justify-content: center; }
+
+/* Üretim Panosu (TV) — salt görüntüleme, otomatik yenilenen. Tipografi uzaktan
+   okunacak kadar büyük (başlık 46 / KPI 58 / kart 44 px). Renkler dinamik → satır içi. */
+.pano-root { display: flex; flex-direction: column; gap: 26px; background: var(--color-surface); }
+.pano-root:fullscreen { padding: 30px 34px 34px; overflow-y: auto; }
+
+.pano-head { display: flex; align-items: flex-start; gap: 24px;
+  border-bottom: 1px solid var(--color-neutral-400); padding-bottom: 20px; }
+.pano-title { font-family: var(--font-heading); font-size: 46px; font-weight: 600; line-height: 1; }
+.pano-date { font-size: 19px; color: var(--color-neutral-600); margin-top: 6px; }
+.pano-head-right { margin-left: auto; flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.pano-clock { font-family: var(--font-mono); font-size: 40px; font-weight: 500; line-height: 1; letter-spacing: 0.02em; }
+.pano-fs { height: 36px; padding: 0 16px; font-size: 14px; background: transparent;
+  border: 1px solid var(--color-neutral-400); color: var(--color-text); cursor: pointer; font-family: var(--font-body); }
+.pano-fs:hover { background: var(--color-accent-100); border-color: var(--color-accent-500); }
+
+.pano-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+.pano-kpi { border: 1px solid var(--color-neutral-400); border-top: 3px solid var(--color-accent-500); padding: 18px 20px 20px; }
+.pano-kpi-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; color: var(--color-neutral-600); }
+.pano-kpi-value { font-family: var(--font-heading); font-size: 58px; font-weight: 600; line-height: 1; margin-top: 10px; }
+.pano-kpi-sub { font-size: 14px; color: var(--color-neutral-700); margin-top: 6px; }
+
+.pano-empty { border: 1px solid var(--color-neutral-400); padding: 64px 24px; text-align: center; }
+.pano-empty-title { font-family: var(--font-heading); font-size: 30px; font-weight: 600; }
+.pano-empty-sub { font-size: 16px; color: var(--color-neutral-700); margin-top: 8px; }
+
+.pano-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
+.pano-card { border: 1px solid var(--color-neutral-400); padding: 18px 20px 20px; }
+.pano-card-top { display: flex; align-items: baseline; gap: 12px; }
+.pano-card-name { font-family: var(--font-heading); font-size: 25px; font-weight: 600; min-width: 0; }
+.pano-card-pct { margin-left: auto; flex: none; font-family: var(--font-mono); font-size: 16px; }
+.pano-card-sub { font-size: 14.5px; color: var(--color-neutral-600); margin-top: 3px; font-family: var(--font-mono); }
+.pano-card-nums { display: flex; align-items: baseline; gap: 8px; margin-top: 14px; }
+.pano-card-actual { font-family: var(--font-heading); font-size: 44px; font-weight: 600; line-height: 1; }
+.pano-card-target { font-size: 20px; color: var(--color-neutral-600); }
+.pano-card-down { margin-left: auto; flex: none; font-family: var(--font-mono); font-size: 13px; padding: 3px 8px;
+  border: 1px solid var(--pano-kotu); background: var(--pano-kotu-zemin); color: var(--pano-kotu); }
+.pano-bar { display: block; height: 12px; background: var(--color-neutral-200); margin-top: 14px; position: relative; }
+.pano-bar > i { position: absolute; left: 0; top: 0; bottom: 0; }
+
+.pano-week-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; color: var(--color-neutral-600); margin-bottom: 12px; }
+.pano-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; }
+.pano-day { border: 1px solid var(--color-neutral-400); padding: 14px 12px; text-align: center; }
+.pano-day-name { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; color: var(--color-neutral-600); }
+.pano-day-date { font-family: var(--font-mono); font-size: 13px; color: var(--color-neutral-700); margin-top: 3px; }
+.pano-day-nums { font-family: var(--font-heading); font-size: 28px; font-weight: 600; margin-top: 10px; line-height: 1; }
+.pano-day-nums small { font-size: 16px; font-weight: 500; color: var(--color-neutral-600); }
+.pano-day-pct { font-family: var(--font-mono); font-size: 13px; margin-top: 6px; }
+
+.pano-foot { font-size: 13px; color: var(--color-neutral-600); text-align: center; padding-top: 4px; }
