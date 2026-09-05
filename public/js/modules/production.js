@@ -7,7 +7,7 @@
 import { resource, ValidationError, ApiError } from '../core/api.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
-import { errorState, esc } from '../core/states.js';
+import { errorState, esc, confirmDialog } from '../core/states.js';
 import { loadLookup, mapProduct } from '../core/lookups.js';
 import { t, bindLang } from '../core/i18n.js';
 
@@ -124,11 +124,36 @@ export async function viewProduction(container) {
       clearErrors();
       const body = {};
       for (const k in F) body[k] = F[k].read ? F[k].read() : F[k].inp.value;
+      // Mükerrer kayıt koruması: aynı (iş emri, tarih, vardiya, operatör) beşlisi tekildir
+      // (migration 042). Operatör doluysa mevcut kaydı bul; varsa üzerine yazmadan ÖNCE onay
+      // iste (v78 sessizce yazıyordu — operatör yanlış vardiya seçtiyse veri kaybı riski).
+      // Operatörsüz kayıt tekil kısıta girmez → her zaman yeni satır (kontrol atlanır).
+      const hasOp = body.operatorId != null && body.operatorId !== '';
+      const dup = hasOp
+        ? entries.find(e => Number(e.workOrderId) === Number(body.workOrderId) && e.date === body.date
+            && e.shift === body.shift && Number(e.operatorId) === Number(body.operatorId))
+        : null;
+      if (dup) {
+        const ok = await confirmDialog({
+          title: t('prod.dupTitle'),
+          body: t('prod.dupBody', { date: fmtDateTr(body.date), shift: t('shift.' + body.shift), n: dup.actualQuantity }),
+          confirmLabel: t('action.overwrite')
+        });
+        if (!ok) return;
+      }
       saveBtn.disabled = true; saveBtn.textContent = t('action.saving');
       try {
-        const { data } = await api.create(body);
-        toast(t('prod.savedToast', { n: data.actualQuantity, s: data.scrapQuantity }), 'success');
-        entries.unshift(data);
+        let data;
+        if (dup) {
+          ({ data } = await api.update(dup.id, { ...body, updatedAt: dup.updatedAt }));
+          const i = entries.findIndex(e => e.id === dup.id);
+          if (i >= 0) entries[i] = data; else entries.unshift(data);
+          toast(t('prod.overwritten', { n: data.actualQuantity, s: data.scrapQuantity }), 'success');
+        } else {
+          ({ data } = await api.create(body));
+          entries.unshift(data);
+          toast(t('prod.savedToast', { n: data.actualQuantity, s: data.scrapQuantity }), 'success');
+        }
         reset();
         renderToday();
         const tgt = woTarget.get(data.workOrderId); const done = producedByWo().get(data.workOrderId) || 0;
@@ -162,6 +187,7 @@ export async function viewProduction(container) {
 
 // --- küçük DOM yardımcıları ---
 function todayStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function fmtDateTr(iso) { const p = String(iso || '').split('-'); return p.length === 3 ? `${p[2]}.${p[1]}.${p[0]}` : (iso || ''); }
 function div(cls) { const n = document.createElement('div'); if (cls) n.className = cls; return n; }
 function errSpan(fieldEl) { const s = document.createElement('span'); s.className = 'field-error'; s.style.display = 'none'; fieldEl.appendChild(s); return s; }
 function field(label, controlEl, req) {
