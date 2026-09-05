@@ -154,7 +154,8 @@ export async function viewSatisSiparisleri(container, params) {
     const inp = container.querySelector('#ss-search');
     inp.addEventListener('input', () => { search = inp.value; paint(); });
     container.querySelector('#ss-new').addEventListener('click', () => { if (canWrite) openForm(null); });
-    container.querySelectorAll('.ss-filter').forEach(b => b.addEventListener('click', () => { filter = b.dataset.f; paint(); }));
+    // Filtre değişince TAM yeniden çiz — düğmelerin .on sınıfı da tazelensin (arama değeri korunur).
+    container.querySelectorAll('.ss-filter').forEach(b => b.addEventListener('click', () => { filter = b.dataset.f; render(); }));
     paint();
   }
 
