@@ -334,23 +334,26 @@ export async function viewSatisSiparisleri(container, params) {
           return (await api.update(row.id, v)).data;
         }
         // Yeni satış siparişi: source='satis', takip no üret, başlangıç durumu.
-        const payload = { ...v, source: 'satis', status: statuses[0] || 'Hammadde Bekleniyor', orderNo: nextOrderNo() };
+        const payload = { ...v, source: 'satis', status: statuses[0] || 'Hammadde Bekleniyor', orderNo: makeOrderNo(v.salesOrderNo) };
         return (await api.create(payload)).data;
       },
       onSaved: async () => { toast(t('ss.saved'), 'success'); orders = (await api.listAll()).data.filter(o => o.source === 'satis'); render(); },
     });
   }
 
-  // Takip no (order_no) üretici: SIP-<yıl>-<sıra>. Çakışırsa BE 409 döner; kullanıcı yeniden dener.
-  function nextOrderNo() {
+  // Takip no (order_no): mevcut veri deseni SP-<yıl>-<müşteri PO no> (ör. SP-2026-50500).
+  // Son kısım satisSiparisNo (müşterinin PO'su), sıra değil. PO boşsa sıra numarasına düşer.
+  // Çakışırsa BE 409 döner; kullanıcı yeniden dener.
+  function makeOrderNo(salesNo) {
     const year = new Date().getFullYear();
-    const prefix = `SIP-${year}-`;
+    const po = String(salesNo || '').trim();
+    if (po) return `SP-${year}-${po}`;
     let max = 0;
     for (const o of orders) {
-      const m = String(o.orderNo || '').match(new RegExp('^SIP-' + year + '-(\\d+)$'));
+      const m = String(o.orderNo || '').match(new RegExp('^SP-' + year + '-(\\d+)$'));
       if (m) max = Math.max(max, parseInt(m[1], 10));
     }
-    return prefix + String(max + 1).padStart(4, '0');
+    return `SP-${year}-${String(max + 1).padStart(4, '0')}`;
   }
 }
 
