@@ -50,6 +50,20 @@ if ($ETL_DRYRUN) {
 echo " &nbsp;|&nbsp; dosya: " . htmlspecialchars((string) $ETL_FILE, ENT_QUOTES, 'UTF-8') . "</div>";
 echo "<pre style='white-space:pre-wrap;word-break:break-word'>";
 
+// Fatal gorunurlugu: ob_start callback'i bir fatal error olunca tamponu YUTAR ve
+// ekran BOS kalir (or. eksik sutun → "Unknown column"). Shutdown'da son hatayi
+// tamponlari bosaltip ham yuzeye cikaririz — sessiz-bos bir daha olmasin.
+@ini_set('display_errors', '1');
+error_reporting(E_ALL);
+register_shutdown_function(static function (): void {
+    $e = error_get_last();
+    if ($e !== null && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        while (ob_get_level() > 0) { @ob_end_flush(); }
+        echo "\n\n!!! FATAL: " . htmlspecialchars($e['message'], ENT_QUOTES, 'UTF-8')
+            . "\n    @ " . htmlspecialchars($e['file'], ENT_QUOTES, 'UTF-8') . ':' . $e['line'] . "\n";
+    }
+});
+
 // etl.php duz metin basar + sonda exit() cagirir. Ciktiyi tampon callback'inden
 // gecirerek HTML-escape ederiz; exit'te tampon bu callback ile bosaltilir.
 // (<pre> ve baslik ob_start'tan ONCE basildigi icin ham kalir; dogru.)
