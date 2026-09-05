@@ -44,6 +44,8 @@ $parts   = $path === '' ? [] : explode('/', $path);
 $resource = $parts[0] ?? '';
 $id       = isset($parts[1]) && ctype_digit($parts[1]) ? (int) $parts[1] : null;
 $op       = strtolower($_GET['op'] ?? '');
+// Sayisal olmayan alt-yol (or. work-orders/batch) — kaynaga ozgu toplu islemler icin.
+$sub      = (isset($parts[1]) && !ctype_digit($parts[1])) ? strtolower($parts[1]) : '';
 
 if ($resource === '') {
     Response::ok(null, ['service' => 'ozmel-api', 'version' => 2]);
@@ -127,6 +129,13 @@ try {
     }
 
     if ($method === 'POST') {
+        // Toplu islem (or. POST work-orders/batch) — tek transaction, hepsi ya da hicbiri.
+        if ($sub === 'batch' && $id === null) {
+            if (!method_exists($controller, 'batch')) {
+                Response::fail(400, 'Bu kaynak toplu islemi desteklemiyor');
+            }
+            $controller->batch($input);
+        }
         if ($op === 'sil' && $id !== null) {
             $controller->destroy($id);
         }

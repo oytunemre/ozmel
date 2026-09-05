@@ -24,7 +24,6 @@ import { estimateCompletion } from '../core/eta.js';
 import { createCapacityHelpers } from '../core/bottleneck.js';
 
 const api = resource('orders');
-const woApi = resource('work-orders');
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 const DAY_MS = 86400000;
 const daysBetween = (a, b) => Math.round((startOfDay(b) - startOfDay(a)) / DAY_MS);
@@ -401,22 +400,18 @@ export async function viewOrders(container, params) {
           });
         });
       }
-      const created = [];
+      // Tek transaction (POST work-orders/batch) — hepsi ya da hiçbiri (BE Db::transaction).
+      const items = plan.map(w => ({
+        orderId: order.id, productCodeId: order.productCodeId, woNo: w.woNo, operationId: w.operationId,
+        workCenterId: w.workCenterId, sequence: w.sequence, targetQuantity: w.targetQuantity, status: 'Aktif', splitLabel: w.splitLabel,
+      }));
       try {
-        for (const w of plan) {
-          const { data } = await woApi.create({
-            orderId: order.id, productCodeId: order.productCodeId, woNo: w.woNo, operationId: w.operationId,
-            workCenterId: w.workCenterId, sequence: w.sequence, targetQuantity: w.targetQuantity, status: 'Aktif', splitLabel: w.splitLabel,
-          });
-          created.push(data.id);
-        }
+        await request('/work-orders/batch', { method: 'POST', body: { items } });
         toast(t('uo.opened', { n: plan.length }), 'success');
         close();
         await reload();
         focusRow(order.id);
       } catch (err) {
-        // Telafi: açılanları geri sil (hepsi ya da hiçbiri).
-        for (const id of created.reverse()) { try { await woApi.remove(id); } catch {} }
         saveBtn.disabled = false;
         toast((err && err.message) || t('err.GENERIC'), 'danger');
       }

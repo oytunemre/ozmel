@@ -113,6 +113,45 @@ final class WorkOrderController
         Response::ok(['id' => $id]);
     }
 
+    /**
+     * POST work-orders/batch — birden çok iş emrini TEK transaction'da açar (hepsi ya da hiçbiri).
+     * Govde: { items: [ {woNo, orderId, productCodeId, operationId, workCenterId, sequence,
+     * targetQuantity, status, splitLabel}, ... ] }. Bir öge doğrulamadan geçmezse ya da
+     * benzersizlik ihlali olursa HİÇBİRİ yazılmaz.
+     */
+    public function batch(array $input): never
+    {
+        $this->requireEditor();
+
+        $items = $input['items'] ?? null;
+        if (!is_array($items) || $items === []) {
+            Response::fail(400, 'items bos');
+        }
+
+        $rows = [];
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                Response::fail(400, 'Gecersiz is emri ogesi');
+            }
+            $v = (new WorkOrderValidator())->validate($item, isCreate: true);
+            if ($v->fails()) {
+                Response::invalid($v->errors());
+            }
+            $rows[] = WorkOrder::toColumns($item);
+        }
+
+        try {
+            $ids = $this->repo->createBatch($rows);
+        } catch (\PDOException $e) {
+            if (($e->errorInfo[1] ?? null) === 1062) {
+                Response::invalid(['woNo' => 'Bu is emri no altinda bu urun zaten var']);
+            }
+            throw $e;
+        }
+
+        Response::created(array_map(fn(int $id): array => WorkOrder::fromRow($this->repo->find($id)), $ids));
+    }
+
     private function requireEditor(): void
     {
         if (!$this->ctx->isEditor()) {

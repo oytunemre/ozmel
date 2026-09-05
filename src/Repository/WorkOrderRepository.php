@@ -49,4 +49,21 @@ final class WorkOrderRepository extends BaseRepository
     {
         return Db::transaction(fn(): bool => parent::delete($id));
     }
+
+    /**
+     * Birden çok iş emrini TEK transaction'da açar — hepsi ya da hiçbiri.
+     * Bir kayıt (benzersizlik/FK/NOT NULL) patlarsa tamamı geri alınır.
+     * @param list<array> $itemsCols her biri WorkOrder::toColumns çıktısı
+     * @return list<int> oluşturulan id'ler
+     */
+    public function createBatch(array $itemsCols): array
+    {
+        return Db::transaction(function () use ($itemsCols): array {
+            $ids = [];
+            foreach ($itemsCols as $cols) {
+                $ids[] = $this->create($cols);
+            }
+            return $ids;
+        });
+    }
 }
