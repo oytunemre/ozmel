@@ -105,6 +105,7 @@ $repo = [
     'control_plans'        => new App\Repository\ControlPlanRepository($ctx),
     'quality_measurements' => new App\Repository\QualityMeasurementRepository($ctx),
     'sites'                => new App\Repository\SiteRepository($ctx),
+    'downtime_reasons'     => new App\Repository\DowntimeReasonRepository($ctx),
 ];
 
 // --- deger yardimcilari ------------------------------------------------------
@@ -581,22 +582,53 @@ $runCollection('work_orders', $D['workorders'] ?? [], function (array $r)
     return $res['action'];
 });
 
+// --- Durus nedenleri: ONCE migration 035 TOHUM kayitlarini temizle (yalniz o adlar +
+// legacy_id NULL; FK'li olan korunur), sonra gercek listeyi legacy_id ile upsert et.
+// production'dan ONCE gelir ki durusNedeni ADI id'ye cozulebilsin.
+$downtimeSeedNames = ['Malzeme bekleme', 'Kalıp değişimi', 'Mekanik arıza', 'Ölçü ayarı', 'Vardiya devri'];
+$downtimeSeedCleanup = ['deleted' => 0, 'kept' => 0];
+if ($stoppedAt === null) {
+    $downtimeSeedCleanup = $repo['downtime_reasons']->etlDeleteSeeds($downtimeSeedNames);
+}
+
+if ($stoppedAt === null)
+$runCollection('downtime_reasons', $D['durusNedenleri'] ?? [], function (array $r)
+        use ($repo, $str): string {
+    // v1 ad alani: 'ad' / 'neden' / 'isim' / 'name' varyantlari denenir.
+    $name = $str($r['ad'] ?? $r['neden'] ?? $r['isim'] ?? $r['name'] ?? null);
+    if ($name === null) throw new EtlSkip('durus nedeni adi bos');
+    $active = array_key_exists('aktif', $r) ? ($r['aktif'] ? 1 : 0) : 1;
+    $res = $repo['downtime_reasons']->etlUpsert($str($r['id'] ?? null), ['name' => $name, 'is_active' => $active]);
+    return $res['action'];
+});
+
+// production.durusNedeni AD olarak gelir → downtime_reasons.name uzerinden id'ye cozulur.
+$reasonByName = $repo['downtime_reasons']->etlMapBy('name');
+$reasonIssues = [];   // cozulemeyen durus nedeni adlari (ad => adet)
+$resolveReason = static function (?string $name) use ($reasonByName, &$reasonIssues): ?int {
+    if ($name === null || $name === '') return null;
+    if (isset($reasonByName[$name])) return $reasonByName[$name];
+    $reasonIssues[$name] = ($reasonIssues[$name] ?? 0) + 1;   // eslesmezse NULL + raporla
+    return null;
+};
+
 if ($stoppedAt === null)
 $runCollection('production', $D['production'] ?? [], function (array $r)
-        use ($repo, &$idMap, $str, $num): string {
+        use ($repo, &$idMap, $str, $num, $resolveReason): string {
     $woId = $idMap['work_orders'][$r['workOrderId'] ?? ''] ?? null;
     if ($woId === null) throw new EtlSkip("uretim: is emri bulunamadi ({$r['workOrderId']})");
     $res = $repo['production']->etlUpsert($str($r['id'] ?? null), [
-        'work_order_id'   => $woId,
-        'date'            => $str($r['tarih'] ?? null),
-        'shift'           => $str($r['vardiya'] ?? null) ?? 'Sabah',
-        'target_quantity' => $num($r['hedefAdet'] ?? null),
-        'actual_quantity' => $num($r['gercekAdet'] ?? null) ?? 0,
-        'scrap_quantity'  => $num($r['fireAdet'] ?? null) ?? 0,
-        'operator_id'     => $idMap['operators'][$r['operator'] ?? ''] ?? null,
-        'downtime_start'  => $str($r['durusBaslangic'] ?? null),
-        'downtime_end'    => $str($r['durusBitis'] ?? null),
-        'note'            => $str($r['not'] ?? null),
+        'work_order_id'     => $woId,
+        'date'              => $str($r['tarih'] ?? null),
+        'shift'             => $str($r['vardiya'] ?? null) ?? 'Sabah',
+        'target_quantity'   => $num($r['hedefAdet'] ?? null),
+        'actual_quantity'   => $num($r['gercekAdet'] ?? null) ?? 0,
+        'scrap_quantity'    => $num($r['fireAdet'] ?? null) ?? 0,
+        'operator_id'       => $idMap['operators'][$r['operator'] ?? ''] ?? null,
+        'downtime_start'    => $str($r['durusBaslangic'] ?? null),
+        'downtime_end'      => $str($r['durusBitis'] ?? null),
+        'downtime_reason_id' => $resolveReason($str($r['durusNedeni'] ?? null)),
+        'note'              => $str($r['not'] ?? null),
     ]);
     return $res['action'];
 });
@@ -947,6 +979,16 @@ if ($materialIssues !== []) {
     foreach ($materialIssues as $m) {
         echo "  {$m['id']}: {$m['malzeme']}\n";
     }
+}
+
+// Durus nedeni tohum temizligi + production durus nedeni cozumleme ozeti.
+echo "\nDurus nedeni tohumlari (migration 035): {$downtimeSeedCleanup['deleted']} silindi"
+    . ($downtimeSeedCleanup['kept'] ? ", {$downtimeSeedCleanup['kept']} korundu (uretim kaydinca kullaniliyor)" : "") . "\n";
+echo "Uretim — durus nedeni cozulemedi: " . array_sum($reasonIssues) . " kayit"
+    . ($reasonIssues === [] ? " (dolu olanlarin hepsi ada cozuldu)\n" : " (downtime_reason_id NULL birakildi)\n");
+if ($reasonIssues !== []) {
+    arsort($reasonIssues);
+    foreach ($reasonIssues as $name => $n) echo "  ($n) $name\n";
 }
 
 if ($stoppedAt !== null) {
