@@ -29,12 +29,13 @@ export async function viewVerimlilik(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let centers, products, workOrders, plans, production, wh;
   try {
-    centers = await loadLookup('work-centers', mapNamed);
-    products = await loadLookup('product-codes', mapProduct);
-    workOrders = (await resource('work-orders').listAll()).data;
-    plans = (await resource('machine-plans').listAll()).data;
-    production = (await resource('production').listAll()).data;
-    ({ data: wh } = await request('/working-hours'));
+    const d = (n) => resource(n).listAll().then(r => r.data);
+    [centers, products, workOrders, plans, production, wh] = await Promise.all([
+      loadLookup('work-centers', mapNamed),
+      loadLookup('product-codes', mapProduct),
+      d('work-orders'), d('machine-plans'), d('production'),
+      request('/working-hours').then(r => r.data),
+    ]);
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewVerimlilik(container) }));

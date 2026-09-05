@@ -41,14 +41,18 @@ export async function viewSatisSiparisleri(container, params) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, ops, centers, orders, workOrders, production, routes, statuses;
   try {
-    products = await loadLookup('product-codes', mapProduct);
-    ops = await loadLookup('operations', mapNamed);
-    centers = await loadLookup('work-centers', mapNamed);
-    orders = (await api.listAll()).data.filter(o => o.source === 'satis');
-    workOrders = (await resource('work-orders').listAll()).data;
-    production = (await resource('production').listAll()).data;
-    routes = (await resource('routes').listAll()).data;
-    statuses = (await request('/order-statuses')).data;   // create için varsayılan durum
+    let allOrders;
+    [products, ops, centers, allOrders, workOrders, production, routes, statuses] = await Promise.all([
+      loadLookup('product-codes', mapProduct),
+      loadLookup('operations', mapNamed),
+      loadLookup('work-centers', mapNamed),
+      api.listAll().then(r => r.data),
+      resource('work-orders').listAll().then(r => r.data),
+      resource('production').listAll().then(r => r.data),
+      resource('routes').listAll().then(r => r.data),
+      request('/order-statuses').then(r => r.data),   // create için varsayılan durum
+    ]);
+    orders = allOrders.filter(o => o.source === 'satis');
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewSatisSiparisleri(container) }));

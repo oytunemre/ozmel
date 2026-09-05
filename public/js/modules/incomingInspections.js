@@ -37,8 +37,10 @@ export async function viewIncomingInspections(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, receipts;
   try {
-    products = await loadLookup('product-codes', mapProduct);
-    receipts = await loadLookup('purchase-receipts', (r) => ({ id: r.id, code: '#' + r.id, name: r.date || '' }));
+    [products, receipts] = await Promise.all([
+      loadLookup('product-codes', mapProduct),
+      loadLookup('purchase-receipts', (r) => ({ id: r.id, code: '#' + r.id, name: r.date || '' })),
+    ]);
   } catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewIncomingInspections(container) })); return; }
 
   const table = new DataTable(container, {

@@ -33,24 +33,18 @@ export async function viewDashboard(container) {
   let products, centers, ops, people, orders, workOrders, tasks, caps, routes, production,
       trees, receipts, requests, inspections, wh;
   try {
-    [products, centers, ops, people] = await Promise.all([
+    // Tüm yüklemeler TEK Promise.all — sıralı 15 istek yerine paralel (risk 3 için stok verileri dahil).
+    const d = (n) => resource(n).listAll().then(r => r.data);
+    [products, centers, ops, people, orders, workOrders, tasks, caps, routes, production,
+      trees, receipts, requests, inspections, wh] = await Promise.all([
       loadLookup('product-codes', mapProdFull),
       loadLookup('work-centers', mapNamed),
       loadLookup('operations', mapNamed),
       loadLookup('task-people', mapNamed),
+      d('orders'), d('work-orders'), d('tasks'), d('capacities'), d('routes'), d('production'),
+      d('product-trees'), d('purchase-receipts'), d('purchase-requests'), d('incoming-inspections'),
+      request('/working-hours').then(r => r.data),
     ]);
-    orders = (await resource('orders').listAll()).data;
-    workOrders = (await resource('work-orders').listAll()).data;
-    tasks = (await resource('tasks').listAll()).data;
-    caps = (await resource('capacities').listAll()).data;
-    routes = (await resource('routes').listAll()).data;
-    production = (await resource('production').listAll()).data;
-    // Risk 3 (hammadde eksiği) — Stok Durumu'ndaki net stok mantığı:
-    trees = (await resource('product-trees').listAll()).data;
-    receipts = (await resource('purchase-receipts').listAll()).data;
-    requests = (await resource('purchase-requests').listAll()).data;
-    inspections = (await resource('incoming-inspections').listAll()).data;
-    ({ data: wh } = await request('/working-hours'));   // dakika/adet kapasiteleri canlı hesaplansın (capacities.js ile birebir)
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewDashboard(container) }));

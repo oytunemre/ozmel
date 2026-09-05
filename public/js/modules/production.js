@@ -23,14 +23,17 @@ export async function viewProduction(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, woRows, woTarget, woLabel, operators, reasons, entries;
   try {
-    products = await loadLookup('product-codes', mapProduct);
-    const woData = (await resource('work-orders').listAll()).data;
-    woRows = woData.map(w => ({ id: w.id, code: w.woNo, name: products.label(w.productCodeId) }));
+    let woData;
+    [products, woData, operators, reasons, entries] = await Promise.all([
+      loadLookup('product-codes', mapProduct),
+      resource('work-orders').listAll().then(r => r.data),
+      loadLookup('operators', (o) => ({ id: o.id, code: o.badgeNo, name: o.fullName })),
+      loadLookup('downtime-reasons', (r) => ({ id: r.id, name: r.name, isActive: r.isActive })),
+      api.listAll().then(r => r.data),
+    ]);
+    woRows = woData.map(w => ({ id: w.id, code: w.woNo, name: products.label(w.productCodeId) }));   // products hazır (Promise.all sonrası)
     woTarget = new Map(woData.map(w => [w.id, w.targetQuantity]));
     woLabel = new Map(woData.map(w => [w.id, w.woNo]));
-    operators = await loadLookup('operators', (o) => ({ id: o.id, code: o.badgeNo, name: o.fullName }));
-    reasons = await loadLookup('downtime-reasons', (r) => ({ id: r.id, name: r.name, isActive: r.isActive }));
-    entries = (await api.listAll()).data;
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewProduction(container) }));

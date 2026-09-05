@@ -56,16 +56,15 @@ export async function viewOrders(container, params) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, ops, centers, orders, workOrders, production, routes, caps, wh, statuses;
   try {
-    products = await loadLookup('product-codes', mapProduct);
-    ops = await loadLookup('operations', mapNamed);
-    centers = await loadLookup('work-centers', mapNamed);
-    orders = (await api.listAll()).data;
-    workOrders = (await resource('work-orders').listAll()).data;
-    production = (await resource('production').listAll()).data;
-    routes = (await resource('routes').listAll()).data;
-    caps = (await resource('capacities').listAll()).data;
-    ({ data: wh } = await request('/working-hours'));
-    statuses = (await request('/order-statuses')).data;
+    const d = (n) => resource(n).listAll().then(r => r.data);
+    [products, ops, centers, orders, workOrders, production, routes, caps, wh, statuses] = await Promise.all([
+      loadLookup('product-codes', mapProduct),
+      loadLookup('operations', mapNamed),
+      loadLookup('work-centers', mapNamed),
+      d('orders'), d('work-orders'), d('production'), d('routes'), d('capacities'),
+      request('/working-hours').then(r => r.data),
+      request('/order-statuses').then(r => r.data),
+    ]);
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewOrders(container, params) }));

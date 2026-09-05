@@ -24,8 +24,7 @@ export async function viewFirstOffPoints(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, ops;
   try {
-    products = await loadLookup('product-codes', mapProduct);
-    ops = await loadLookup('operations', mapNamed);
+    [products, ops] = await Promise.all([loadLookup('product-codes', mapProduct), loadLookup('operations', mapNamed)]);
   } catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewFirstOffPoints(container) })); return; }
 
   const table = new DataTable(container, {

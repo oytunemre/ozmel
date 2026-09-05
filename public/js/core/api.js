@@ -8,6 +8,7 @@
 //   public/js/core/api.js -> ../../api/index.php
 
 import { t } from './i18n.js';
+import { cached, invalidateWrite, isCacheableList, isCacheableGet } from './store.js';
 
 const API = new URL('../../api/index.php', import.meta.url).href;
 
@@ -62,7 +63,28 @@ export class NetworkError extends ApiError {
  * @param {{method?: string, body?: any}} opts
  * @returns {Promise<{data:any, meta:any}>}
  */
-export async function request(path, { method = 'GET', body = null } = {}) {
+/**
+ * Dış API: önbellek + otomatik geçersiz kılma katmanı.
+ * - Cache'lenebilir singleton GET (/working-hours, /order-statuses) → store'dan döner (uçuş-anı dedup).
+ * - Yazma (GET olmayan) → gerçekleşir, sonra etkilenen kaynak(lar) OTOMATİK düşürülür (store.invalidateWrite).
+ * @param {string} path
+ * @param {{method?: string, body?: any}} opts
+ * @returns {Promise<{data:any, meta:any}>}
+ */
+export async function request(path, opts = {}) {
+  const method = opts.method || 'GET';
+  if (method === 'GET' && isCacheableGet(path)) {
+    return cached('get:' + path, () => _doRequest(path, opts));
+  }
+  if (method !== 'GET') {
+    const r = await _doRequest(path, opts);
+    invalidateWrite(path);   // yazma başarılı → etkilenen önbellekleri düşür (sessiz bayatlamayı önle)
+    return r;
+  }
+  return _doRequest(path, opts);
+}
+
+async function _doRequest(path, { method = 'GET', body = null } = {}) {
   let res;
   try {
     res = await fetch(API + path, {
@@ -112,8 +134,18 @@ export async function request(path, { method = 'GET', body = null } = {}) {
 const PAGE_LIMIT = 200;   // backend tavani ile ayni
 const MAX_PAGES  = 50;    // sonsuz donguye karsi: 50 * 200 = 10.000 kayit
 
-/** page=1'den meta.total'a ulasana kadar tum sayfalari cekip birlestirir. */
+/** Nadiren değişen tablolarda önbellekli; diğerlerinde her çağrıda taze. Önbellek
+ *  isabetinde KOPYA döner — çağıran sort/reverse ile önbellekteki diziyi bozamaz. */
 async function listAll(name, params = {}) {
+  if (isCacheableList(name) && Object.keys(params).length === 0) {
+    const { data, meta } = await cached('list:' + name, () => _listAllFetch(name, params));
+    return { data: data.slice(), meta };
+  }
+  return _listAllFetch(name, params);
+}
+
+/** page=1'den meta.total'a ulasana kadar tum sayfalari cekip birlestirir. */
+async function _listAllFetch(name, params = {}) {
   const all = [];
   let meta = {};
   let page = 1;

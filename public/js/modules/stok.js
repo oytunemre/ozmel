@@ -36,16 +36,13 @@ export async function viewStok(container) {
 
   let products, operations, trees, receipts, requests, inspections, orders, workOrders, routes, production;
   try {
-    products = await loadLookup('product-codes', mapProductFull);
-    operations = await loadLookup('operations', mapNamed);
-    trees = (await resource('product-trees').listAll()).data;
-    receipts = (await resource('purchase-receipts').listAll()).data;
-    requests = (await resource('purchase-requests').listAll()).data;
-    inspections = (await resource('incoming-inspections').listAll()).data;
-    orders = (await resource('orders').listAll()).data;
-    workOrders = (await resource('work-orders').listAll()).data;
-    routes = (await resource('routes').listAll()).data;
-    production = (await resource('production').listAll()).data;
+    const d = (n) => resource(n).listAll().then(r => r.data);
+    [products, operations, trees, receipts, requests, inspections, orders, workOrders, routes, production] = await Promise.all([
+      loadLookup('product-codes', mapProductFull),
+      loadLookup('operations', mapNamed),
+      d('product-trees'), d('purchase-receipts'), d('purchase-requests'), d('incoming-inspections'),
+      d('orders'), d('work-orders'), d('routes'), d('production'),
+    ]);
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewStok(container) }));

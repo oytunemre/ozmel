@@ -34,16 +34,19 @@ export async function viewMachinePlans(container) {
   let products, centers, ops, workOrders, routes, caps, wh, plans;
   const producedByWo = new Map();
   try {
-    products = await loadLookup('product-codes', mapProduct);
-    centers  = await loadLookup('work-centers', mapNamed);
-    ops      = await loadLookup('operations', mapNamed);
-    workOrders = (await resource('work-orders').listAll()).data;
-    routes   = (await resource('routes').listAll()).data;
-    caps     = (await resource('capacities').listAll()).data;
-    plans    = (await api.listAll()).data;
-    const production = (await resource('production').listAll()).data;
+    let production;
+    [products, centers, ops, workOrders, routes, caps, plans, production, wh] = await Promise.all([
+      loadLookup('product-codes', mapProduct),
+      loadLookup('work-centers', mapNamed),
+      loadLookup('operations', mapNamed),
+      resource('work-orders').listAll().then(r => r.data),
+      resource('routes').listAll().then(r => r.data),
+      resource('capacities').listAll().then(r => r.data),
+      api.listAll().then(r => r.data),
+      resource('production').listAll().then(r => r.data),
+      request('/working-hours').then(r => r.data),
+    ]);
     for (const p of production) producedByWo.set(p.workOrderId, (producedByWo.get(p.workOrderId) || 0) + (p.actualQuantity || 0));
-    ({ data: wh } = await request('/working-hours'));
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewMachinePlans(container) }));

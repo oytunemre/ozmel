@@ -36,10 +36,12 @@ export async function viewKaliteKontrol(container) {
 
   let products, plans, measurements, orders;
   try {
-    products = await loadLookup('product-codes', mapProduct);
-    plans = (await resource('control-plans').listAll()).data;
-    measurements = (await resource('quality-measurements').listAll()).data;
-    orders = (await resource('orders').listAll()).data;
+    [products, plans, measurements, orders] = await Promise.all([
+      loadLookup('product-codes', mapProduct),
+      resource('control-plans').listAll().then(r => r.data),
+      resource('quality-measurements').listAll().then(r => r.data),
+      resource('orders').listAll().then(r => r.data),
+    ]);
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewKaliteKontrol(container) }));

@@ -20,9 +20,12 @@ export async function viewPurchaseRequests(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, orders, receiptsByReq;
   try {
-    products = await loadLookup('product-codes', mapProduct);
+    // products + girişler paralel; orders lookup'ı products.label kullandığından SONRA.
+    [products, receiptsByReq] = await Promise.all([
+      loadLookup('product-codes', mapProduct),
+      loadReceipts(),
+    ]);
     orders = await loadLookup('orders', (o) => ({ id: o.id, code: o.orderNo, name: products.label(o.productCodeId) }));
-    receiptsByReq = await loadReceipts();
   } catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewPurchaseRequests(container) })); return; }
 
   // Satınalma girişleri istek bazında gruplanır (genişleyen satır için).

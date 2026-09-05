@@ -21,9 +21,12 @@ export async function viewHourlyRecords(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, ops, pointRows, pointsById;
   try {
-    products = await loadLookup('product-codes', mapProduct);
-    ops = await loadLookup('operations', mapNamed);
-    const pts = (await resource('hourly-points').listAll()).data;
+    let pts;
+    [products, ops, pts] = await Promise.all([
+      loadLookup('product-codes', mapProduct),
+      loadLookup('operations', mapNamed),
+      resource('hourly-points').listAll().then(r => r.data),
+    ]);
     pointRows = pts.map(p => ({ id: p.id, code: products.byId.get(p.productCodeId)?.code || '', name: p.measureLocation }));
     pointsById = new Map(pts.map(p => [p.id, p]));
   } catch (err) { container.innerHTML = ''; container.appendChild(errorState({ message: err.message, onRetry: () => viewHourlyRecords(container) })); return; }

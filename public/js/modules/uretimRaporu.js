@@ -28,13 +28,14 @@ export async function viewUretimRaporu(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let centers, products, reasons, workOrders, plans, production, wh;
   try {
-    centers = await loadLookup('work-centers', mapNamed);
-    products = await loadLookup('product-codes', mapProduct);
-    reasons = await loadLookup('downtime-reasons', mapNamed);
-    workOrders = (await resource('work-orders').listAll()).data;
-    plans = (await resource('machine-plans').listAll()).data;
-    production = (await resource('production').listAll()).data;
-    ({ data: wh } = await request('/working-hours'));
+    const d = (n) => resource(n).listAll().then(r => r.data);
+    [centers, products, reasons, workOrders, plans, production, wh] = await Promise.all([
+      loadLookup('work-centers', mapNamed),
+      loadLookup('product-codes', mapProduct),
+      loadLookup('downtime-reasons', mapNamed),
+      d('work-orders'), d('machine-plans'), d('production'),
+      request('/working-hours').then(r => r.data),
+    ]);
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewUretimRaporu(container) }));

@@ -20,11 +20,14 @@ export async function viewWorkOrders(container, params) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
   let products, ops, centers, orders, producedByWo, prodByWo;
   try {
-    products = await loadLookup('product-codes', mapProduct);
-    ops = await loadLookup('operations', mapNamed);
-    centers = await loadLookup('work-centers', mapNamed);
+    // products/ops/centers + üretim paralel; orders lookup'ı products.label kullandığından SONRA.
+    [products, ops, centers, { producedByWo, prodByWo }] = await Promise.all([
+      loadLookup('product-codes', mapProduct),
+      loadLookup('operations', mapNamed),
+      loadLookup('work-centers', mapNamed),
+      loadProduction(),
+    ]);
     orders = await loadLookup('orders', (o) => ({ id: o.id, code: o.orderNo, name: products.label(o.productCodeId) }));
-    ({ producedByWo, prodByWo } = await loadProduction());
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewWorkOrders(container) }));

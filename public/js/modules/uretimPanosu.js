@@ -76,14 +76,13 @@ export async function viewUretimPanosu(container) {
   }, REFRESH_SEC * 1000);
 
   async function loadData() {
-    const [centers, products] = await Promise.all([
+    const d = (n) => resource(n).listAll().then(r => r.data);
+    const [centers, products, workOrders, plans, production, wh] = await Promise.all([
       loadLookup('work-centers', mapNamed),
       loadLookup('product-codes', mapProduct),
+      d('work-orders'), d('machine-plans'), d('production'),
+      request('/working-hours').then(r => r.data),
     ]);
-    const workOrders = (await resource('work-orders').listAll()).data;
-    const plans = (await resource('machine-plans').listAll()).data;
-    const production = (await resource('production').listAll()).data;
-    const { data: wh } = await request('/working-hours');
     return { centers, products, woById: new Map(workOrders.map(w => [w.id, w])), plans, production, wh };
   }
 

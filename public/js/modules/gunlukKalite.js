@@ -32,16 +32,17 @@ const FIXED_HOURS = ['10:30', '12:00', '15:00', '18:00'];   // Saatlik sabit saa
 
 export async function viewGunlukKalite(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
-  let products, ops, centers, foPoints, hrPoints, routes, foRecords, hrRecords;
+  let products, ops, centers, foPoints, hrPoints, routes;
+  let foRecords = null, hrRecords = null;   // TEMBEL: yalnız o sekme açılınca inecek
   try {
-    products = await loadLookup('product-codes', mapProduct);
-    ops = await loadLookup('operations', mapNamed);
-    centers = await loadLookup('work-centers', mapNamed);
-    foPoints = (await resource('first-off-points').listAll()).data;
-    hrPoints = (await resource('hourly-points').listAll()).data;
-    routes = (await resource('routes').listAll()).data;
-    foRecords = (await resource('first-off-records').listAll()).data;
-    hrRecords = (await resource('hourly-records').listAll()).data;
+    // Çekirdek (filtre + özet için hep gerekli) paralel; kayıtlar (foRecords/hrRecords) sekmeye göre lazy.
+    const d = (n) => resource(n).listAll().then(r => r.data);
+    [products, ops, centers, foPoints, hrPoints, routes] = await Promise.all([
+      loadLookup('product-codes', mapProduct),
+      loadLookup('operations', mapNamed),
+      loadLookup('work-centers', mapNamed),
+      d('first-off-points'), d('hourly-points'), d('routes'),
+    ]);
   } catch (err) {
     container.innerHTML = '';
     container.appendChild(errorState({ message: err.message, onRetry: () => viewGunlukKalite(container) }));
@@ -120,8 +121,21 @@ export async function viewGunlukKalite(container) {
   }
   syncOperation();
 
-  render();
-  bindLang(container, render);
+  // O anki sekmenin ihtiyacı olan kayıtları (yoksa) çeker — sekmeye girmeden veri inmez.
+  async function ensureRecords() {
+    const jobs = [];
+    if ((tab === 'ozet' || tab === 'firstoff') && foRecords == null) jobs.push(resource('first-off-records').listAll().then(r => { foRecords = r.data; }));
+    if ((tab === 'ozet' || tab === 'saatlik') && hrRecords == null) jobs.push(resource('hourly-records').listAll().then(r => { hrRecords = r.data; }));
+    if (jobs.length) await Promise.all(jobs);
+  }
+  // Sekmeye geç: gereken kayıtları yükle, sonra çiz (yükleme sırasında kısa "yükleniyor").
+  async function show() {
+    await ensureRecords();
+    render();
+  }
+
+  show();
+  bindLang(container, render);   // dil değişimi: mevcut sekmenin verisi zaten yüklü
 
   function save() {
     localStorage.setItem(LS + 'tab', tab);
@@ -192,7 +206,7 @@ export async function viewGunlukKalite(container) {
     container.querySelector('#gkr-operation')?.addEventListener('change', (e) => { operation = Number(e.target.value) || null; resetFo(); save(); render(); });
     container.querySelector('#gkr-date')?.addEventListener('change', (e) => { date = e.target.value || date; resetFo(); save(); render(); });
     container.querySelectorAll('.gkr-shift-btn').forEach(b => b.addEventListener('click', () => { shift = b.dataset.shift; save(); render(); }));
-    container.querySelectorAll('.gkr-tab').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; save(); render(); }));
+    container.querySelectorAll('.gkr-tab').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; save(); show(); }));
 
     if (tab === 'firstoff') bindFirstOff();
     if (tab === 'saatlik') bindHourly();
