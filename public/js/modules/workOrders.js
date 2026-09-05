@@ -8,7 +8,7 @@ import { openDrawer } from '../core/drawer.js';
 import { FkSelect } from '../core/fkselect.js';
 import { toast } from '../core/toast.js';
 import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, mapNamed, ORDER_STATUS_OPTIONS, withCurrent } from '../core/lookups.js';
+import { loadLookup, mapProduct, mapNamed, WORK_ORDER_STATUS_OPTIONS, withCurrent } from '../core/lookups.js';
 import { childTable } from './_childDetail.js';
 import { t, tStatus } from '../core/i18n.js';
 
@@ -92,7 +92,7 @@ export async function viewWorkOrders(container, params) {
         { name: 'workCenterId', label: () => t('field.workCenter'), type: 'fk', fk: centerFk },
         { name: 'sequence', label: () => t('field.sequence'), type: 'number' },
         { name: 'targetQuantity', label: () => t('field.targetQuantity'), type: 'number', step: 'any', required: true },
-        { name: 'status', label: () => t('field.status'), type: 'select', required: true, options: withCurrent(ORDER_STATUS_OPTIONS.map(o => ({ value: o.value, label: tStatus(o.value) })), row?.status) },
+        { name: 'status', label: () => t('field.status'), type: 'select', required: true, options: withCurrent(WORK_ORDER_STATUS_OPTIONS.map(o => ({ value: o.value, label: tStatus(o.value) })), row?.status) },
         { name: 'splitLabel', label: () => t('field.splitLabel'), type: 'text' }
       ],
       onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,

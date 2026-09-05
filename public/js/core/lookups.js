@@ -93,7 +93,11 @@ export function outOfTolerance(v, lower, upper) {
 }
 
 // Durum seçenekleri (backend VARCHAR; kısıt yalnızca arayüzde). Gerçek veriden.
-export const ORDER_STATUS_OPTIONS = [
+// İŞ EMRİ (work_orders) durumu — 3 durum; SİPARİŞ (orders) durumundan FARKLI.
+// Sipariş durumu 9 aşamalı akıştır (BE tek kaynak: /order-statuses). İş emri ise
+// Aktif/Tamamlandı/İptal. (Eski ad ORDER_STATUS_OPTIONS yanıltıcıydı — kafa karışıklığı
+// yaratan "üçüncü sipariş durumu listesi" değil, iş emri durum listesidir.)
+export const WORK_ORDER_STATUS_OPTIONS = [
   { value: 'Aktif', label: 'Aktif' },
   { value: 'Tamamlandı', label: 'Tamamlandı' },
   { value: 'İptal', label: 'İptal' }
