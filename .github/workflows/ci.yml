@@ -14,7 +14,7 @@ jobs:
           php-version: '8.3'
 
       - name: PHP sözdizimi
-        run: find src public tools -name "*.php" -exec php -l {} \;
+        run: find src public tools -name "*.php" -print0 | xargs -0 -n1 php -l
 
       - name: Node kur
         uses: actions/setup-node@v4
@@ -22,4 +22,4 @@ jobs:
           node-version: '20'
 
       - name: JS sözdizimi
-        run: find public/js -name "*.js" -exec node --check {} \;
+        run: find public/js -name "*.js" -print0 | xargs -0 -n1 node --check
