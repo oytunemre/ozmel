@@ -34,3 +34,8 @@ jobs:
             node --check "$f" || hata=1
           done < <(find public/js -name "*.js" -print0)
           exit $hata
+          
+      - name: i18n TR/EN dengesi
+        run: |
+          tr=$(grep -c "^\s*'" public/js/core/i18n.js)
+          echo "Toplam anahtar satırı: $tr"
