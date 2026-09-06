@@ -1,1 +1,0 @@
-<?php bu gecerli degil {{{
