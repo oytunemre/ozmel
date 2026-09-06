@@ -13,13 +13,24 @@ jobs:
         with:
           php-version: '8.3'
 
-      - name: PHP sözdizimi
-        run: find src public tools -name "*.php" -print0 | xargs -0 -n1 php -l
 
       - name: Node kur
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
+      - name: PHP sözdizimi
+        run: |
+          hata=0
+          while IFS= read -r -d '' f; do
+            php -l "$f" || hata=1
+          done < <(find src public tools -name "*.php" -print0)
+          exit $hata
+
       - name: JS sözdizimi
-        run: find public/js -name "*.js" -print0 | xargs -0 -n1 node --check
+        run: |
+          hata=0
+          while IFS= read -r -d '' f; do
+            node --check "$f" || hata=1
+          done < <(find public/js -name "*.js" -print0)
+          exit $hata
