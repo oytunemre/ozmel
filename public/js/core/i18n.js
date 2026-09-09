@@ -170,6 +170,13 @@ const DICT = {
     'wo.colWoNo': 'İŞ EMRİ NO', 'wo.colOrder': 'SİPARİŞ', 'wo.colProduct': 'ÜRÜN', 'wo.colOperation': 'OPERASYON',
     'wo.colMachine': 'MAKİNE', 'wo.colTarget': 'HEDEF', 'wo.colRemaining': 'KALAN', 'wo.colPct': '%',
     'wo.colStatus': 'DURUM', 'wo.colEta': 'TAHMİNİ BİTİŞ',
+    // İş Emirleri v2 — Sekme 3 (Duruşlar)
+    'wo.dtTitle': 'DURUŞLAR', 'wo.dtMissing': '{n} nedeni eksik',
+    'wo.dtDesc': "Duruşu olan üretim kayıtlarını gösterir — nedeni girmek için Düzenle'ye tıklayın.",
+    'wo.colWo': 'İŞ EMRİ', 'wo.colDuration': 'SÜRE', 'wo.colReason': 'NEDEN',
+    'wo.reasonMissing': 'Neden girilmemiş', 'wo.edit': 'Düzenle',
+    'wo.dtEmpty': 'Henüz duruş kaydı yok.', 'wo.dtEmptyDate': 'Bu tarihte duruş kaydı yok.',
+    'wo.dtEditTitle': 'Duruş Kaydını Düzenle', 'wo.reasonNone': '— Neden seçin —',
     // — Parti C: Üretim Girişi + Ürün Ağaçları —
     'field.description': 'Açıklama', 'field.type': 'Tip', 'field.unitQuantity': 'Birim Miktar',
     'field.outerDiameter': 'Dış Çap', 'field.innerDiameter': 'İç Çap',
@@ -830,6 +837,13 @@ const DICT = {
     'wo.colWoNo': 'WORK ORDER NO', 'wo.colOrder': 'ORDER', 'wo.colProduct': 'PRODUCT', 'wo.colOperation': 'OPERATION',
     'wo.colMachine': 'MACHINE', 'wo.colTarget': 'TARGET', 'wo.colRemaining': 'REMAINING', 'wo.colPct': '%',
     'wo.colStatus': 'STATUS', 'wo.colEta': 'EST. FINISH',
+    // Work Orders v2 — Tab 3 (Downtime)
+    'wo.dtTitle': 'DOWNTIME', 'wo.dtMissing': '{n} missing reason',
+    'wo.dtDesc': 'Shows production records with downtime — click Edit to enter the reason.',
+    'wo.colWo': 'WORK ORDER', 'wo.colDuration': 'DURATION', 'wo.colReason': 'REASON',
+    'wo.reasonMissing': 'Reason not entered', 'wo.edit': 'Edit',
+    'wo.dtEmpty': 'No downtime records yet.', 'wo.dtEmptyDate': 'No downtime records on this date.',
+    'wo.dtEditTitle': 'Edit Downtime Record', 'wo.reasonNone': '— Select reason —',
     // — Group C: Production Entry + Product Trees —
     'field.description': 'Description', 'field.type': 'Type', 'field.unitQuantity': 'Unit Quantity',
     'field.outerDiameter': 'Outer Diameter', 'field.innerDiameter': 'Inner Diameter',

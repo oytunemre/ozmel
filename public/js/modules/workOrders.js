@@ -12,8 +12,10 @@
 // korunur: gelen id bir iş emriyse siparişi seçilir, o adım açılır.
 
 import { resource, request } from '../core/api.js';
+import { openDrawer } from '../core/drawer.js';
+import { toast } from '../core/toast.js';
 import { errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
+import { loadLookup, mapProduct, mapNamed, withCurrent } from '../core/lookups.js';
 import { t, bindLang } from '../core/i18n.js';
 import { fmtTr, fmtDateTR, fmtDuration } from '../core/format.js';
 import { startOfDay, parseISO } from '../core/report.js';
@@ -24,18 +26,20 @@ const TAB_LS = 'ozmel.wo.tab';
 const TABS = [['siparis', 'wo.tabOrder'], ['liste', 'wo.tabList'], ['durus', 'wo.tabDowntime']];
 const DAY_MS = 86400000;
 const daysBetween = (a, b) => Math.round((startOfDay(b) - startOfDay(a)) / DAY_MS);
+const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
 
 export async function viewWorkOrders(container, params) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
 
-  let products, ops, centers, operators, orders, workOrders, production, routes, plans, wh;
+  let products, ops, centers, operators, reasons, orders, workOrders, production, routes, plans, wh;
   try {
     const d = (n) => resource(n).listAll().then(r => r.data);
-    [products, ops, centers, operators, orders, workOrders, production, routes, plans, wh] = await Promise.all([
+    [products, ops, centers, operators, reasons, orders, workOrders, production, routes, plans, wh] = await Promise.all([
       loadLookup('product-codes', mapProduct),
       loadLookup('operations', mapNamed),
       loadLookup('work-centers', mapNamed),
       loadLookup('operators', (o) => ({ id: o.id, code: o.badgeNo, name: o.fullName })),
+      loadLookup('downtime-reasons', (r) => ({ id: r.id, name: r.name, isActive: r.isActive })),
       d('orders'), d('work-orders'), d('production'), d('routes'), d('machine-plans'),
       request('/working-hours').then(r => r.data),
     ]);
@@ -64,6 +68,8 @@ export async function viewWorkOrders(container, params) {
     planDatesByWo.get(pl.workOrderId).add(pl.date);
   }
   const orderById = new Map(orders.map(o => [o.id, o]));
+  const woById = new Map(workOrders.map(w => [w.id, w]));
+  const reasonName = (id) => { const r = reasons.byId.get(id); return r ? r.name : ''; };
   const produced = (w) => producedByWo.get(w.id) || 0;
 
   // Bir siparişin iş emirlerini sıraya (sequence) göre adımlara böler; aynı sırada birden
@@ -115,6 +121,8 @@ export async function viewWorkOrders(container, params) {
   let listeArama = '';
   let listeFiltre = 'hepsi';          // hepsi | aktif | tamam
   let listeTarihi = '';
+  // Sekme 3 (Duruşlar) durumu
+  let durusTarihi = '';
 
   // focusId: gelen id bir iş emriyse → siparişini seç, sekmeyi Sipariş Bazlı yap, adımı aç.
   if (params?.id != null) {
@@ -157,14 +165,137 @@ export async function viewWorkOrders(container, params) {
 
     if (tab === 'siparis') renderOrderTab();
     else if (tab === 'liste') renderListTab();
-    else renderPlaceholder('wo.tabDowntime');
+    else renderDowntimeTab();
   }
 
-  function renderPlaceholder(key) {
+  // ---------- SEKME 3: Duruşlar ----------
+  // Duruşu olan üretim kayıtları (downtime_start + downtime_end dolu). Bir veri temizleme
+  // aracı: nedeni girilmemiş duruşları bulup Düzenle ile tamamlamak için.
+  function downtimeRows() {
+    const rows = production
+      .filter(r => r.downtimeStart && r.downtimeEnd)
+      .filter(r => !durusTarihi || r.date === durusTarihi);
+    rows.sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))
+      || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+    return rows;
+  }
+
+  function renderDowntimeTab() {
     const host = container.querySelector('#wo-body');
     host.style.cssText = 'flex:1; min-height:0; overflow-y:auto;';
-    host.innerHTML = `<div style="background:#fff; border:1px solid var(--color-neutral-400); padding:48px 24px; text-align:center; color:var(--color-neutral-600); font-size:14px;">
-      ${esc(t(key))} — ${esc(t('common.loading'))}</div>`;
+    host.innerHTML = `
+      <div style="background:#fff; border:1px solid var(--color-neutral-400);">
+        <div style="padding:13px 18px 12px; border-bottom:1px solid var(--color-neutral-300); display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <span style="font-family:var(--font-heading); font-size:19px; font-weight:600;">${esc(t('wo.dtTitle'))}</span>
+          <span id="wo-dtcount" style="flex:none; padding:2px 8px; font-family:'IBM Plex Mono',monospace; font-size:12px; border:1px solid var(--color-neutral-400); background:var(--color-neutral-100); color:var(--color-neutral-700);"></span>
+          <span id="wo-dtmissing" style="flex:none; padding:2px 8px; font-family:'IBM Plex Mono',monospace; font-size:12px; border:1px solid var(--color-danger); background:var(--color-danger-fill); color:var(--color-danger); display:none;"></span>
+          <div style="margin-left:auto; flex:none; display:flex; align-items:center; gap:8px;">
+            <input type="date" id="wo-dtdate" value="${esc(durusTarihi)}" style="box-sizing:border-box; height:38px; padding:0 10px; font-family:'IBM Plex Mono',monospace; font-size:13.5px; border:1px solid var(--color-neutral-400); background:#fff; color:var(--color-text);">
+            <button type="button" id="wo-dtall" style="height:38px; padding:0 12px; font-size:13.5px; background:transparent; border:1px solid var(--color-neutral-400); cursor:pointer;">${esc(t('wo.allBtn'))}</button>
+          </div>
+        </div>
+        <div style="padding:10px 18px 0; font-size:12.5px; color:var(--color-neutral-600);">${esc(t('wo.dtDesc'))}</div>
+        <div id="wo-dtbody" style="margin-top:10px;"></div>
+      </div>`;
+
+    host.querySelector('#wo-dtdate').addEventListener('change', (e) => { durusTarihi = e.target.value; renderDowntimeBody(); });
+    host.querySelector('#wo-dtall').addEventListener('click', () => { durusTarihi = ''; renderDowntimeBody(); });
+    renderDowntimeBody();
+  }
+
+  function renderDowntimeBody() {
+    const rows = downtimeRows();
+    const missing = rows.filter(r => !r.downtimeReasonId).length;
+
+    const countEl = container.querySelector('#wo-dtcount');
+    if (countEl) countEl.textContent = t('wo.recordCount', { n: rows.length });
+    const missEl = container.querySelector('#wo-dtmissing');
+    if (missEl) { missEl.style.display = missing ? '' : 'none'; missEl.textContent = t('wo.dtMissing', { n: missing }); }
+
+    const body = container.querySelector('#wo-dtbody');
+    if (rows.length === 0) {
+      body.innerHTML = `<div style="padding:40px 24px; text-align:center; font-size:14px; color:var(--color-neutral-600);">${esc(durusTarihi ? t('wo.dtEmptyDate') : t('wo.dtEmpty'))}</div>`;
+      return;
+    }
+    const cols = [
+      ['wo.colDate', 'left', '110px'], ['wo.colWo', 'left', '120px'], ['wo.colProduct', 'left', '110px'],
+      ['wo.colOperation', 'left', '160px'], ['wo.colShift', 'left', '140px'], ['wo.colDuration', 'right', '110px'],
+      ['wo.colReason', 'left', 'auto'], ['', 'right', '110px'],
+    ];
+    body.innerHTML = `<div style="overflow-x:auto;">
+      <table style="width:100%; min-width:1060px; border-collapse:collapse; font-size:14px;">
+        <thead><tr style="background:var(--color-neutral-100);">
+          ${cols.map(([k, hz, w]) => `<th style="text-align:${hz}; padding:8px 12px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.12em; color:var(--color-neutral-700); font-weight:500; border-bottom:1px solid var(--color-neutral-300); width:${w}; white-space:nowrap;">${k ? esc(t(k)) : ''}</th>`).join('')}
+        </tr></thead>
+        <tbody>${rows.map(dtRowHtml).join('')}</tbody>
+      </table></div>`;
+    body.querySelectorAll('.wo-dtedit').forEach(b => b.addEventListener('click', () => {
+      const r = production.find(x => String(x.id) === b.dataset.id);
+      if (r) openDowntimeEdit(r);
+    }));
+  }
+
+  function dtRowHtml(r) {
+    const w = woById.get(r.workOrderId);
+    const p = w ? products.byId.get(w.productCodeId) : null;
+    const dt = downtimeMinutes(r.downtimeStart, r.downtimeEnd, wh);
+    const hasReason = !!r.downtimeReasonId;
+    const rowBg = hasReason ? '#fff' : 'var(--color-danger-fill)';
+    const td = (hz, extra = '') => `padding:9px 12px; text-align:${hz}; border-bottom:1px solid var(--color-neutral-200);${extra}`;
+    const mono = "font-family:'IBM Plex Mono',monospace;";
+    const nedenCell = hasReason
+      ? `<span style="font-size:13.5px;">${esc(reasonName(r.downtimeReasonId))}</span>`
+      : `<span style="display:inline-block; padding:2px 8px; font-size:12.5px; border:1px solid var(--color-danger); background:var(--color-danger-fill); color:var(--color-danger); white-space:nowrap;">${esc(t('wo.reasonMissing'))}</span>`;
+    return `<tr style="background:${rowBg};">
+      <td style="${td('left', mono + 'font-size:13px;')}">${esc(fmtDateTR(r.date) || '—')}</td>
+      <td style="${td('left', mono + 'font-size:13px;')}">${esc(w ? woLabelFull(w) : '#' + r.workOrderId)}</td>
+      <td style="${td('left', mono + 'font-size:13px;')}">${esc(p?.code || '—')}</td>
+      <td style="${td('left', 'white-space:nowrap;')}">${esc(w && w.operationId ? ops.label(w.operationId) : '—')}</td>
+      <td style="${td('left', 'white-space:nowrap;')}">${esc(r.shift ? t('shift.' + r.shift) : '—')}</td>
+      <td style="${td('right', mono + 'font-size:13.5px; font-weight:500; white-space:nowrap;')}">${dt > 0 ? esc(fmtDuration(dt)) : '—'}</td>
+      <td style="${td('left')}">${nedenCell}</td>
+      <td style="${td('right', 'white-space:nowrap;')}">${canWrite ? `<button type="button" class="wo-dtedit" data-id="${esc(String(r.id))}" style="height:30px; padding:0 12px; font-size:13px; cursor:pointer; background:transparent; border:1px solid var(--color-neutral-400); color:var(--color-text);">${esc(t('wo.edit'))}</button>` : ''}</td>
+    </tr>`;
+  }
+
+  // Yerinde düzenleme: nedeni (ve gerekirse saatleri/notu) tamamla, üretim kaydını güncelle.
+  function openDowntimeEdit(r) {
+    const reasonOpts = withCurrent(
+      [{ value: '', label: t('wo.reasonNone') }, ...reasons.rows.filter(x => x.isActive).map(x => ({ value: String(x.id), label: x.name }))],
+      r.downtimeReasonId != null ? String(r.downtimeReasonId) : null
+    );
+    openDrawer({
+      title: () => t('wo.dtEditTitle'),
+      submitLabel: () => t('action.update'),
+      values: {
+        downtimeStart: r.downtimeStart || '', downtimeEnd: r.downtimeEnd || '',
+        downtimeReasonId: r.downtimeReasonId != null ? String(r.downtimeReasonId) : '',
+        note: r.note || '', updatedAt: r.updatedAt,
+      },
+      fields: [
+        { name: 'downtimeStart', label: () => t('ug.dtStart'), type: 'time' },
+        { name: 'downtimeEnd', label: () => t('ug.dtEnd'), type: 'time' },
+        { name: 'downtimeReasonId', label: () => t('ug.downtimeReason'), type: 'select', options: reasonOpts },
+        { name: 'note', label: () => t('field.note'), type: 'text' },
+      ],
+      onSubmit: async (v) => {
+        const body = {
+          workOrderId: r.workOrderId, date: r.date, shift: r.shift,
+          actualQuantity: r.actualQuantity, scrapQuantity: r.scrapQuantity, operatorId: r.operatorId,
+          downtimeStart: v.downtimeStart || null, downtimeEnd: v.downtimeEnd || null,
+          downtimeReasonId: v.downtimeReasonId ? Number(v.downtimeReasonId) : null,
+          note: (v.note || '').trim(), updatedAt: v.updatedAt,
+        };
+        const { data } = await resource('production').update(r.id, body);
+        // Yerel veriyi tazele: production dizisi + prodByWo'daki kaydı değiştir (miktar değişmez).
+        const i = production.findIndex(x => x.id === data.id);
+        if (i >= 0) production[i] = data;
+        const arr = prodByWo.get(data.workOrderId);
+        if (arr) { const j = arr.findIndex(x => x.id === data.id); if (j >= 0) arr[j] = data; }
+        return data;
+      },
+      onSaved: () => { toast(t('toast.saved'), 'success'); renderDowntimeBody(); },
+    });
   }
 
   // ---------- SEKME 1: Sipariş Bazlı ----------
