@@ -24,6 +24,10 @@ import { downtimeMinutes } from '../core/capacity.js';
 
 const TAB_LS = 'ozmel.wo.tab';
 const TABS = [['siparis', 'wo.tabOrder'], ['liste', 'wo.tabList'], ['durus', 'wo.tabDowntime']];
+// Sekme 2 (Liste) durum filtresi seçenekleri. MODÜL SEVİYESİNDE — render() ilk çağrıda
+// (localStorage'daki sekme 'liste' ise) renderListTab'ı çalıştırır; fonksiyon içinde
+// tanımlanırsa kullanımdan önce erişilir ve TDZ hatası verir (node --check yakalamaz).
+const LIST_FILTERS = [['hepsi', 'wo.fAll'], ['aktif', 'wo.fActive'], ['tamam', 'wo.fDone']];
 const DAY_MS = 86400000;
 const daysBetween = (a, b) => Math.round((startOfDay(b) - startOfDay(a)) / DAY_MS);
 const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
@@ -581,8 +585,6 @@ export async function viewWorkOrders(container, params) {
   }
 
   // ---------- SEKME 2: Liste ----------
-  const LIST_FILTERS = [['hepsi', 'wo.fAll'], ['aktif', 'wo.fActive'], ['tamam', 'wo.fDone']];
-
   function renderListTab() {
     const host = container.querySelector('#wo-body');
     host.style.cssText = 'flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:20px;';
