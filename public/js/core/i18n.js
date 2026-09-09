@@ -29,7 +29,7 @@ const DICT = {
     'menu.satis-siparisleri': 'Satış Siparişleri', 'menu.orders': 'Üretim Siparişleri', 'menu.sales': 'Satış Raporları',
     'menu.product-codes': 'Kod Tanımları', 'menu.task-people': 'Görev Kişileri',
     'menu.terms': 'Terimler', 'menu.working-hours': 'Çalışma Saatleri',
-    'menu.tasks': 'Görev Takibi', 'menu.audits': 'Denetim Soruları', 'menu.users': 'Kullanıcı Yönetimi',
+    'menu.tasks': 'Görev Takibi', 'menu.users': 'Kullanıcı Yönetimi',
     // — ortak eylemler —
     'action.new': 'Yeni', 'action.edit': 'Düzenle', 'action.delete': 'Sil', 'action.save': 'Kaydet',
     'action.update': 'Güncelle', 'action.add': 'Ekle', 'action.cancel': 'Vazgeç', 'action.close': 'Kapat',
@@ -620,13 +620,6 @@ const DICT = {
     'db.detailOpenToday': "{n}'i bugün başlamalı", 'db.detailOpenNone': 'bugün başlayacak yok',
     'db.detailOutParts': 'son 24 saat · {n} parça',
     'field.password': 'Şifre',
-    // Denetim Soruları
-    'aud.subtitle': 'Denetim soru bankası', 'aud.new': 'Yeni Soru',
-    'aud.empty': 'Henüz soru yok. "Yeni Soru" ile başlayın.',
-    'aud.newTitle': 'Yeni Soru', 'aud.editTitle': 'Soru Düzenle',
-    'aud.form': 'Form', 'aud.section': 'Bölüm', 'aud.question': 'Soru', 'aud.score': 'Puan', 'aud.evidence': 'Kanıt',
-    'aud.updated': 'Soru güncellendi', 'aud.added': 'Soru eklendi', 'aud.deleted': 'Soru silindi',
-    'aud.deleteTitle': 'Soru silinsin mi?', 'aud.deleteBody': 'Bu denetim sorusu silinecek.',
     // Kullanıcı Yönetimi
     'us.summary': '{n} kullanıcı · tüm kullanıcılar yönetici · hesap yönetimi',
     'us.new': 'Yeni Kullanıcı', 'us.search': 'Ad veya kullanıcı adı ara…',
@@ -662,7 +655,7 @@ const DICT = {
     'menu.satis-siparisleri': 'Sales Orders', 'menu.orders': 'Production Orders', 'menu.sales': 'Sales Reports',
     'menu.product-codes': 'Material Codes', 'menu.task-people': 'Task Assignees',
     'menu.terms': 'Terms', 'menu.working-hours': 'Working Hours',
-    'menu.tasks': 'Task Tracking', 'menu.audits': 'Audit Questions', 'menu.users': 'Users',
+    'menu.tasks': 'Task Tracking', 'menu.users': 'Users',
     // — common actions —
     'action.new': 'New', 'action.edit': 'Edit', 'action.delete': 'Delete', 'action.save': 'Save',
     'action.update': 'Update', 'action.add': 'Add', 'action.cancel': 'Cancel', 'action.close': 'Close',
@@ -1253,13 +1246,6 @@ const DICT = {
     'db.detailOpenToday': '{n} due to start today', 'db.detailOpenNone': 'none starting today',
     'db.detailOutParts': 'last 24h · {n} parts',
     'field.password': 'Password',
-    // Audit Questions
-    'aud.subtitle': 'Audit question bank', 'aud.new': 'New Question',
-    'aud.empty': 'No questions yet. Start with "New Question".',
-    'aud.newTitle': 'New Question', 'aud.editTitle': 'Edit Question',
-    'aud.form': 'Form', 'aud.section': 'Section', 'aud.question': 'Question', 'aud.score': 'Score', 'aud.evidence': 'Evidence',
-    'aud.updated': 'Question updated', 'aud.added': 'Question added', 'aud.deleted': 'Question deleted',
-    'aud.deleteTitle': 'Delete this question?', 'aud.deleteBody': 'This audit question will be deleted.',
     // Users
     'us.summary': '{n} users · all users are administrators · account management',
     'us.new': 'New User', 'us.search': 'Search name or username…',

@@ -89,7 +89,9 @@ $repo = [
     'product_trees'   => new App\Repository\ProductTreeRepository($ctx),
     'routes'          => new App\Repository\RouteRepository($ctx),
     'capacities'      => new App\Repository\CapacityRepository($ctx),
-    'audits'          => new App\Repository\AuditRepository($ctx),
+    // Denetim Soruları modülü kaldırıldı (müşteri kararı, Eylül 2026).
+    // Geri istenirse bu satır, aşağıdaki audits bloğu ve migration 043 geri alınır.
+    // 'audits'          => new App\Repository\AuditRepository($ctx),
     'tasks'           => new App\Repository\TaskRepository($ctx),
     'orders'          => new App\Repository\OrderRepository($ctx),
     'work_orders'     => new App\Repository\WorkOrderRepository($ctx),
@@ -380,7 +382,7 @@ if ($whList !== []) {
 } // if stoppedAt === null (working_hours)
 
 // =========================================================================
-// GRUP 2 — operators(+skills), product_trees, routes(+variants), capacities, audits, tasks
+// GRUP 2 — operators(+skills), product_trees, routes(+variants), capacities, tasks
 // =========================================================================
 
 if ($stoppedAt === null)
@@ -507,18 +509,21 @@ $runCollection('capacities', $D['capacity'] ?? [], function (array $r)
 });
 
 // --- audits ---
-if ($stoppedAt === null)
-$runCollection('audits', $D['audits'] ?? [], function (array $r)
-        use ($repo, $str, $num): string {
-    $res = $repo['audits']->etlUpsert($str($r['id'] ?? null), [
-        'form'     => $str($r['form'] ?? null) ?? 'TQS',
-        'section'  => $str($r['section'] ?? null) ?? '',
-        'question' => $str($r['question'] ?? null) ?? '',
-        'score'    => $num($r['score'] ?? null),
-        'evidence' => $str($r['evidence'] ?? null),
-    ]);
-    return $res['action'];
-});
+// Denetim Soruları modülü kaldırıldı (müşteri kararı, Eylül 2026).
+// Geri istenirse bu blok, yukarıdaki $repo['audits'] kaydı ve migration 043 geri alınır.
+// (561 kayıt yedek dosyalarında duruyor.)
+// if ($stoppedAt === null)
+// $runCollection('audits', $D['audits'] ?? [], function (array $r)
+//         use ($repo, $str, $num): string {
+//     $res = $repo['audits']->etlUpsert($str($r['id'] ?? null), [
+//         'form'     => $str($r['form'] ?? null) ?? 'TQS',
+//         'section'  => $str($r['section'] ?? null) ?? '',
+//         'question' => $str($r['question'] ?? null) ?? '',
+//         'score'    => $num($r['score'] ?? null),
+//         'evidence' => $str($r['evidence'] ?? null),
+//     ]);
+//     return $res['action'];
+// });
 
 // --- tasks (gorevler) ---
 if ($stoppedAt === null)

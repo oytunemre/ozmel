@@ -76,7 +76,6 @@ $routes = [
     'sites'         => App\Controller\SiteController::class,
     'control-plans' => App\Controller\ControlPlanController::class,
     'quality-measurements' => App\Controller\QualityMeasurementController::class,
-    'audits'        => App\Controller\AuditController::class,
     'task-people'   => App\Controller\TaskPersonController::class,
     'tasks'         => App\Controller\TaskController::class,
     'purchase-requests' => App\Controller\PurchaseRequestController::class,

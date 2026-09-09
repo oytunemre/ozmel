@@ -42,7 +42,7 @@ const WRITE_DEPS = {
   'capacities':    ['capacities', 'routes'],
   'working-hours': ['working-hours'],
   // Diğerleri (control-plans, quality-measurements, first-off-*, hourly-*, tasks,
-  // task-people, terms, downtime-reasons, sites, purchase-*, audits, users): kendisi (fallback).
+  // task-people, terms, downtime-reasons, sites, purchase-*, users): kendisi (fallback).
 };
 
 const _cache = new Map();   // 'list:<name>' | 'get:<path>' -> Promise<{data,meta}>
