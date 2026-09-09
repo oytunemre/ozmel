@@ -15,7 +15,7 @@ import { errorState, esc } from '../core/states.js';
 import { loadLookup, mapNamed } from '../core/lookups.js';
 import { t, bindLang } from '../core/i18n.js';
 import { fmtTr, fmtDateTR } from '../core/format.js';
-import { fmtISO, parseISO, startOfDay } from '../core/report.js';
+import { fmtISO, parseISO, startOfDay, mondayOf, addDays } from '../core/report.js';
 import { createCapacityHelpers } from '../core/bottleneck.js';
 import { estimateCompletion } from '../core/eta.js';
 
@@ -31,19 +31,19 @@ export async function viewDashboard(container) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
 
   let products, centers, ops, people, orders, workOrders, tasks, caps, routes, production,
-      trees, receipts, requests, inspections, wh;
+      trees, receipts, requests, inspections, wh, plans;
   try {
-    // Tüm yüklemeler TEK Promise.all — sıralı 15 istek yerine paralel (risk 3 için stok verileri dahil).
+    // Tüm yüklemeler TEK Promise.all — sıralı istek yerine paralel (risk 3 için stok verileri + doluluk için planlar dahil).
     const d = (n) => resource(n).listAll().then(r => r.data);
     [products, centers, ops, people, orders, workOrders, tasks, caps, routes, production,
-      trees, receipts, requests, inspections, wh] = await Promise.all([
+      trees, receipts, requests, inspections, wh, plans] = await Promise.all([
       loadLookup('product-codes', mapProdFull),
       loadLookup('work-centers', mapNamed),
       loadLookup('operations', mapNamed),
       loadLookup('task-people', mapNamed),
       d('orders'), d('work-orders'), d('tasks'), d('capacities'), d('routes'), d('production'),
       d('product-trees'), d('purchase-receipts'), d('purchase-requests'), d('incoming-inspections'),
-      request('/working-hours').then(r => r.data),
+      request('/working-hours').then(r => r.data), d('machine-plans'),
     ]);
   } catch (err) {
     container.innerHTML = '';
@@ -56,9 +56,44 @@ export async function viewDashboard(container) {
   const wosByOrder = new Map();
   for (const w of workOrders) { if (!wosByOrder.has(w.orderId)) wosByOrder.set(w.orderId, []); wosByOrder.get(w.orderId).push(w); }
 
-  const { productBottleneck, computeDataWarnings } = createCapacityHelpers({
+  const { getCapacity, productBottleneck, computeDataWarnings } = createCapacityHelpers({
     caps, routes, wh, products, ops, centers, t,
   });
+
+  // İş merkezi doluluğu (bu hafta): haftalık plan / haftalık kapasite. getCapacity GÜNLÜK
+  // değer döndürür (netWorkMinutes günün tamamı = 2 vardiya) → haftalık için × 5 İŞ GÜNÜ
+  // (10 ile DEĞİL; günlük değer iki vardiyayı zaten içerir). Kapasite iş merkezinin bu hafta
+  // en çok planlanan (baskın) ürününden çözülür; tanımsızsa iş merkezi orandan çıkarılır.
+  const WORK_DAYS_PER_WEEK = 5;
+  function workCenterLoad(today) {
+    const weekStart = mondayOf(today), weekEnd = addDays(weekStart, 7);   // [Pzt, gelecek Pzt)
+    const agg = new Map();   // wcId -> { plan, prod: Map(productId -> {target, op}) }
+    for (const pl of plans) {
+      if (pl.workCenterId == null || pl.targetQuantity == null || !pl.date) continue;
+      const dd = parseISO(pl.date);
+      if (dd < weekStart || dd >= weekEnd) continue;
+      if (!agg.has(pl.workCenterId)) agg.set(pl.workCenterId, { plan: 0, prod: new Map() });
+      const a = agg.get(pl.workCenterId);
+      const tgt = Number(pl.targetQuantity) || 0;
+      a.plan += tgt;
+      const op = pl.workOrderId != null ? (woById.get(pl.workOrderId)?.operationId ?? null) : null;
+      const pm = a.prod.get(pl.productCodeId) || { target: 0, op };
+      pm.target += tgt; if (pm.op == null) pm.op = op;
+      a.prod.set(pl.productCodeId, pm);
+    }
+    const rows = [], undefinedWc = [];
+    for (const [wcId, a] of agg) {
+      let dom = null;
+      for (const [pid, pm] of a.prod) if (!dom || pm.target > dom.target) dom = { pid, ...pm };
+      const cap = dom ? getCapacity(dom.pid, wcId, dom.op) : null;
+      const daily = cap?.capacity ?? null;
+      if (daily == null || daily <= 0) { undefinedWc.push(centers.label(wcId)); continue; }
+      const weekly = daily * WORK_DAYS_PER_WEEK;
+      rows.push({ name: centers.label(wcId), plan: a.plan, cap: weekly, pct: Math.round(a.plan / weekly * 100) });
+    }
+    rows.sort((x, y) => y.pct - x.pct);
+    return { rows, undefinedWc };
+  }
 
   // Risk 3: net stoğu negatif hammaddeyi kullanan bitmiş ürünler (BOM üzerinden). Stok
   // Durumu ekranındaki hesabın küçük kopyası (ileride ortak yardımcıya çıkarılabilir).
@@ -163,6 +198,20 @@ export async function viewDashboard(container) {
         </div>`;
     }).join('');
 
+    // --- İş Merkezi Doluluğu (bu hafta) ---
+    const { rows: wcLoad, undefinedWc } = workCenterLoad(today);
+    const wcLoadRows = wcLoad.map(r => {
+      const barColor = r.pct > 85 ? 'var(--color-danger)' : r.pct > 60 ? 'var(--color-warning)' : 'var(--color-accent-500)';
+      const pctColor = r.pct > 100 ? 'var(--color-danger)' : 'var(--color-text)';
+      return `
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 150px minmax(80px,1fr) 56px; gap:12px; align-items:center; padding:5px 0; font-size:13.5px;">
+          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(r.name)}</span>
+          <span class="mono" style="text-align:right; color:var(--color-neutral-700);">${esc(fmtTr(r.plan))} / ${esc(fmtTr(r.cap))}</span>
+          <span class="gb-bar"><i style="width:${Math.min(100, r.pct)}%; background:${barColor};"></i></span>
+          <span class="mono" style="text-align:right; color:${pctColor};">%${r.pct}</span>
+        </div>`;
+    }).join('');
+
     // --- MRP: aktif siparişlerin termin riski ---
     const todayProd = production.filter(p => p.date === todayISO).reduce((s, p) => s + (Number(p.actualQuantity) || 0), 0);
     const risky = [];
@@ -240,6 +289,17 @@ export async function viewDashboard(container) {
         </div>
         <div class="gb-bn-body">${bnRows || `<div class="text-muted">${esc(t('cap.emptyRoutes'))}</div>`}</div>
         <div class="gb-note">${esc(t('gb.bottleneckNote'))}</div>
+      </div>
+
+      <div class="panel gb-panel">
+        <div class="gb-panel-head">
+          <span class="gb-panel-title">${esc(t('gb.wcLoadTitle'))}</span>
+        </div>
+        <div class="gb-bn-body">
+          ${wcLoadRows || `<div class="text-muted">${esc(t('gb.wcLoadEmpty'))}</div>`}
+          ${undefinedWc.length ? `<div class="text-muted" style="font-size:12.5px; margin-top:10px;">${esc(t('gb.wcLoadUndefined', { list: undefinedWc.join(', ') }))}</div>` : ''}
+        </div>
+        <div class="gb-note">${esc(t('gb.wcLoadNote'))}</div>
       </div>
 
       <div class="panel gb-panel">

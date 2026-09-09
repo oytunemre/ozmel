@@ -30,7 +30,6 @@ final class DashboardRepository
     {
         return [
             'cards'           => $this->cards(),
-            'workCenterLoad'  => $this->workCenterLoad(),
             'recentQuality'   => $this->recentQuality(),
         ];
     }
@@ -122,45 +121,10 @@ final class DashboardRepository
         ];
     }
 
-    /**
-     * Is merkezi yuku: bu haftanin makine plani hedef toplami / eslesen kapasite
-     * (vardiya basi) toplami. Ikisi de ayni plan satirlari uzerinden toplandigindan
-     * oran anlamli (haftalik plan vs. o planlarin kapasitesi).
-     */
-    private function workCenterLoad(): array
-    {
-        $stmt = $this->pdo()->prepare(
-            "SELECT wc.name AS name,
-                    COALESCE(SUM(mp.target_quantity),0)   AS planned,
-                    COALESCE(SUM(cap.capacity_per_shift),0) AS capacity
-               FROM machine_plans mp
-               JOIN work_centers wc
-                 ON wc.id = mp.work_center_id AND wc.tenant_id = mp.tenant_id
-          LEFT JOIN capacities cap
-                 ON cap.product_code_id = mp.product_code_id
-                AND cap.work_center_id  = mp.work_center_id
-                AND cap.tenant_id        = mp.tenant_id
-              WHERE mp.tenant_id = :t
-                AND mp.`date` >= (CURDATE() - INTERVAL WEEKDAY(CURDATE()) DAY)
-                AND mp.`date` <  (CURDATE() - INTERVAL WEEKDAY(CURDATE()) DAY) + INTERVAL 7 DAY
-           GROUP BY wc.id, wc.name
-           ORDER BY planned DESC"
-        );
-        $stmt->execute(['t' => $this->ctx->tenantId]);
-
-        $out = [];
-        foreach ($stmt->fetchAll() as $r) {
-            $planned  = (float) $r['planned'];
-            $capacity = (float) $r['capacity'];
-            $out[] = [
-                'name'     => (string) $r['name'],
-                'planned'  => $planned,
-                'capacity' => $capacity,
-                'ratio'    => $capacity > 0 ? round($planned / $capacity, 3) : null,
-            ];
-        }
-        return $out;
-    }
+    // NOT: Eski workCenterLoad() kaldırıldı — SUM(capacity_per_shift)'i plan satır sayısıyla
+    // çarpan JOIN hatası her iş merkezini %100 gösteriyordu. Doluluk artık istemcide,
+    // core/bottleneck.js:getCapacity (çalışma saatlerinden canlı, günlük) × 5 iş günü ile
+    // hesaplanıyor (public/js/modules/dashboard.js). GET /dashboard bu ekranda kullanılmıyor.
 
     /**
      * Son 10 olcum (first-off + saatlik birlesik), en yeni once. Siralama ve `at`
