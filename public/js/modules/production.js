@@ -195,7 +195,9 @@ export async function viewProduction(container) {
     }
 
     const grid = document.createElement('div');
-    grid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:18px; align-items:start;';
+    // align-items:stretch → aynı satırdaki kartlar en uzuna göre eşit yükseklik; kart
+    // içi flex kolon + Kaydet'te margin-top:auto ile düğmeler hizalanır (aşağıda).
+    grid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:18px; align-items:stretch;';
     for (const plan of gunun) grid.appendChild(buildCard(plan));
     host.appendChild(grid);
 
@@ -228,7 +230,7 @@ export async function viewProduction(container) {
       : reached ? 'var(--color-success)' : 'var(--color-warning)';
 
     const el = document.createElement('div');
-    el.style.cssText = `background:#fff; border:1px solid var(--color-neutral-400); border-left:4px solid ${seritRenk}; padding:15px 18px 18px; min-width:0;`;
+    el.style.cssText = `background:#fff; border:1px solid var(--color-neutral-400); border-left:4px solid ${seritRenk}; padding:15px 18px 18px; min-width:0; display:flex; flex-direction:column;`;
 
     const opts = (list, sel, ph) =>
       `<option value="">${esc(ph)}</option>` +
@@ -236,9 +238,9 @@ export async function viewProduction(container) {
 
     const dis = canWrite ? '' : ' disabled';
     el.innerHTML = `
-      <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
-        <span style="font-family:var(--font-heading); font-size:24px; font-weight:600; line-height:1.1;">${esc(centers.label(plan.workCenterId))}</span>
-        <span style="margin-left:auto; flex:none; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--color-neutral-600); white-space:nowrap;">İE-${esc(wo.woNo)} · ${esc(products.byId.get(plan.productCodeId)?.code || '')}</span>
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span title="${esc(centers.label(plan.workCenterId))}" style="flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:var(--font-heading); font-size:24px; font-weight:600; line-height:1.1;">${esc(centers.label(plan.workCenterId))}</span>
+        <span style="flex:none; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--color-neutral-600); white-space:nowrap;">İE-${esc(wo.woNo)} · ${esc(products.byId.get(plan.productCodeId)?.code || '')}</span>
       </div>
       <div style="font-size:13.5px; color:var(--color-neutral-600); margin-top:2px;">${esc([ops.label(wo.operationId), products.byId.get(plan.productCodeId)?.name].filter(Boolean).join(' · '))}</div>
 
@@ -305,6 +307,7 @@ export async function viewProduction(container) {
         <div class="ug-err-sol" style="font-size:12.5px; color:var(--color-neutral-700); margin-top:2px;"></div>
       </div>
 
+      <div style="flex:1 1 auto;"></div>
       ${canWrite ? `<button type="button" class="ug-save" style="width:100%; height:48px; margin-top:14px; font-family:var(--font-heading); font-size:17px; font-weight:600; cursor:pointer; background:${rec ? 'transparent' : 'var(--color-accent)'}; border:1px solid var(--color-accent-700); color:${rec ? 'var(--color-accent-800)' : '#fff'};">${esc(rec ? t('ug.update') : t('ug.save'))}</button>` : ''}
     `;
 
