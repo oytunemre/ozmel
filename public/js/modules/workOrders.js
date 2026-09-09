@@ -14,7 +14,7 @@
 import { resource, request } from '../core/api.js';
 import { openDrawer } from '../core/drawer.js';
 import { toast } from '../core/toast.js';
-import { errorState, esc } from '../core/states.js';
+import { errorState, esc, confirmDialog } from '../core/states.js';
 import { loadLookup, mapProduct, mapNamed, withCurrent } from '../core/lookups.js';
 import { t, bindLang } from '../core/i18n.js';
 import { fmtTr, fmtDateTR, fmtDuration } from '../core/format.js';
@@ -55,26 +55,45 @@ export async function viewWorkOrders(container, params) {
 
   const today = startOfDay(new Date());
 
-  // --- türetmeler ---
+  // --- türetmeler (bakım araçları veriyi değiştirince computeDerived ile yeniden kurulur) ---
   const woByOrder = new Map();        // orderId -> [wo]
-  for (const w of workOrders) { if (!woByOrder.has(w.orderId)) woByOrder.set(w.orderId, []); woByOrder.get(w.orderId).push(w); }
   const producedByWo = new Map();     // woId -> toplam üretilen
   const prodByWo = new Map();         // woId -> [üretim kaydı]
-  for (const p of production) {
-    producedByWo.set(p.workOrderId, (producedByWo.get(p.workOrderId) || 0) + (p.actualQuantity || 0));
-    if (!prodByWo.has(p.workOrderId)) prodByWo.set(p.workOrderId, []);
-    prodByWo.get(p.workOrderId).push(p);
-  }
   const planDatesByWo = new Map();    // woId -> Set(tarih) (machine_plans)
-  for (const pl of plans) {
-    if (pl.workOrderId == null || !pl.date) continue;
-    if (!planDatesByWo.has(pl.workOrderId)) planDatesByWo.set(pl.workOrderId, new Set());
-    planDatesByWo.get(pl.workOrderId).add(pl.date);
-  }
-  const orderById = new Map(orders.map(o => [o.id, o]));
-  const woById = new Map(workOrders.map(w => [w.id, w]));
+  const woById = new Map();           // woId -> wo
+  const summaries = new Map();        // orderId -> özet
+  const orderById = new Map(orders.map(o => [o.id, o]));   // siparişler değişmez
   const reasonName = (id) => { const r = reasons.byId.get(id); return r ? r.name : ''; };
   const produced = (w) => producedByWo.get(w.id) || 0;
+
+  function computeDerived() {
+    for (const m of [woByOrder, producedByWo, prodByWo, planDatesByWo, woById, summaries]) m.clear();
+    for (const w of workOrders) {
+      if (!woByOrder.has(w.orderId)) woByOrder.set(w.orderId, []);
+      woByOrder.get(w.orderId).push(w);
+      woById.set(w.id, w);
+    }
+    for (const p of production) {
+      producedByWo.set(p.workOrderId, (producedByWo.get(p.workOrderId) || 0) + (p.actualQuantity || 0));
+      if (!prodByWo.has(p.workOrderId)) prodByWo.set(p.workOrderId, []);
+      prodByWo.get(p.workOrderId).push(p);
+    }
+    for (const pl of plans) {
+      if (pl.workOrderId == null || !pl.date) continue;
+      if (!planDatesByWo.has(pl.workOrderId)) planDatesByWo.set(pl.workOrderId, new Set());
+      planDatesByWo.get(pl.workOrderId).add(pl.date);
+    }
+    for (const o of orders) summaries.set(o.id, summaryOf(o));
+  }
+  computeDerived();
+
+  // İş emri/üretim değişince (bakım araçları) taze çek + türetmeleri kur + yeniden çiz.
+  async function reloadAll() {
+    const d = (n) => resource(n).listAll().then(r => r.data);
+    [workOrders, production, plans] = await Promise.all([d('work-orders'), d('production'), d('machine-plans')]);
+    computeDerived();
+    render();
+  }
 
   // Bir siparişin iş emirlerini sıraya (sequence) göre adımlara böler; aynı sırada birden
   // çok iş emri (farklı makine) → bölünmüş adım (A/B).
@@ -113,7 +132,6 @@ export async function viewWorkOrders(container, params) {
       : riskli ? 'risk' : 'active';
     return { wos, hedef, uretilen, pct, tamamMi, due, eta, riskli, status };
   }
-  const summaries = new Map(orders.map(o => [o.id, summaryOf(o)]));
 
   // --- görünüm durumu ---
   let tab = readTab();
@@ -404,12 +422,23 @@ export async function viewWorkOrders(container, params) {
     const p = products.byId.get(o.productCodeId);
     const steps = stepsOf(o);
 
+    // Bakım araçları (yalnız iş emri varken ve düzenleme yetkisiyle): eksik adım ekle,
+    // mükerrer birleştir, tüm iş emirlerini sil. Planlamacının veri düzeltme araçları.
+    const missing = missingSteps(o);
+    const dups = duplicateGroups(o);
+    const maintBtns = (canWrite && steps.length) ? [
+      missing.length ? `<button type="button" class="wo-m-missing" style="height:32px; padding:0 10px; font-size:12px; cursor:pointer; background:transparent; border:1px solid var(--color-accent-500); color:var(--color-accent-800);">${esc(t('wo.addMissing', { n: missing.length }))}</button>` : '',
+      dups.length ? `<button type="button" class="wo-m-merge" style="height:32px; padding:0 10px; font-size:12px; cursor:pointer; background:transparent; border:1px solid var(--color-warning); color:var(--color-warning);">${esc(t('wo.mergeDup', { n: dups.length }))}</button>` : '',
+      `<button type="button" class="wo-m-delete" style="height:32px; padding:0 10px; font-size:12px; cursor:pointer; background:transparent; border:1px solid var(--color-neutral-400); color:var(--color-neutral-700);">${esc(t('wo.deleteWos'))}</button>`,
+    ].filter(Boolean).join('') : '';
+
     const headHtml = `
       <div style="flex:none; padding:13px 18px 12px; border-bottom:1px solid var(--color-neutral-300); display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap;">
         <div style="min-width:0;">
           <div style="font-family:var(--font-heading); font-size:23px; font-weight:600; line-height:1.15;">${esc([p?.code, p?.name].filter(Boolean).join(' — '))}</div>
           <div style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--color-neutral-600); margin-top:3px;">${esc(t('wo.meta', { orderNo: o.orderNo, qty: fmtTr(o.targetQuantity), n: steps.length }))}</div>
         </div>
+        ${maintBtns ? `<div style="margin-left:auto; flex:1 1 100%; display:flex; gap:6px; flex-wrap:wrap; align-items:center; justify-content:flex-end;">${maintBtns}</div>` : ''}
       </div>`;
 
     if (steps.length === 0) {
@@ -432,6 +461,116 @@ export async function viewWorkOrders(container, params) {
 
     host.innerHTML = headHtml;
     host.appendChild(body);
+
+    host.querySelector('.wo-m-missing')?.addEventListener('click', () => addMissingSteps(o));
+    host.querySelector('.wo-m-merge')?.addEventListener('click', () => mergeDuplicates(o));
+    host.querySelector('.wo-m-delete')?.addEventListener('click', () => deleteWorkOrders(o));
+  }
+
+  // ---------- Bakım araçları ----------
+  // Ürünün rota adımları (sequence → operasyon + aktif iş merkezi). orders.js routeSteps ile aynı.
+  function routeStepsForProduct(pid) {
+    const bySeq = new Map();
+    for (const r of routes.filter(x => x.productCodeId === pid)) {
+      if (!bySeq.has(r.sequence)) bySeq.set(r.sequence, []);
+      bySeq.get(r.sequence).push(r);
+    }
+    return [...bySeq.entries()].sort((a, b) => a[0] - b[0]).map(([sequence, group]) => {
+      const rep = group.find(g => g.isActive) || group[0];
+      return { sequence, operationId: rep.operationId, workCenterId: rep.workCenterId };
+    });
+  }
+  // Rotada olup iş emri açılmamış adımlar.
+  function missingSteps(o) {
+    const have = new Set((woByOrder.get(o.id) || []).map(w => w.sequence));
+    return routeStepsForProduct(o.productCodeId).filter(s => !have.has(s.sequence));
+  }
+  // Aynı (sequence, work_center_id) için birden çok iş emri → mükerrer gruplar.
+  function duplicateGroups(o) {
+    const m = new Map();
+    for (const w of (woByOrder.get(o.id) || [])) {
+      const k = (w.sequence ?? '∅') + '|' + (w.workCenterId ?? '∅');
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(w);
+    }
+    return [...m.values()].filter(g => g.length > 1);
+  }
+
+  async function addMissingSteps(o) {
+    const missing = missingSteps(o);
+    if (!missing.length) return;
+    const items = missing.map(s => ({
+      orderId: o.id, productCodeId: o.productCodeId, woNo: `${o.orderNo}-${s.sequence}`,
+      operationId: s.operationId, workCenterId: s.workCenterId, sequence: s.sequence,
+      targetQuantity: Number(o.targetQuantity) || 0, status: 'Aktif', splitLabel: null,
+    }));
+    try {
+      await request('/work-orders/batch', { method: 'POST', body: { items } });
+      toast(t('wo.addMissingDone', { n: items.length }), 'success');
+      await reloadAll();
+    } catch (err) { toast((err && err.message) || t('err.GENERIC'), 'danger'); }
+  }
+
+  async function mergeDuplicates(o) {
+    const groups = duplicateGroups(o);
+    if (!groups.length) return;
+    const ok = await confirmDialog({
+      title: t('wo.mergeConfirmTitle'),
+      body: t('wo.mergeConfirmBody', { n: groups.length }),
+      confirmLabel: t('wo.mergeConfirmBtn'),
+    });
+    if (!ok) return;
+    let partial = false;
+    try {
+      for (const group of groups) {
+        // En düşük id'li kayıt korunur; diğerlerinin ÜRETİM KAYITLARI korunana taşınır,
+        // sonra o iş emri silinir (silme cascade → kayıt taşınmadan silinirse kaybolur,
+        // bu yüzden ÖNCE taşı). Yalnız tüm kayıtları taşınabilen iş emri silinir.
+        const sorted = group.slice().sort((a, b) => a.id - b.id);
+        const kept = sorted[0];
+        let addTarget = 0;
+        for (const other of sorted.slice(1)) {
+          const recs = prodByWo.get(other.id) || [];
+          let allMoved = true;
+          for (const r of recs) {
+            try { await resource('production').update(r.id, { workOrderId: kept.id, updatedAt: r.updatedAt }); }
+            catch { allMoved = false; partial = true; break; }
+          }
+          if (allMoved) {
+            addTarget += Number(other.targetQuantity) || 0;
+            await resource('work-orders').remove(other.id);
+          }
+        }
+        if (addTarget > 0) {
+          await resource('work-orders').update(kept.id, {
+            woNo: kept.woNo, orderId: kept.orderId, productCodeId: kept.productCodeId,
+            operationId: kept.operationId, workCenterId: kept.workCenterId, sequence: kept.sequence,
+            targetQuantity: (Number(kept.targetQuantity) || 0) + addTarget, status: kept.status,
+            splitLabel: kept.splitLabel, updatedAt: kept.updatedAt,
+          });
+        }
+      }
+      toast(partial ? t('wo.mergePartial') : t('wo.mergeDone'), partial ? 'danger' : 'success');
+      await reloadAll();
+    } catch (err) { toast((err && err.message) || t('err.GENERIC'), 'danger'); await reloadAll(); }
+  }
+
+  async function deleteWorkOrders(o) {
+    const wos = woByOrder.get(o.id) || [];
+    if (!wos.length) return;
+    // Veri kaybı uyarısı: silinecek bağlı üretim kaydı sayısı (cascade ile gider).
+    const prodCount = wos.reduce((s, w) => s + (prodByWo.get(w.id)?.length || 0), 0);
+    const ok = await confirmDialog({
+      title: t('wo.deleteAllTitle'),
+      body: t('wo.deleteAllBody', { n: wos.length, p: prodCount }),
+      confirmLabel: t('action.delete'), danger: true,
+    });
+    if (!ok) return;
+    try {
+      for (const w of wos) await resource('work-orders').remove(w.id);
+      toast(t('wo.deleteAllDone', { n: wos.length }), 'success');
+      await reloadAll();
+    } catch (err) { toast((err && err.message) || t('err.GENERIC'), 'danger'); await reloadAll(); }
   }
 
   function buildStep(o, s, i, total, firstOpen) {
