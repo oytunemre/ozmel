@@ -111,6 +111,10 @@ export async function viewWorkOrders(container, params) {
   let arama = '';
   let planTarihi = '';                // sol kolon plan tarihi filtresi
   const acikAdim = new Map();         // 'orderId|sequence' -> açık mı (elle override)
+  // Sekme 2 (Liste) durumu
+  let listeArama = '';
+  let listeFiltre = 'hepsi';          // hepsi | aktif | tamam
+  let listeTarihi = '';
 
   // focusId: gelen id bir iş emriyse → siparişini seç, sekmeyi Sipariş Bazlı yap, adımı aç.
   if (params?.id != null) {
@@ -152,7 +156,8 @@ export async function viewWorkOrders(container, params) {
     }));
 
     if (tab === 'siparis') renderOrderTab();
-    else renderPlaceholder(tab === 'liste' ? 'wo.tabList' : 'wo.tabDowntime');
+    else if (tab === 'liste') renderListTab();
+    else renderPlaceholder('wo.tabDowntime');
   }
 
   function renderPlaceholder(key) {
@@ -442,6 +447,143 @@ export async function viewWorkOrders(container, params) {
         <td title="${esc(note)}" style="${td('font-size:12.5px; color:var(--color-neutral-700); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')}">${esc(note || '—')}</td>
       </tr>`;
     }
+  }
+
+  // ---------- SEKME 2: Liste ----------
+  const LIST_FILTERS = [['hepsi', 'wo.fAll'], ['aktif', 'wo.fActive'], ['tamam', 'wo.fDone']];
+
+  function renderListTab() {
+    const host = container.querySelector('#wo-body');
+    host.style.cssText = 'flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:20px;';
+    host.innerHTML = `
+      <div style="flex:none; background:#fff; border:1px solid var(--color-neutral-400); padding:11px 14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <input type="text" id="wo-lsearch" value="${esc(listeArama)}" placeholder="${esc(t('wo.searchList'))}" style="flex:1 1 220px; min-width:200px; max-width:320px; box-sizing:border-box; height:38px; padding:0 10px; font-size:13.5px; border:1px solid var(--color-neutral-400); background:#fff; color:var(--color-text);">
+        <div id="wo-lfilter" style="display:flex; border:1px solid var(--color-neutral-400); flex:none;">
+          ${LIST_FILTERS.map(([id, key], i) => {
+            const on = id === listeFiltre;
+            return `<button type="button" class="wo-lfbtn" data-f="${id}" style="height:38px; padding:0 14px; font-size:14px; border:0; border-left:${i === 0 ? '0' : '1px solid var(--color-neutral-400)'}; cursor:pointer; background:${on ? 'var(--color-accent-900)' : 'transparent'}; color:${on ? '#fff' : 'var(--color-text)'}; font-weight:${on ? '600' : '400'}; white-space:nowrap;">${esc(t(key))}</button>`;
+          }).join('')}
+        </div>
+        <div style="flex:none; display:flex; align-items:center; gap:8px;">
+          <span style="font-size:13px; color:var(--color-neutral-700); white-space:nowrap;">${esc(t('wo.planDateLabel'))}</span>
+          <input type="date" id="wo-ldate" value="${esc(listeTarihi)}" style="box-sizing:border-box; height:38px; padding:0 10px; font-family:'IBM Plex Mono',monospace; font-size:13.5px; border:1px solid var(--color-neutral-400); background:#fff; color:var(--color-text);">
+          <button type="button" id="wo-lall" style="height:38px; padding:0 12px; font-size:13.5px; background:transparent; border:1px solid var(--color-neutral-400); cursor:pointer; white-space:nowrap;">${esc(t('wo.allBtn'))}</button>
+        </div>
+        <span id="wo-lcount" style="flex:none; margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--color-neutral-600); white-space:nowrap;"></span>
+      </div>
+      <div id="wo-list-groups" style="display:flex; flex-direction:column; gap:20px;"></div>`;
+
+    const s = host.querySelector('#wo-lsearch');
+    s.addEventListener('input', () => { listeArama = s.value; renderListGroups(); });
+    host.querySelectorAll('.wo-lfbtn').forEach(b => b.addEventListener('click', () => {
+      if (b.dataset.f === listeFiltre) return;
+      listeFiltre = b.dataset.f; renderListTab();
+    }));
+    host.querySelector('#wo-ldate').addEventListener('change', (e) => { listeTarihi = e.target.value; renderListGroups(); });
+    host.querySelector('#wo-lall').addEventListener('click', () => { listeTarihi = ''; renderListTab(); });
+
+    renderListGroups();
+  }
+
+  function isPlanned(w) { const set = planDatesByWo.get(w.id); return !!(set && set.size); }
+  function woLabelFull(w) { return 'İE-' + w.woNo + (w.splitLabel ? '/' + w.splitLabel : ''); }
+
+  function renderListGroups() {
+    const q = listeArama.trim().toLocaleLowerCase('tr');
+    const rows = workOrders.filter(w => {
+      const o = orderById.get(w.orderId);
+      const p = products.byId.get(w.productCodeId);
+      if (q) {
+        const hay = [woLabelFull(w), o?.orderNo, p?.code, p?.name, ops.label(w.operationId), centers.label(w.workCenterId)]
+          .filter(Boolean).join(' ').toLocaleLowerCase('tr');
+        if (!hay.includes(q)) return false;
+      }
+      if (listeTarihi && !planDatesByWo.get(w.id)?.has(listeTarihi)) return false;
+      const hedef = Number(w.targetQuantity) || 0;
+      const bitti = hedef > 0 && produced(w) >= hedef;
+      if (listeFiltre === 'aktif') return !bitti;
+      if (listeFiltre === 'tamam') return bitti;
+      return true;
+    });
+
+    const count = container.querySelector('#wo-lcount');
+    if (count) count.textContent = t('wo.listCount', { shown: rows.length, total: workOrders.length })
+      + (listeTarihi ? ' ' + t('wo.listCountDateSuffix', { date: fmtDateTR(listeTarihi) }) : '');
+
+    const planli = rows.filter(isPlanned);
+    const plansiz = rows.filter(w => !isPlanned(w));
+    const host = container.querySelector('#wo-list-groups');
+    host.innerHTML =
+      groupHtml('wo.grpPlanned', 'wo.grpPlannedDesc', planli, false, false) +
+      groupHtml('wo.grpUnplanned', 'wo.grpUnplannedDesc', plansiz, true, true);
+    host.querySelectorAll('.wo-planadd').forEach(b => b.addEventListener('click', () => { location.hash = '#machine-plans'; }));
+  }
+
+  function groupHtml(titleKey, descKey, rows, plansiz, warnCount) {
+    const cols = [
+      ['wo.colWoNo', 'left', '150px'], ['wo.colOrder', 'left', '150px'], ['wo.colProduct', 'left', '110px'],
+      ['wo.colOperation', 'left', '150px'], ['wo.colMachine', 'left', '170px'], ['wo.colTarget', 'right', '90px'],
+      ['wo.colProduced', 'right', '100px'], ['wo.colRemaining', 'right', '90px'], ['wo.colPct', 'center', '70px'],
+      ['wo.colStatus', 'left', '130px'], ['wo.colEta', 'left', '140px'], ['', 'right', '120px'],
+    ];
+    const cRenk = warnCount && rows.length ? 'var(--color-warning)' : (rows.length ? 'var(--color-accent-700)' : 'var(--color-neutral-600)');
+    const cZemin = warnCount && rows.length ? 'var(--color-warning-fill)' : (rows.length ? 'var(--color-accent-100)' : 'var(--color-neutral-100)');
+    const bodyHtml = rows.length
+      ? rows.map(w => rowHtml(w, plansiz)).join('')
+      : `<tr><td colspan="12" style="padding:18px; text-align:center; font-size:13px; color:var(--color-neutral-600); border-bottom:1px solid var(--color-neutral-200);">${esc(t('common.noRecords'))}</td></tr>`;
+    return `<div style="background:#fff; border:1px solid var(--color-neutral-400);">
+      <div style="padding:12px 18px 11px; border-bottom:1px solid var(--color-neutral-300); display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+        <span style="font-family:var(--font-heading); font-size:19px; font-weight:600;">${esc(t(titleKey))}</span>
+        <span style="flex:none; padding:2px 8px; font-family:'IBM Plex Mono',monospace; font-size:12px; border:1px solid ${cRenk}; background:${cZemin}; color:${cRenk};">${esc(t('wo.recordCount', { n: rows.length }))}</span>
+        <span style="font-size:12.5px; color:var(--color-neutral-600);">${esc(t(descKey))}</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%; min-width:1340px; border-collapse:collapse; font-size:14px;">
+          <thead><tr style="background:var(--color-neutral-100);">
+            ${cols.map(([k, hz, w]) => `<th style="text-align:${hz}; padding:8px 12px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.12em; color:var(--color-neutral-700); font-weight:500; border-bottom:1px solid var(--color-neutral-300); width:${w}; white-space:nowrap;">${k ? esc(t(k)) : ''}</th>`).join('')}
+          </tr></thead>
+          <tbody>${bodyHtml}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  function rowHtml(w, plansiz) {
+    const o = orderById.get(w.orderId);
+    const p = products.byId.get(w.productCodeId);
+    const hedef = Number(w.targetQuantity) || 0;
+    const done = produced(w);
+    const kalan = Math.max(0, hedef - done);
+    const pct = hedef > 0 ? Math.min(100, Math.round(done / hedef * 100)) : 0;
+    const [pc, pf] = pctStyle(pct, false);
+    const durum = listDurum(w, done, hedef);
+    const due = o?.requestedDeliveryDate ? parseISO(o.requestedDeliveryDate) : null;
+    const e = estimateCompletion(w, production, { today });
+    const etaTxt = e.complete ? '—' : (e.etaDate ? fmtDateTR(fmtISOLocal(e.etaDate)) : '—');
+    const etaLate = !e.complete && due && e.etaDate && e.etaDate > due;
+    const td = (hz, extra = '') => `padding:9px 12px; text-align:${hz}; border-bottom:1px solid var(--color-neutral-200);${extra}`;
+    const mono = "font-family:'IBM Plex Mono',monospace;";
+    return `<tr>
+      <td style="${td('left', mono + 'font-size:13px; font-weight:500;')}">${esc(woLabelFull(w))}</td>
+      <td style="${td('left', mono + 'font-size:12.5px; color:var(--color-neutral-600);')}">${esc(o?.orderNo || '—')}</td>
+      <td style="${td('left', mono + 'font-size:13px;')}">${esc(p?.code || '—')}</td>
+      <td style="${td('left', 'white-space:nowrap;')}">${esc(w.operationId ? ops.label(w.operationId) : '—')}</td>
+      <td style="${td('left', 'white-space:nowrap;')}">${esc(w.workCenterId ? centers.label(w.workCenterId) : '—')}</td>
+      <td style="${td('right', mono + 'font-size:13px;')}">${esc(fmtTr(hedef))}</td>
+      <td style="${td('right', mono + 'font-size:13px;')}">${esc(fmtTr(done))}</td>
+      <td style="${td('right', mono + 'font-size:13px;')}">${esc(fmtTr(kalan))}</td>
+      <td style="${td('center')}"><span style="display:inline-block; padding:2px 7px; font-family:'IBM Plex Mono',monospace; font-size:12px; border:1px solid ${pc}; background:${pf}; color:${pc};">%${pct}</span></td>
+      <td style="${td('left')}"><span style="display:inline-block; padding:2px 8px; font-size:12.5px; border:1px solid ${durum.c}; background:${durum.f}; color:${durum.c}; white-space:nowrap;">${esc(durum.label)}</span></td>
+      <td style="${td('left', mono + 'font-size:13px; white-space:nowrap; color:' + (etaLate ? 'var(--color-danger)' : 'var(--color-text)') + ';')}">${esc(etaTxt)}</td>
+      <td style="${td('right', 'white-space:nowrap;')}">${plansiz ? `<button type="button" class="wo-planadd" style="height:30px; padding:0 12px; font-size:13px; cursor:pointer; background:transparent; border:1px solid var(--color-accent-700); color:var(--color-accent-800);">${esc(t('wo.planAdd'))}</button>` : ''}</td>
+    </tr>`;
+  }
+
+  function listDurum(w, done, hedef) {
+    if (w.status === 'İptal') return { label: t('status.İptal'), c: 'var(--color-neutral-600)', f: 'var(--color-neutral-100)' };
+    if (hedef > 0 && done >= hedef) return { label: t('wo.stDone'), c: 'var(--color-success)', f: 'var(--color-success-fill)' };
+    if (done > 0) return { label: t('wo.stActive'), c: 'var(--color-accent-700)', f: 'var(--color-accent-100)' };
+    return { label: t('wo.stNotStarted'), c: 'var(--color-neutral-600)', f: 'var(--color-neutral-100)' };
   }
 
   // ---------- yardımcılar ----------
