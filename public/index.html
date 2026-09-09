@@ -111,11 +111,6 @@
         ['sites', 'tedarikciSite.js', 'viewTedarikciSite'],
         ['gunluk-kalite', 'gunlukKalite.js', 'viewGunlukKalite'],
         ['kalite-kontrol', 'kaliteKontrol.js', 'viewKaliteKontrol'],
-        // Nokta tanımları geçici olarak menüde kalıyor — sekme-içi "Kontrol Noktaları"
-        // drawer'ı eklenince (sonraki adım) kaldırılacak. Kayıt/kontrol ekranları
-        // (Giriş Kalite, First-Off Kayıtları, Saatlik Kayıtlar) Günlük Kalite'ye taşındı.
-        ['first-off-points', 'firstOffPoints.js', 'viewFirstOffPoints'],
-        ['hourly-points', 'hourlyPoints.js', 'viewHourlyPoints'],
       ]],
       ['production', [
         ['work-centers', 'workCenters.js', 'viewWorkCenters'],
@@ -146,6 +141,10 @@
         ['terms', 'terms.js', 'viewTerms'],
         ['working-hours', 'workingHours.js', 'viewWorkingHours'],
         ['downtime-reasons', 'downtimeReasons.js', 'viewDowntimeReasons'],
+        // Nokta tanımları birer TANIM — Günlük Kalite'yi kullanan kişi nadiren dokunur
+        // (müşteri kararı). Modül dosyaları değişmedi, yalnız menü grubu.
+        ['first-off-points', 'firstOffPoints.js', 'viewFirstOffPoints'],
+        ['hourly-points', 'hourlyPoints.js', 'viewHourlyPoints'],
       ]],
       ['admin', [
         ['tasks', 'tasks.js', 'viewTasks'],
