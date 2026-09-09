@@ -409,6 +409,49 @@ baktığında tanıdık kelimeleri görmeli.
 | tree.deleteTitle | Düğüm silinsin mi? | Delete this node? |
 | tree.deleteBody | "{name}" ve ALT düğümleri kalıcı olarak silinecek. | "{name}" and its CHILD nodes will be permanently deleted. |
 
+### Üretim Girişi v2 (`ug.*`) — kart bazlı ekranın yeniden yazımı
+
+**Yeni ekran** (`docs/uretim-girisi-brief.md`, tasarım `tasarim/Uretim-Girisi-v2.dc.html`, referans v78 `viewUretimGirisi`): kullanıcı iş emri **seçmez** — tarih + vardiya seçilir, o güne `machine_plans`'ta atanmış iş emirleri **kart** olarak gelir; her karta üretilen/fire/operatör (+ opsiyonel duruş, not) girilir. **Vardiya hedefi** günlük hedefin (`machine_plans.target_quantity`) süreye orantılı payı — Çalışma Saatleri'nden CANLI hesaplanır (`core/capacity.js`'e eklenen `shiftWorkMinutes` / `shiftRatio` / `shiftTarget`; sabit oran yok), kayda `target_quantity` yazılır, düzenlenemez. Kayıt anahtarı `(iş emri, tarih, vardiya, operatör)` — migration 042; `ProductionRepository::create()` upsert eder, mevcut kayıtta önce onay istenir. `uretilen > kalan` **engel değil uyarı** (meşru durum). Boş hal → Üretim Planı'na yönlendirir. Alt tablo "Bugünkü Girişler" `production.not` + duruş süresini (mola düşülmüş, `downtimeMinutes`) görünür kılar (tutarlılık raporu D1/D2). Sadece **Sabah / Öğleden Sonra** vardiyaları gösterilir (Mesai BE enum'unda kalır ama ekranda seçilmez — veride yok).
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| ug.subtitle | Üretim Planı'nda seçilen güne atanmış işler listelenir — iş emri seçmenize gerek yok | Jobs assigned to the selected day in Production Plan are listed — no need to pick a work order |
+| ug.prevDay / ug.nextDay | Önceki gün / Sonraki gün | Previous day / Next day |
+| ug.todayBadge | Bugün | Today |
+| ug.shiftAuto / ug.shiftManual | saate göre seçildi / elle seçildi | selected by time / selected manually |
+| ug.daySummary | {n} iş · hedef {target} · girilen {done} | {n} jobs · target {target} · entered {done} |
+| ug.dailyTarget / ug.shiftTarget / ug.remaining | GÜNLÜK HEDEF / VARDİYA HEDEFİ / KALAN | DAILY TARGET / SHIFT TARGET / REMAINING |
+| ug.shiftHint | {shift} vardiyası {pct} | {shift} shift {pct} |
+| ug.breakDeducted | mola düşülmüş | breaks deducted |
+| ug.produced / ug.scrap / ug.operator | Üretilen / Fire / Operatör | Produced / Scrap / Operator |
+| ug.selectPlaceholder | — Seçin — | — Select — |
+| ug.downtimeAdd / ug.downtimeRemove | + Duruş ekle / − Duruşu kaldır | + Add downtime / − Remove downtime |
+| ug.dtStart / ug.dtEnd / ug.dtDuration | Başlangıç / Bitiş / SÜRE | Start / End / DURATION |
+| ug.downtimeReason | Duruş nedeni | Downtime reason |
+| ug.dtBreakNote | Mola süresi duruştan otomatik düşülür. | Break time is deducted from downtime automatically. |
+| ug.note / ug.notePlaceholder | Not (isteğe bağlı) / Kısa açıklama | Note (optional) / Short note |
+| ug.save / ug.update | Kaydet / Güncelle | Save / Update |
+| ug.badgeReached / ug.badgeBelow | Hedefe ulaşıldı / Hedefin altında | Target reached / Below target |
+| ug.downtimeBadge | {n} dk duruş | {n} min downtime |
+| ug.overWarn | Girilen miktar kalandan fazla (kalan: {n}). Yine de kaydedilecek. | Entered quantity exceeds remaining (remaining: {n}). It will still be saved. |
+| ug.errNoQtyTitle / ug.errNoQtySol | Üretilen miktar girilmedi / Bu vardiyada üretilen sağlam parça sayısını yazın. | Produced quantity not entered / Enter the number of good parts produced this shift. |
+| ug.errZeroTitle / ug.errZeroSol | Üretilen miktar sıfırdan büyük olmalı / Hiç üretim yapılmadıysa kaydetmeyin. | Produced quantity must be greater than zero / Don't save if nothing was produced. |
+| ug.errNoOpTitle / ug.errNoOpSol | Operatör seçilmedi / Bu vardiyada makineyi kullanan kişiyi seçin. | Operator not selected / Select the person who operated the machine this shift. |
+| ug.errDtHalfTitle / ug.errDtHalfSol | Duruş saatleri eksik / İkisini de girin ya da bölümü boş bırakın. | Downtime hours incomplete / Enter both, or leave the section empty. |
+| ug.errDtOrderTitle / ug.errDtOrderSol | Duruş bitişi başlangıçtan önce / Bitiş saatini sonraya alın. | Downtime end is before start / Set the end time after the start. |
+| ug.errDtReasonTitle / ug.errDtReasonSol | Duruş nedeni seçilmedi / Listeden duruşun nedenini seçin. | Downtime reason not selected / Select the downtime reason from the list. |
+| ug.emptyTitle | Bu tarih için planlanmış iş yok | No jobs planned for this date |
+| ug.emptyBody | Üretim Planı'ndan bu güne iş atadığınızda burada listelenir. | Once you assign a job to this day in Production Plan, it will be listed here. |
+| ug.goPlan | Üretim Planı'na git | Go to Production Plan |
+| ug.dupTitle | Kayıt zaten var | Entry already exists |
+| ug.dupBody | Bu iş emri için {date} / {shift} vardiyasında bu operatörün kaydı var (üretilen: {n}). Üzerine yazılsın mı? | This operator already has an entry for this work order on {date} / {shift} shift (produced: {n}). Overwrite it? |
+| ug.savedToast / ug.updatedToast | {n} adet kaydedildi / {n} adet güncellendi | {n} pcs saved / {n} pcs updated |
+| ug.entriesTitle | BUGÜNKÜ GİRİŞLER | TODAY'S ENTRIES |
+| ug.entriesSummary | {date} · {n} kayıt · duruş süreleri moladan arındırılmış | {date} · {n} records · downtime durations exclude breaks |
+| ug.entriesEmpty | Bu gün için henüz kayıt girilmedi. | No entries recorded for this day yet. |
+| ug.colTime / ug.colWo / ug.colProduct / ug.colShift / ug.colOperator | SAAT / İŞ EMRİ / ÜRÜN / VARDİYA / OPERATÖR | TIME / WORK ORDER / PRODUCT / SHIFT / OPERATOR |
+| ug.colProduced / ug.colScrap / ug.colDowntime / ug.colNote | ÜRETİLEN / FİRE / DURUŞ / NOT | PRODUCED / SCRAP / DOWNTIME / NOTE |
+
 ### Parti D (Kalite: Giriş Kontrolleri / First-Off Noktaları & Kayıtları) — paylaşılan + modül metinleri
 
 Paylaşılan alan/enum anahtarları (kalite modülleri + ölçüm detayı):
