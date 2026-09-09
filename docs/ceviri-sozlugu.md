@@ -375,6 +375,75 @@ baktığında tanıdık kelimeleri görmeli.
 | wo.deleteTitle | İş emri silinsin mi? | Delete this work order? |
 | wo.deleteBody | "{no}" ve BAĞLI üretim kayıtları silinecek. | "{no}" and its LINKED production records will be deleted. |
 
+### İş Emirleri v2 (`wo.*`) — üç sekme + bakım araçları
+
+**Ekranın yeniden yazımı** (`docs/is-emirleri-brief.md`, tasarım `tasarim/Is-Emirleri-v2.dc.html`, referans v78 `viewWorkOrders`/`viewWorkOrdersSiparisBazli`/`viewWorkOrdersListe`/`viewDurusKayitlari`; tutarlılık raporu madde 2). Düz tablo → üç sekme: **Sipariş Bazlı** (operasyon zinciri), **Liste** (planlı/plansız gruplar), **Duruşlar** (veri temizleme). Sekme seçimi `localStorage` (`ozmel.wo.tab`). Yukarıdaki `wo.*` (drawer/CRUD) anahtarları KORUNUR; aşağıdakiler v2 ekidir. Hesaplar mevcut core ile: `eta.js:estimateCompletion` (tahmini bitiş/gecikme), `capacity.js:downtimeMinutes` (mola düşülmüş süre), `format.js`. Durum rozetleri **hesaplanır** (`orders.status` değil). `focusId` (`#work-orders?id=<işEmriId>`) korunur. Bakım araçları: eksik adım ekle (`work-orders/batch`), mükerrer birleştir (üretim kayıtları korunana taşınır, sonra silinir), tüm iş emirlerini sil (onayda bağlı üretim kaydı sayısı). `veri metnine text-transform: uppercase uygulanmaz`.
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| wo.tabOrder / wo.tabList / wo.tabDowntime | Sipariş Bazlı / Liste / Duruşlar | By Order / List / Downtime |
+| wo.subtitleV2 | {orders} sipariş · {wos} iş emri · operasyon zincirinde nerede kaldığını görün | {orders} orders · {wos} work orders · see where each stands in the operation chain |
+| wo.stActive / wo.stDone / wo.stStopped | Üretimde / Tamamlandı / Durduruldu | In Production / Completed / Stopped |
+| wo.stWaiting / wo.stRisk / wo.stNotStarted | İş Emri Bekliyor / Termin Riski / Başlamadı | Awaiting Work Order / Deadline Risk / Not Started |
+| **Sekme 1 (Sipariş Bazlı)** | | |
+| wo.searchOrders | Ürün kodu, ürün adı, sipariş no | Product code, product name, order no |
+| wo.allBtn | Tümü | All |
+| wo.dateNoteFiltered | {n} sipariş · {date} günü planlanmış | {n} orders · planned on {date} |
+| wo.dateNoteAll | {n} sipariş · plan tarihi seçerek daraltabilirsiniz | {n} orders · pick a plan date to narrow down |
+| wo.searchEmpty | Arama sonucu bulunamadı. | No results found. |
+| wo.orderMeta | {qty} adet · teslim {date} | {qty} pcs · due {date} |
+| wo.meta | {orderNo} · {qty} adet · {n} operasyon | {orderNo} · {qty} pcs · {n} operations |
+| wo.noWoTitle | İş emri henüz açılmadı | No work order opened yet |
+| wo.noWoBody | Üretim Siparişleri modülünden "İş Emri Aç" ile başlatabilirsiniz. | You can start it from the Production Orders module with "Open Work Order". |
+| wo.goOrders | Üretim Siparişleri'ne git | Go to Production Orders |
+| wo.delayDays | {n} gün gecikme | {n} days late |
+| wo.recordsTitle | ÜRETİM KAYITLARI | PRODUCTION RECORDS |
+| wo.addProduction | + Üretim Girişi | + Production Entry |
+| wo.etaEstimate | Tahmini bitiş {date} | Est. finish {date} |
+| wo.etaMeets / wo.etaMisses | termine yetişir / termine yetişmiyor | meets deadline / misses deadline |
+| wo.etaNone | Tahmini bitiş hesaplanamıyor | Estimated finish cannot be computed |
+| wo.etaDone | Tamamlandı | Completed |
+| wo.noRecords | Bu adım için henüz üretim kaydı yok. | No production records for this step yet. |
+| wo.colDate / wo.colShift / wo.colOperator | TARİH / VARDİYA / OPERATÖR | DATE / SHIFT / OPERATOR |
+| wo.colProduced / wo.colScrap / wo.colDowntime / wo.colNote | ÜRETİLEN / FİRE / DURUŞ / NOT | PRODUCED / SCRAP / DOWNTIME / NOTE |
+| **Sekme 2 (Liste)** | | |
+| wo.searchList | İş emri, ürün, makine… | Work order, product, machine… |
+| wo.fAll / wo.fActive / wo.fDone | Tümü / Aktif / Tamamlandı | All / Active / Completed |
+| wo.planDateLabel | Plan tarihi | Plan date |
+| wo.listCount | {shown} / {total} iş emri | {shown} / {total} work orders |
+| wo.listCountDateSuffix | · sadece plan tarihi {date} | · only plan date {date} |
+| wo.grpPlanned / wo.grpUnplanned | PLANLI İŞ EMİRLERİ / PLANSIZ İŞ EMİRLERİ | PLANNED WORK ORDERS / UNPLANNED WORK ORDERS |
+| wo.grpPlannedDesc | Makine planında bir güne atanmış | Assigned to a day in the machine plan |
+| wo.grpUnplannedDesc | Henüz plana girmemiş | Not yet in a plan |
+| wo.recordCount | {n} kayıt | {n} records |
+| wo.planAdd | Plana Ekle | Add to Plan |
+| wo.colWoNo / wo.colOrder / wo.colProduct | İŞ EMRİ NO / SİPARİŞ / ÜRÜN | WORK ORDER NO / ORDER / PRODUCT |
+| wo.colOperation / wo.colMachine / wo.colTarget | OPERASYON / MAKİNE / HEDEF | OPERATION / MACHINE / TARGET |
+| wo.colRemaining / wo.colPct / wo.colStatus / wo.colEta | KALAN / % / DURUM / TAHMİNİ BİTİŞ | REMAINING / % / STATUS / EST. FINISH |
+| **Sekme 3 (Duruşlar)** | | |
+| wo.dtTitle | DURUŞLAR | DOWNTIME |
+| wo.dtMissing | {n} nedeni eksik | {n} missing reason |
+| wo.dtDesc | Duruşu olan üretim kayıtlarını gösterir — nedeni girmek için Düzenle'ye tıklayın. | Shows production records with downtime — click Edit to enter the reason. |
+| wo.colWo / wo.colDuration / wo.colReason | İŞ EMRİ / SÜRE / NEDEN | WORK ORDER / DURATION / REASON |
+| wo.reasonMissing | Neden girilmemiş | Reason not entered |
+| wo.edit | Düzenle | Edit |
+| wo.dtEmpty / wo.dtEmptyDate | Henüz duruş kaydı yok. / Bu tarihte duruş kaydı yok. | No downtime records yet. / No downtime records on this date. |
+| wo.dtEditTitle | Duruş Kaydını Düzenle | Edit Downtime Record |
+| wo.reasonNone | — Neden seçin — | — Select reason — |
+| **Bakım araçları** | | |
+| wo.addMissing | Rotaya Göre Eksik Adımları Ekle ({n}) | Add Missing Steps From Route ({n}) |
+| wo.mergeDup | Mükerrer Adımları Birleştir ({n}) | Merge Duplicate Steps ({n}) |
+| wo.deleteWos | İş Emirlerini Sil | Delete Work Orders |
+| wo.addMissingDone | {n} eksik adım rotadan eklendi | {n} missing steps added from route |
+| wo.mergeConfirmTitle | Mükerrer adımlar birleştirilsin mi? | Merge duplicate steps? |
+| wo.mergeConfirmBody | {n} mükerrer grup birleştirilecek. Her gruptaki iş emirleri tek kayda indirilir; TÜM üretim kayıtları korunur (silinen iş emrinden korunana taşınır). | {n} duplicate groups will be merged. The work orders in each group are reduced to one; ALL production records are preserved (moved from the removed work order to the kept one). |
+| wo.mergeConfirmBtn | Birleştir | Merge |
+| wo.mergeDone | Mükerrer adımlar birleştirildi | Duplicate steps merged |
+| wo.mergePartial | Bazı üretim kayıtları çakışma nedeniyle taşınamadı — birleştirme kısmi yapıldı. | Some production records could not be moved due to a conflict — merge was partial. |
+| wo.deleteAllTitle | Siparişin iş emirleri silinsin mi? | Delete this order's work orders? |
+| wo.deleteAllBody | Bu siparişin {n} iş emri ve BAĞLI {p} üretim kaydı kalıcı olarak silinecek. | This order's {n} work orders and {p} LINKED production records will be permanently deleted. |
+| wo.deleteAllDone | {n} iş emri silindi | {n} work orders deleted |
+
 ### Parti C (Üretim Girişi / Ürün Ağaçları) — alanlar, vardiya, modül metinleri
 
 | Anahtar | Türkçe | English |
