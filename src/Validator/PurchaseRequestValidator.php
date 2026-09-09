@@ -15,6 +15,7 @@ final class PurchaseRequestValidator extends Validator
              ->positiveInt($input, 'productCodeId', 'Urun kodu')
              ->positiveInt($input, 'orderId', 'Siparis')
              ->numeric($input, 'quantity', 'Miktar')
+             ->maxLength($input, 'materialDescription', 255, 'Malzeme adi')
              ->maxLength($input, 'unit', 32, 'Birim')
              ->maxLength($input, 'supplier', 255, 'Tedarikci')
              ->date($input, 'requestDate', 'Istek tarihi')

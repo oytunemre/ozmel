@@ -770,20 +770,23 @@ $runCollection('hourly_records', $D['saatlikKayitlari'] ?? [], function (array $
 if ($stoppedAt === null)
 $runCollection('purchase_requests', $D['satinalmaIstekleri'] ?? [], function (array $r)
         use ($repo, &$idMap, &$ref, &$materialIssues, $str, $num): string {
-    $matCode = $str($r['malzeme'] ?? null);
+    // Kaynak: urun = GERCEK kod (material_code_id'ye cozulur), malzeme = SERBEST aciklama
+    // (material_description sutununa yazilir; migration 044). Onceden malzeme kod sanilip
+    // cozulmeye calisiliyor, material_code_id NULL kaliyor ve metin note'a ekleniyordu
+    // (36 kayit) — duzeltildi. Serbest-metin isteklerde kod NULL kalabilir (migration 028).
+    $code    = $str($r['urun'] ?? null);        // gercek kod
+    $matDesc = $str($r['malzeme'] ?? null);     // serbest malzeme aciklamasi
     $note    = $str($r['not'] ?? null);
-    // Malzeme bir urun koduna cozuluyorsa FK verilir; cozulmuyorsa material_code_id
-    // NULL kalir ve orijinal metin note basina eklenir (mevcut not varsa satir basiyla
-    // ayrilir). Serbest-metin malzemeli istekler artik ATLANMAZ (bkz. migration 028).
-    $materialId = ($matCode !== null && isset($ref['product'][$matCode]))
-        ? $ref['product'][$matCode]
+    $materialId = ($code !== null && isset($ref['product'][$code]))
+        ? $ref['product'][$code]
         : null;
-    if ($matCode !== null && $materialId === null) {
-        $materialIssues[] = ['id' => $r['id'] ?? '', 'malzeme' => $matCode];
-        $note = $matCode . ($note !== null ? "\n" . $note : '');
+    if ($code !== null && $materialId === null) {
+        $materialIssues[] = ['id' => $r['id'] ?? '', 'malzeme' => $code];
     }
     $res = $repo['purchase_requests']->etlUpsert($str($r['id'] ?? null), [
-        'material_code_id' => $materialId,
+        'material_code_id'     => $materialId,
+        'material_description' => $matDesc,
+        // product_code_id ("hangi urun icin") kaynak alani urun ile aynidir — dokunulmadi.
         'product_code_id'  => isset($r['urun']) ? ($ref['product'][$str($r['urun'])] ?? null) : null,
         'quantity'         => $num($r['miktar'] ?? null),
         'unit'             => $str($r['birim'] ?? null),
@@ -974,13 +977,13 @@ foreach ($order as $col) {
     }
 }
 
-// Satinalma isteklerinde malzeme kod cozumleme ozeti (her zaman raporlanir).
-echo "\nSatinalma istekleri — malzeme cozulemedi: " . count($materialIssues) . " kayit"
+// Satinalma isteklerinde urun kodu cozumleme ozeti (her zaman raporlanir).
+echo "\nSatinalma istekleri — urun kodu cozulemedi: " . count($materialIssues) . " kayit"
     . ($materialIssues === [] ? " (hepsi koda cozuldu)\n" : "\n");
-// Melih'e ozel: cozulemeyenler material_code_id NULL ile ice alindi, metin note'a yazildi.
+// Cozulemeyenler material_code_id NULL ile ice alinir; malzeme aciklamasi material_description'a yazilir.
 if ($materialIssues !== []) {
-    echo "--- MELIH ICIN: bu istekler NULL malzeme ile ice alindi; orijinal metin note basina eklendi ---\n";
-    echo "Kod tanimlanip malzeme kodla degistirilince ETL tekrar calistirilabilir.\n";
+    echo "--- Bu istekler NULL material_code_id ile ice alindi (urun kodu bulunamadi) ---\n";
+    echo "Kod tanimlaninca ETL tekrar calistirilabilir.\n";
     foreach ($materialIssues as $m) {
         echo "  {$m['id']}: {$m['malzeme']}\n";
     }

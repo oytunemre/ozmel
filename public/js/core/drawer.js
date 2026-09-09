@@ -257,7 +257,10 @@ function buildField(f, value, markDirty, form) {
   if (f.type === 'fk') {
     const fk = f.fk;
     if (value != null) fk.setValue(value);
-    fk.onChange(markDirty);
+    // markDirty her zaman; alan kendi onChange'ini de tanımlarsa (ör. kod seçilince
+    // başka alanları otomatik doldurma) o da çağrılır. setValue emit ETMEZ → düzenleme
+    // panelini açmak otomatik doldurmayı tetiklemez (yalnız kullanıcı seçimi).
+    fk.onChange((val) => { markDirty(); f.onChange?.(val); });
     wrap.appendChild(fk.el);
     read = () => fk.getValue();
   } else if (f.type === 'tags') {

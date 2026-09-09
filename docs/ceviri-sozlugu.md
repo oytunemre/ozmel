@@ -278,6 +278,8 @@ baktığında tanıdık kelimeleri görmeli.
 
 ### Satınalma İstekleri (`pr.*`)
 
+**Malzeme kodu + adı** (`docs/satinalma-malzeme-brief.md`): malzeme kodu listeden seçilir (yalnız `product_codes.type = 'Hammadde'`, alfabetik); kod seçilince Malzeme Adı (`product_codes.name`) ve Birim (`product_codes.unit`) otomatik dolar, ikisi de elle değiştirilebilir. Serbest malzeme adı yeni `material_description` sütununda tutulur (migration 044; DTO/Validator/Repository). ETL düzeltmesi: kaynak `urun` → `material_code_id`, `malzeme` → `material_description` (önceden `malzeme` koda çözülmeye çalışılıp 36 kayıtta NULL kalıyordu). Listede Malzeme sütunu iki satır: üstte kod (mono), altında açıklama (gri); arama her ikisinde çalışır. `veri metnine text-transform: uppercase uygulanmaz`.
+
 | Anahtar | Türkçe | English |
 |---|---|---|
 | pr.subtitle | Üretim için gereken malzemenin tedarik talebi | Supply request for the material needed in production |
@@ -286,7 +288,10 @@ baktığında tanıdık kelimeleri görmeli.
 | pr.noReceipts | Henüz giriş yapılmadı. | No receipts yet. |
 | pr.newTitle | Yeni İstek | New Request |
 | pr.editTitle | İstek Düzenle | Edit Request |
-| pr.materialHelp | Malzeme kod listesinden seçilir; serbest metin girilmez. | Chosen from the material code list; free text is not allowed. |
+| pr.materialField | Malzeme / Ürün Kodu | Material / Product Code |
+| pr.materialName | Malzeme Adı | Material Name |
+| pr.materialNamePlaceholder | Kod seçilince otomatik dolar, gerekirse düzenleyin | Auto-fills when a code is selected; edit if needed |
+| pr.materialHelp | Yalnız hammadde kodları listelenir; kod seçilince ad ve birim otomatik dolar. | Only raw-material codes are listed; selecting a code auto-fills name and unit. |
 | pr.productFor | Ürün (hangi ürün için) | Product (for which product) |
 | pr.linkedOrder | Bağlı Sipariş | Linked Order |
 | pr.selectMaterial | Malzeme seçin… | Select material… |

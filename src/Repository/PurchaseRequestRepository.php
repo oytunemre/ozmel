@@ -15,8 +15,8 @@ final class PurchaseRequestRepository extends BaseRepository
     protected function columns(): array
     {
         return [
-            'material_code_id', 'product_code_id', 'quantity', 'unit', 'supplier',
-            'request_date', 'expected_date', 'order_id', 'note',
+            'material_code_id', 'material_description', 'product_code_id', 'quantity', 'unit',
+            'supplier', 'request_date', 'expected_date', 'order_id', 'note',
         ];
     }
 }

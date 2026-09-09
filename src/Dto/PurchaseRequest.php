@@ -9,8 +9,8 @@ namespace App\Dto;
  *
  * v1 satinalmaIstekleri alan adlari -> Ingilizce API/DB. Malzeme artik FK
  * (materialCodeId); tanim ayri tutulmaz, product_codes.name'den JOIN ile gelir.
- *   malzeme       -> materialCodeId (product_codes.id, opsiyonel; eslesmezse NULL)
- *   urun          -> productCodeId  (product_codes.id, opsiyonel)
+ *   urun          -> materialCodeId (product_codes.id; gercek kod) + productCodeId (ayni kaynak)
+ *   malzeme       -> materialDescription (serbest metin, opsiyonel; migration 044)
  *   miktar        -> quantity
  *   birim         -> unit
  *   tedarikci     -> supplier
@@ -26,6 +26,7 @@ final class PurchaseRequest
         return [
             'id'             => (int) $row['id'],
             'materialCodeId' => $row['material_code_id'] !== null ? (int) $row['material_code_id'] : null,
+            'materialDescription' => isset($row['material_description']) ? (string) $row['material_description'] : null,
             'productCodeId'  => $row['product_code_id'] !== null ? (int) $row['product_code_id'] : null,
             'quantity'       => $row['quantity'] !== null ? (float) $row['quantity'] : null,
             'unit'           => $row['unit'] !== null ? (string) $row['unit'] : null,
@@ -52,6 +53,11 @@ final class PurchaseRequest
             // Malzeme opsiyonel: bos/gecersiz -> NULL (product/order ile ayni desen).
             $id = (int) $input['materialCodeId'];
             $out['material_code_id'] = $id > 0 ? $id : null;
+        }
+        if (array_key_exists('materialDescription', $input)) {
+            // Serbest malzeme adi (opsiyonel); kod secilince otomatik dolar, elle degistirilebilir.
+            $val = trim((string) $input['materialDescription']);
+            $out['material_description'] = $val === '' ? null : $val;
         }
         if (array_key_exists('productCodeId', $input)) {
             $id = (int) $input['productCodeId'];
