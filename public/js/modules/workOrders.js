@@ -1,123 +1,471 @@
-// İş Emirleri — v2 modülü. Tasarım: Is-Emirleri.dc.html.
-// Tablo + drawer. "Üretilen / Hedef" ve ilerleme, üretim kayıtlarından toplanır.
-// i18n: etiketler () => t(...); vardiya/durum değerleri BE'de TR saklanır, t/tStatus ile gösterilir.
+// İş Emirleri — v2 (yeniden yazım). Tasarım: tasarim/Is-Emirleri-v2.dc.html.
+// Referans: v78 viewWorkOrders / viewWorkOrdersSiparisBazli / viewWorkOrdersListe /
+// viewDurusKayitlari. Spec: docs/is-emirleri-brief.md. Tutarlılık raporu madde 2.
+//
+// Üç sekme: Sipariş Bazlı (operasyon zinciri) · Liste · Duruşlar. Sekme seçimi
+// localStorage'da. Bu dosya ADIM ADIM yazılıyor — şu an SEKME 1 (Sipariş Bazlı) tam;
+// Liste ve Duruşlar sonraki commit'lerde. Hesaplar mevcut core fonksiyonlarıyla:
+// eta.js (estimateCompletion), capacity.js (downtimeMinutes), format.js.
+//
+// i18n: özel görünüm (DataTable yok) — makine/ürün/operasyon adları sunucudan geldiği
+// gibi basılır (çevrilmez), etiketler t() ile. focusId (#work-orders?id=<işEmriId>)
+// korunur: gelen id bir iş emriyse siparişi seçilir, o adım açılır.
 
-import { resource } from '../core/api.js';
-import { DataTable } from '../core/table.js';
-import { openDrawer } from '../core/drawer.js';
-import { FkSelect } from '../core/fkselect.js';
-import { toast } from '../core/toast.js';
-import { confirmDialog, errorState, esc } from '../core/states.js';
-import { loadLookup, mapProduct, mapNamed, WORK_ORDER_STATUS_OPTIONS, withCurrent } from '../core/lookups.js';
-import { childTable } from './_childDetail.js';
-import { t, tStatus } from '../core/i18n.js';
+import { resource, request } from '../core/api.js';
+import { errorState, esc } from '../core/states.js';
+import { loadLookup, mapProduct, mapNamed } from '../core/lookups.js';
+import { t, bindLang } from '../core/i18n.js';
+import { fmtTr, fmtDateTR, fmtDuration } from '../core/format.js';
+import { startOfDay, parseISO } from '../core/report.js';
+import { estimateCompletion } from '../core/eta.js';
+import { downtimeMinutes } from '../core/capacity.js';
 
-const api = resource('work-orders');
-const canWrite = (window.SESSION_ROLE ?? 'editor') === 'editor';
-const shiftLabel = (s) => s ? t('shift.' + s) : '—';
+const TAB_LS = 'ozmel.wo.tab';
+const TABS = [['siparis', 'wo.tabOrder'], ['liste', 'wo.tabList'], ['durus', 'wo.tabDowntime']];
+const DAY_MS = 86400000;
+const daysBetween = (a, b) => Math.round((startOfDay(b) - startOfDay(a)) / DAY_MS);
 
 export async function viewWorkOrders(container, params) {
   container.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
-  let products, ops, centers, orders, producedByWo, prodByWo;
+
+  let products, ops, centers, operators, orders, workOrders, production, routes, plans, wh;
   try {
-    // products/ops/centers + üretim paralel; orders lookup'ı products.label kullandığından SONRA.
-    [products, ops, centers, { producedByWo, prodByWo }] = await Promise.all([
+    const d = (n) => resource(n).listAll().then(r => r.data);
+    [products, ops, centers, operators, orders, workOrders, production, routes, plans, wh] = await Promise.all([
       loadLookup('product-codes', mapProduct),
       loadLookup('operations', mapNamed),
       loadLookup('work-centers', mapNamed),
-      loadProduction(),
+      loadLookup('operators', (o) => ({ id: o.id, code: o.badgeNo, name: o.fullName })),
+      d('orders'), d('work-orders'), d('production'), d('routes'), d('machine-plans'),
+      request('/working-hours').then(r => r.data),
     ]);
-    orders = await loadLookup('orders', (o) => ({ id: o.id, code: o.orderNo, name: products.label(o.productCodeId) }));
   } catch (err) {
     container.innerHTML = '';
-    container.appendChild(errorState({ message: err.message, onRetry: () => viewWorkOrders(container) }));
+    container.appendChild(errorState({ message: err.message, onRetry: () => viewWorkOrders(container, params) }));
     return;
   }
 
-  // Üretim kayıtları bir kez çekilir: hem üretilen adet toplamı hem iş emri bazında liste.
-  async function loadProduction() {
-    const { data } = await resource('production').listAll();
-    const producedByWo = new Map();
-    const prodByWo = new Map();
-    for (const p of data) {
-      producedByWo.set(p.workOrderId, (producedByWo.get(p.workOrderId) || 0) + (p.actualQuantity || 0));
-      if (!prodByWo.has(p.workOrderId)) prodByWo.set(p.workOrderId, []);
-      prodByWo.get(p.workOrderId).push(p);
+  const today = startOfDay(new Date());
+
+  // --- türetmeler ---
+  const woByOrder = new Map();        // orderId -> [wo]
+  for (const w of workOrders) { if (!woByOrder.has(w.orderId)) woByOrder.set(w.orderId, []); woByOrder.get(w.orderId).push(w); }
+  const producedByWo = new Map();     // woId -> toplam üretilen
+  const prodByWo = new Map();         // woId -> [üretim kaydı]
+  for (const p of production) {
+    producedByWo.set(p.workOrderId, (producedByWo.get(p.workOrderId) || 0) + (p.actualQuantity || 0));
+    if (!prodByWo.has(p.workOrderId)) prodByWo.set(p.workOrderId, []);
+    prodByWo.get(p.workOrderId).push(p);
+  }
+  const planDatesByWo = new Map();    // woId -> Set(tarih) (machine_plans)
+  for (const pl of plans) {
+    if (pl.workOrderId == null || !pl.date) continue;
+    if (!planDatesByWo.has(pl.workOrderId)) planDatesByWo.set(pl.workOrderId, new Set());
+    planDatesByWo.get(pl.workOrderId).add(pl.date);
+  }
+  const orderById = new Map(orders.map(o => [o.id, o]));
+  const produced = (w) => producedByWo.get(w.id) || 0;
+
+  // Bir siparişin iş emirlerini sıraya (sequence) göre adımlara böler; aynı sırada birden
+  // çok iş emri (farklı makine) → bölünmüş adım (A/B).
+  function stepsOf(o) {
+    const wos = (woByOrder.get(o.id) || []).slice()
+      .sort((a, b) => (a.sequence ?? 1e9) - (b.sequence ?? 1e9) || String(a.woNo).localeCompare(String(b.woNo), 'tr'));
+    const bySeq = new Map();
+    for (const w of wos) { const s = w.sequence ?? 0; if (!bySeq.has(s)) bySeq.set(s, []); bySeq.get(s).push(w); }
+    return [...bySeq.entries()].sort((a, b) => a[0] - b[0]).map(([sequence, group]) => {
+      const target = group.reduce((s, w) => s + (Number(w.targetQuantity) || 0), 0);
+      const done = group.reduce((s, w) => s + produced(w), 0);
+      return { sequence, group, target, done, split: group.length > 1 };
+    });
+  }
+
+  // Sipariş özeti: ilerleme (zincir min(üretilen,hedef)/hedef), hesaplanan durum, termin riski.
+  function summaryOf(o) {
+    const wos = woByOrder.get(o.id) || [];
+    const hedef = wos.reduce((s, w) => s + (Number(w.targetQuantity) || 0), 0);
+    const uretilen = wos.reduce((s, w) => s + Math.min(produced(w), Number(w.targetQuantity) || 0), 0);
+    const pct = hedef > 0 ? Math.min(100, Math.round(uretilen / hedef * 100)) : 0;
+    const tamamMi = o.status === 'Tamamlandı' || (hedef > 0 && uretilen >= hedef);
+    const due = o.requestedDeliveryDate ? parseISO(o.requestedDeliveryDate) : null;
+    let eta = null;
+    if (wos.length && !tamamMi) {
+      const lastSeq = wos.reduce((m, w) => Math.max(m, w.sequence ?? 0), 0);
+      for (const w of wos.filter(w => (w.sequence ?? 0) === lastSeq)) {
+        const e = estimateCompletion(w, production, { today });
+        if (e.etaDate && (!eta || e.etaDate > eta)) eta = e.etaDate;
+      }
     }
-    return { producedByWo, prodByWo };
+    const riskli = !!(eta && due && eta > due);
+    const status = !wos.length ? 'waiting'
+      : o.status === 'İptal' ? 'stopped'
+      : tamamMi ? 'done'
+      : riskli ? 'risk' : 'active';
+    return { wos, hedef, uretilen, pct, tamamMi, due, eta, riskli, status };
+  }
+  const summaries = new Map(orders.map(o => [o.id, summaryOf(o)]));
+
+  // --- görünüm durumu ---
+  let tab = readTab();
+  let secili = null;                  // seçili sipariş id
+  let arama = '';
+  let planTarihi = '';                // sol kolon plan tarihi filtresi
+  const acikAdim = new Map();         // 'orderId|sequence' -> açık mı (elle override)
+
+  // focusId: gelen id bir iş emriyse → siparişini seç, sekmeyi Sipariş Bazlı yap, adımı aç.
+  if (params?.id != null) {
+    const w = workOrders.find(x => String(x.id) === String(params.id));
+    if (w && w.orderId != null) {
+      tab = 'siparis'; secili = w.orderId;
+      acikAdim.set(w.orderId + '|' + (w.sequence ?? 0), true);
+    }
   }
 
-  const table = new DataTable(container, {
-    title: () => t('menu.work-orders'),
-    subtitle: () => t('wo.subtitle'),
-    focusId: params?.id,   // çapraz bağlantı: #work-orders?id=… geldiğinde o satıra git
-    canWrite,
-    addLabel: () => t('wo.new'),
-    onAdd: () => openForm(null),
-    onEdit: (row) => openForm(row),
-    onDelete: (row) => remove(row),
-    load: () => api.listAll().then(r => r.data),
-    searchText: (r) => [r.woNo, products.label(r.productCodeId), centers.label(r.workCenterId)].join(' '),
-    emptyMessage: () => t('wo.empty'),
-    expand: (r) => childTable([
-      { label: t('field.date'), key: 'date' },
-      { label: t('field.shift'), render: (p) => esc(shiftLabel(p.shift)) },
-      { label: t('field.actualQuantity'), render: (p) => esc(String(p.actualQuantity ?? '—')), mono: true },
-      { label: t('field.scrap'), render: (p) => esc(String(p.scrapQuantity ?? '—')), mono: true }
-    ], prodByWo.get(r.id) || [], t('wo.noProduction')),
-    columns: [
-      { label: () => t('field.workOrderNo'), key: 'woNo', className: 'mono' },
-      { label: () => t('field.product'), render: (r) => esc(products.label(r.productCodeId)) },
-      { label: () => t('field.operation'), render: (r) => r.operationId ? esc(ops.label(r.operationId)) : '—' },
-      { label: () => t('field.workCenter'), render: (r) => r.workCenterId ? esc(centers.label(r.workCenterId)) : '—' },
-      { label: () => t('field.producedTarget'), render: (r) => `<span class="mono">${producedByWo.get(r.id) || 0} / ${r.targetQuantity}</span>` },
-      { label: () => t('field.progress'), render: (r) => progress(producedByWo.get(r.id) || 0, r.targetQuantity) },
-      { label: () => t('field.status'), render: (r) => esc(tStatus(r.status) || '—') }
-    ]
-  });
+  render();
+  bindLang(container, render);
 
-  function openForm(row) {
-    const editing = !!row;
-    if (editing) table.markActive(row.id);
-    const orderFk = new FkSelect({ source: orders.source, rows: orders.rows, value: row?.orderId ?? null, placeholder: t('wo.selectOrder') });
-    const productFk = new FkSelect({ source: products.source, rows: products.rows, value: row?.productCodeId ?? null, placeholder: t('wo.selectProduct') });
-    const opFk = new FkSelect({ source: ops.source, rows: ops.rows, value: row?.operationId ?? null, placeholder: t('wo.selectOperation') });
-    const centerFk = new FkSelect({ source: centers.source, rows: centers.rows, value: row?.workCenterId ?? null, placeholder: t('wo.selectCenter') });
-    openDrawer({
-      title: () => t(editing ? 'wo.editTitle' : 'wo.newTitle'),
-      submitLabel: () => t(editing ? 'action.update' : 'wo.open'),
-      values: editing ? { ...row } : { status: 'Aktif' },
-      fields: [
-        { name: 'woNo', label: () => t('field.workOrderNo'), type: 'text', required: true },
-        { name: 'orderId', label: () => t('menu.orders'), type: 'fk', fk: orderFk, required: true },
-        { name: 'productCodeId', label: () => t('field.product'), type: 'fk', fk: productFk, required: true },
-        { name: 'operationId', label: () => t('field.operation'), type: 'fk', fk: opFk },
-        { name: 'workCenterId', label: () => t('field.workCenter'), type: 'fk', fk: centerFk },
-        { name: 'sequence', label: () => t('field.sequence'), type: 'number' },
-        { name: 'targetQuantity', label: () => t('field.targetQuantity'), type: 'number', step: 'any', required: true },
-        { name: 'status', label: () => t('field.status'), type: 'select', required: true, options: withCurrent(WORK_ORDER_STATUS_OPTIONS.map(o => ({ value: o.value, label: tStatus(o.value) })), row?.status) },
-        { name: 'splitLabel', label: () => t('field.splitLabel'), type: 'text' }
-      ],
-      onSubmit: async (v) => (editing ? await api.update(row.id, v) : await api.create(v)).data,
-      onSaved: async (saved) => { toast(t('toast.saved'), 'success'); ({ producedByWo, prodByWo } = await loadProduction()); await table.reload(); table.flash(saved.id); },
-      onClose: () => table.markActive(null)
-    });
+  // ---------- kabuk ----------
+  function render() {
+    const woCount = workOrders.length;
+    // .content flex:1 + padding:24px verir; burada height:100% ile onu doldururuz
+    // (kaydırma panellerin/sekmenin kendi içinde). Yatay/dikey ek padding EKLENMEZ.
+    container.innerHTML = `
+      <div style="height:100%; display:flex; flex-direction:column; min-height:0;">
+        <div style="flex:none; display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap; padding-bottom:14px;">
+          <div style="min-width:0;">
+            <h2 style="margin:0;">${esc(t('menu.work-orders'))}</h2>
+            <div style="font-size:13.5px; color:var(--color-neutral-600); margin-top:5px;">${esc(t('wo.subtitleV2', { orders: orders.length, wos: woCount }))}</div>
+          </div>
+          <div id="wo-tabs" style="margin-left:auto; flex:none; display:flex; border:1px solid var(--color-neutral-400);">
+            ${TABS.map(([id, key], i) => {
+              const on = id === tab;
+              return `<button type="button" class="wo-tab" data-tab="${id}" style="height:40px; padding:0 20px; font-size:14.5px; border:0; border-left:${i === 0 ? '0' : '1px solid var(--color-neutral-400)'}; cursor:pointer; background:${on ? 'var(--color-accent-900)' : 'transparent'}; color:${on ? '#fff' : 'var(--color-text)'}; font-weight:${on ? '600' : '400'}; white-space:nowrap;">${esc(t(key))}</button>`;
+            }).join('')}
+          </div>
+        </div>
+        <div id="wo-body" style="flex:1; min-height:0;"></div>
+      </div>`;
+
+    container.querySelectorAll('.wo-tab').forEach(b => b.addEventListener('click', () => {
+      if (b.dataset.tab === tab) return;
+      tab = b.dataset.tab; writeTab(tab); render();
+    }));
+
+    if (tab === 'siparis') renderOrderTab();
+    else renderPlaceholder(tab === 'liste' ? 'wo.tabList' : 'wo.tabDowntime');
   }
 
-  async function remove(row) {
-    const ok = await confirmDialog({
-      title: t('wo.deleteTitle'),
-      body: t('wo.deleteBody', { no: row.woNo }),
-      confirmLabel: t('action.delete'), danger: true
+  function renderPlaceholder(key) {
+    const host = container.querySelector('#wo-body');
+    host.style.cssText = 'flex:1; min-height:0; overflow-y:auto;';
+    host.innerHTML = `<div style="background:#fff; border:1px solid var(--color-neutral-400); padding:48px 24px; text-align:center; color:var(--color-neutral-600); font-size:14px;">
+      ${esc(t(key))} — ${esc(t('common.loading'))}</div>`;
+  }
+
+  // ---------- SEKME 1: Sipariş Bazlı ----------
+  function renderOrderTab() {
+    const host = container.querySelector('#wo-body');
+    host.style.cssText = 'flex:1; overflow:hidden; min-height:0; display:grid; grid-template-columns:280px minmax(520px, 1fr); gap:18px;';
+    host.innerHTML = `
+      <div style="background:#fff; border:1px solid var(--color-neutral-400); display:flex; flex-direction:column; min-height:0;">
+        <div style="flex:none; padding:10px 12px; border-bottom:1px solid var(--color-neutral-300); background:var(--color-neutral-100);">
+          <input type="text" id="wo-search" value="${esc(arama)}" placeholder="${esc(t('wo.searchOrders'))}" style="width:100%; box-sizing:border-box; height:38px; padding:0 10px; font-size:13.5px; border:1px solid var(--color-neutral-400); background:#fff; color:var(--color-text);">
+          <div style="display:flex; gap:6px; align-items:center; margin-top:8px;">
+            <input type="date" id="wo-plandate" value="${esc(planTarihi)}" style="flex:1; min-width:0; box-sizing:border-box; height:36px; padding:0 8px; font-family:'IBM Plex Mono',monospace; font-size:13px; border:1px solid var(--color-neutral-400); background:#fff; color:var(--color-text);">
+            <button type="button" id="wo-planall" style="flex:none; height:36px; padding:0 10px; font-size:13px; background:transparent; border:1px solid var(--color-neutral-400); cursor:pointer;">${esc(t('wo.allBtn'))}</button>
+          </div>
+          <div id="wo-datenote" style="font-size:12px; color:var(--color-neutral-600); margin-top:6px;"></div>
+        </div>
+        <div id="wo-orderlist" style="flex:1; overflow-y:auto; min-height:0;"></div>
+      </div>
+      <div id="wo-right" style="background:#fff; border:1px solid var(--color-neutral-400); display:flex; flex-direction:column; min-height:0; min-width:0;"></div>`;
+
+    const search = host.querySelector('#wo-search');
+    search.addEventListener('input', () => { arama = search.value; renderOrderList(); });
+    host.querySelector('#wo-plandate').addEventListener('change', (e) => { planTarihi = e.target.value; renderOrderList(); });
+    host.querySelector('#wo-planall').addEventListener('click', () => { planTarihi = ''; render(); });
+
+    renderOrderList();
+    renderRightPanel();
+  }
+
+  function filteredOrders() {
+    const q = arama.trim().toLocaleLowerCase('tr');
+    const rows = orders.filter(o => {
+      const p = products.byId.get(o.productCodeId);
+      if (q && ![o.orderNo, p?.code, p?.name].some(v => v && String(v).toLocaleLowerCase('tr').includes(q))) return false;
+      if (planTarihi) {
+        const wos = woByOrder.get(o.id) || [];
+        if (!wos.some(w => planDatesByWo.get(w.id)?.has(planTarihi))) return false;
+      }
+      return true;
     });
-    if (!ok) return;
-    try { await api.remove(row.id); toast(t('toast.deleted'), 'success'); ({ producedByWo, prodByWo } = await loadProduction()); await table.reload(); }
-    catch (err) { toast(err.message, 'danger'); }
+    const rank = (o) => { const s = summaries.get(o.id).status; return s === 'done' ? 2 : s === 'stopped' ? 1 : 0; };
+    return rows.sort((a, b) => rank(a) - rank(b)
+      || String(a.requestedDeliveryDate || '~').localeCompare(String(b.requestedDeliveryDate || '~')));
+  }
+
+  function renderOrderList() {
+    const list = filteredOrders();
+    // seçili sipariş süzgeçle uyumlu değilse ilk satıra düş
+    if (!secili || !list.some(o => o.id === secili)) secili = list[0]?.id ?? null;
+
+    const note = container.querySelector('#wo-datenote');
+    if (note) note.textContent = planTarihi
+      ? t('wo.dateNoteFiltered', { n: list.length, date: fmtDateTR(planTarihi) })
+      : t('wo.dateNoteAll', { n: list.length });
+
+    const host = container.querySelector('#wo-orderlist');
+    if (list.length === 0) {
+      host.innerHTML = `<div style="padding:28px 16px; text-align:center; font-size:13.5px; color:var(--color-neutral-600);">${esc(t('wo.searchEmpty'))}</div>`;
+      renderRightPanel();
+      return;
+    }
+    host.innerHTML = list.map(o => {
+      const z = summaries.get(o.id);
+      const p = products.byId.get(o.productCodeId);
+      const on = o.id === secili;
+      const [dc, df] = statusStyle(z.status);
+      const barColor = z.riskli ? 'var(--color-danger)' : 'var(--color-success)';
+      return `<button type="button" class="wo-orow" data-id="${o.id}" style="width:100%; display:block; text-align:left; padding:12px 14px; border:0; border-bottom:1px solid var(--color-neutral-200); border-left:3px solid ${on ? 'var(--color-accent)' : 'transparent'}; background:${on ? 'var(--color-accent-100)' : '#fff'}; cursor:pointer;">
+        <div style="display:flex; align-items:baseline; gap:8px;">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:500; color:var(--color-accent-800);">${esc(p?.code || '—')}</span>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--color-neutral-600);">${esc(o.orderNo)}</span>
+        </div>
+        <div style="font-size:12.5px; color:var(--color-neutral-700); margin-top:3px;">${esc(t('wo.orderMeta', { qty: fmtTr(o.targetQuantity), date: fmtDateTR(o.requestedDeliveryDate) || '—' }))}</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:7px;">
+          <span style="display:block; flex:1; height:8px; background:var(--color-neutral-200); position:relative; min-width:60px;">
+            <i style="position:absolute; left:0; top:0; bottom:0; width:${z.pct}%; background:${barColor};"></i>
+          </span>
+          <span style="flex:none; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--color-neutral-700);">%${z.pct}</span>
+        </div>
+        <span style="display:inline-block; margin-top:7px; padding:2px 8px; font-size:12px; border:1px solid ${dc}; background:${df}; color:${dc};">${esc(statusLabel(z.status))}</span>
+      </button>`;
+    }).join('');
+    host.querySelectorAll('.wo-orow').forEach(b => b.addEventListener('click', () => {
+      const id = Number(b.dataset.id);
+      if (id === secili) return;
+      secili = id;
+      host.querySelectorAll('.wo-orow').forEach(x => {
+        const sel = Number(x.dataset.id) === secili;
+        x.style.borderLeftColor = sel ? 'var(--color-accent)' : 'transparent';
+        x.style.background = sel ? 'var(--color-accent-100)' : '#fff';
+      });
+      renderRightPanel();
+    }));
+    renderRightPanel();
+  }
+
+  function renderRightPanel() {
+    const host = container.querySelector('#wo-right');
+    if (!host) return;
+    const o = secili != null ? orderById.get(secili) : null;
+    if (!o) { host.innerHTML = ''; return; }
+    const p = products.byId.get(o.productCodeId);
+    const steps = stepsOf(o);
+
+    const headHtml = `
+      <div style="flex:none; padding:13px 18px 12px; border-bottom:1px solid var(--color-neutral-300); display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap;">
+        <div style="min-width:0;">
+          <div style="font-family:var(--font-heading); font-size:23px; font-weight:600; line-height:1.15;">${esc([p?.code, p?.name].filter(Boolean).join(' — '))}</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--color-neutral-600); margin-top:3px;">${esc(t('wo.meta', { orderNo: o.orderNo, qty: fmtTr(o.targetQuantity), n: steps.length }))}</div>
+        </div>
+      </div>`;
+
+    if (steps.length === 0) {
+      host.innerHTML = headHtml + `
+        <div style="flex:1; overflow-y:auto; min-height:0; padding:8px 18px 22px;">
+          <div style="padding:56px 24px; text-align:center;">
+            <div style="font-family:var(--font-heading); font-size:24px; font-weight:600;">${esc(t('wo.noWoTitle'))}</div>
+            <p style="margin:8px auto 0; max-width:46ch; font-size:14px; line-height:1.6; color:var(--color-neutral-700);">${esc(t('wo.noWoBody'))}</p>
+            <button type="button" id="wo-goorders" style="margin-top:18px; height:42px; padding:0 18px; font-size:14.5px; font-weight:500; background:var(--color-accent); border:1px solid var(--color-accent-700); color:#fff; cursor:pointer;">${esc(t('wo.goOrders'))}</button>
+          </div>
+        </div>`;
+      host.querySelector('#wo-goorders')?.addEventListener('click', () => { location.hash = '#orders'; });
+      return;
+    }
+
+    const firstOpen = steps.find(s => s.done < s.target) || null;
+    const body = document.createElement('div');
+    body.style.cssText = 'flex:1; overflow-y:auto; min-height:0; padding:8px 18px 22px;';
+    steps.forEach((s, i) => body.appendChild(buildStep(o, s, i, steps.length, firstOpen)));
+
+    host.innerHTML = headHtml;
+    host.appendChild(body);
+  }
+
+  function buildStep(o, s, i, total, firstOpen) {
+    const pct = s.target > 0 ? Math.min(100, Math.round(s.done / s.target * 100)) : 0;
+    const tamam = s.target > 0 && s.done >= s.target;
+    const devam = !tamam && s.done > 0;
+    const rep = s.group[0];
+    const due = o.requestedDeliveryDate ? parseISO(o.requestedDeliveryDate) : null;
+
+    // adım ETA'sı: adımdaki iş emirlerinin en geç tahmini bitişi
+    let eta = null, allComplete = true;
+    for (const w of s.group) {
+      const e = estimateCompletion(w, production, { today });
+      if (!e.complete) allComplete = false;
+      if (e.etaDate && (!eta || e.etaDate > eta)) eta = e.etaDate;
+    }
+    const gecikmeGun = (!tamam && eta && due && eta > due) ? daysBetween(due, eta) : 0;
+    const gecikme = gecikmeGun > 0;
+
+    const key = o.id + '|' + s.sequence;
+    const acik = acikAdim.has(key) ? acikAdim.get(key) : (firstOpen && firstOpen.sequence === s.sequence);
+    const [pc] = pctStyle(pct, gecikme);
+
+    const isaret = tamam ? '✓' : String(s.sequence);
+    const isaretZemin = tamam ? 'var(--color-success)' : devam ? 'var(--color-accent)' : '#fff';
+    const isaretRenk = (tamam || devam) ? '#fff' : 'var(--color-neutral-700)';
+    const isaretCerceve = gecikme ? 'var(--color-danger)' : tamam ? 'var(--color-success)' : devam ? 'var(--color-accent-700)' : 'var(--color-neutral-400)';
+    const cizgi = i === total - 1 ? 'transparent' : 'var(--color-neutral-300)';
+
+    const machines = [...new Set(s.group.map(w => centers.label(w.workCenterId)).filter(Boolean))].join(' / ');
+    const opName = ops.label(rep.operationId) || '—';
+    const woLabel = (w) => 'İE-' + w.woNo + (w.splitLabel ? '/' + w.splitLabel : '');
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid; grid-template-columns:34px minmax(0, 1fr); gap:12px;';
+    row.innerHTML = `
+      <div style="display:flex; flex-direction:column; align-items:center; padding-top:14px;">
+        <div style="width:28px; height:28px; flex:none; display:grid; place-items:center; font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:500; border:1px solid ${isaretCerceve}; background:${isaretZemin}; color:${isaretRenk};">${esc(isaret)}</div>
+        <div style="flex:1; width:1px; background:${cizgi}; min-height:14px;"></div>
+      </div>
+      <div style="min-width:0; border-bottom:1px solid var(--color-neutral-200); padding-bottom:12px;">
+        <button type="button" class="wo-step-toggle" style="width:100%; text-align:left; background:transparent; border:0; padding:12px 0 0; cursor:pointer; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;">
+          <span style="font-family:var(--font-heading); font-size:19px; font-weight:600;">${esc(opName)}</span>
+          <span style="font-size:13px; color:var(--color-neutral-600);">${esc(machines)}</span>
+          ${gecikme ? `<span style="flex:none; padding:2px 8px; font-size:12px; border:1px solid var(--color-danger); background:var(--color-danger-fill); color:var(--color-danger); white-space:nowrap;">⚠ ${esc(t('wo.delayDays', { n: gecikmeGun }))}</span>` : ''}
+          <span style="margin-left:auto; flex:none; display:flex; align-items:baseline; gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:14px;">${esc(fmtTr(s.done))} / ${esc(fmtTr(s.target))}</span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:500; width:52px; text-align:right; color:${pc};">%${pct}</span>
+          </span>
+        </button>
+        <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+          <span style="display:block; flex:1; height:8px; background:var(--color-neutral-200); position:relative; min-width:80px;">
+            <i style="position:absolute; left:0; top:0; bottom:0; width:${pct}%; background:${pc};"></i>
+          </span>
+          <span style="flex:none; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--color-neutral-600);">${esc(s.split ? '' : woLabel(rep))}</span>
+        </div>
+        ${s.split ? buildSplit(s, woLabel) : ''}
+        <div class="wo-step-detail" style="${acik ? '' : 'display:none;'}"></div>
+      </div>`;
+
+    const detail = row.querySelector('.wo-step-detail');
+    if (acik) detail.appendChild(buildDetail(o, s, { eta, allComplete, due }));
+    row.querySelector('.wo-step-toggle').addEventListener('click', () => {
+      const now = !(acikAdim.has(key) ? acikAdim.get(key) : (firstOpen && firstOpen.sequence === s.sequence));
+      acikAdim.set(key, now);
+      if (now && !detail.hasChildNodes()) detail.appendChild(buildDetail(o, s, { eta, allComplete, due }));
+      detail.style.display = now ? '' : 'none';
+    });
+    return row;
+  }
+
+  function buildSplit(s, woLabel) {
+    return `<div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">` +
+      s.group.map(w => {
+        const tgt = Number(w.targetQuantity) || 0;
+        const done = produced(w);
+        const bp = tgt > 0 ? Math.min(100, Math.round(done / tgt * 100)) : 0;
+        const [bc] = pctStyle(bp, false);
+        const label = w.splitLabel || '—';
+        return `<div style="display:flex; align-items:center; gap:10px; border:1px solid var(--color-neutral-300); background:var(--color-neutral-100); padding:8px 10px; flex-wrap:wrap;">
+          <span style="flex:none; width:22px; height:22px; display:grid; place-items:center; font-family:'IBM Plex Mono',monospace; font-size:12px; border:1px solid var(--color-accent-700); background:var(--color-accent); color:#fff;">${esc(label)}</span>
+          <span style="flex:none; font-size:13.5px;">${esc(centers.label(w.workCenterId) || '—')}</span>
+          <span style="flex:none; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--color-neutral-600);">${esc(woLabel(w))}</span>
+          <span style="display:block; flex:1 1 120px; height:8px; background:var(--color-neutral-200); position:relative; min-width:80px;">
+            <i style="position:absolute; left:0; top:0; bottom:0; width:${bp}%; background:${bc};"></i>
+          </span>
+          <span style="flex:none; font-family:'IBM Plex Mono',monospace; font-size:13px; white-space:nowrap;">${esc(fmtTr(done))} / ${esc(fmtTr(tgt))}  %${bp}</span>
+        </div>`;
+      }).join('') + `</div>`;
+  }
+
+  function buildDetail(o, s, { eta, allComplete, due }) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-top:12px; border:1px solid var(--color-neutral-300); background:var(--color-neutral-100); padding:12px 14px;';
+
+    // ETA rozeti
+    let etaText, etaC, etaF;
+    if (allComplete) { etaText = t('wo.etaDone'); etaC = 'var(--color-success)'; etaF = 'var(--color-success-fill)'; }
+    else if (eta) {
+      const meets = !due || eta <= due;
+      etaText = t('wo.etaEstimate', { date: fmtDateTR(fmtISOLocal(eta)) }) + ' · ' + (meets ? t('wo.etaMeets') : t('wo.etaMisses'));
+      etaC = meets ? 'var(--color-success)' : 'var(--color-danger)'; etaF = meets ? 'var(--color-success-fill)' : 'var(--color-danger-fill)';
+    } else { etaText = t('wo.etaNone'); etaC = 'var(--color-neutral-600)'; etaF = 'var(--color-neutral-100)'; }
+
+    // adımın tüm iş emirlerinin üretim kayıtları, tarihe göre
+    const recs = [];
+    for (const w of s.group) for (const r of (prodByWo.get(w.id) || [])) recs.push(r);
+    recs.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+
+    const cols = [
+      ['wo.colDate', 'left', '100px'], ['wo.colShift', 'left', '120px'], ['wo.colOperator', 'left', '120px'],
+      ['wo.colProduced', 'right', '90px'], ['wo.colScrap', 'right', '70px'], ['wo.colDowntime', 'left', '90px'],
+      ['wo.colNote', 'left', 'auto'],
+    ];
+
+    wrap.innerHTML = `
+      <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.12em; color:var(--color-neutral-600);">${esc(t('wo.recordsTitle'))}</span>
+        <span style="flex:none; padding:2px 8px; font-size:12.5px; border:1px solid ${etaC}; background:${etaF}; color:${etaC};">${esc(etaText)}</span>
+        <button type="button" class="wo-add-prod" style="margin-left:auto; flex:none; height:32px; padding:0 12px; font-size:13px; font-weight:500; background:var(--color-accent); border:1px solid var(--color-accent-700); color:#fff; cursor:pointer;">${esc(t('wo.addProduction'))}</button>
+      </div>` +
+      (recs.length === 0
+        ? `<div style="padding:18px; text-align:center; font-size:13px; color:var(--color-neutral-600); background:#fff; border:1px solid var(--color-neutral-300);">${esc(t('wo.noRecords'))}</div>`
+        : `<div style="overflow-x:auto; background:#fff; border:1px solid var(--color-neutral-300);">
+            <table style="width:100%; min-width:700px; border-collapse:collapse; font-size:13.5px;">
+              <thead><tr style="background:var(--color-neutral-100);">
+                ${cols.map(([k, hz, w]) => `<th style="text-align:${hz}; padding:7px 10px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.1em; color:var(--color-neutral-700); font-weight:500; border-bottom:1px solid var(--color-neutral-300); width:${w}; white-space:nowrap;">${esc(t(k))}</th>`).join('')}
+              </tr></thead>
+              <tbody>${recs.map(rowHtml).join('')}</tbody>
+            </table>
+          </div>`);
+
+    wrap.querySelector('.wo-add-prod')?.addEventListener('click', () => { location.hash = '#production'; });
+    return wrap;
+
+    function rowHtml(r) {
+      const dt = downtimeMinutes(r.downtimeStart, r.downtimeEnd, wh);
+      const note = r.note || '';
+      const mono = "font-family:'IBM Plex Mono',monospace;";
+      const td = (extra = '') => `padding:7px 10px; border-bottom:1px solid var(--color-neutral-200);${extra}`;
+      return `<tr>
+        <td style="${td(mono + 'font-size:12.5px;')}">${esc(fmtDateTR(r.date) || '—')}</td>
+        <td style="${td('white-space:nowrap;')}">${esc(r.shift ? t('shift.' + r.shift) : '—')}</td>
+        <td style="${td('white-space:nowrap;')}">${esc(operators.label(r.operatorId))}</td>
+        <td style="${td('text-align:right;' + mono + 'font-size:13px; font-weight:500;')}">${esc(fmtTr(r.actualQuantity))}</td>
+        <td style="${td('text-align:right;' + mono + 'font-size:12.5px;')}">${r.scrapQuantity ? esc(fmtTr(r.scrapQuantity)) : '—'}</td>
+        <td style="${td(mono + 'font-size:12.5px; white-space:nowrap; color:' + (dt > 0 ? 'var(--color-warning)' : 'var(--color-neutral-500)') + ';')}">${dt > 0 ? esc(fmtDuration(dt)) : '—'}</td>
+        <td title="${esc(note)}" style="${td('font-size:12.5px; color:var(--color-neutral-700); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')}">${esc(note || '—')}</td>
+      </tr>`;
+    }
+  }
+
+  // ---------- yardımcılar ----------
+  function statusLabel(code) {
+    return t({ done: 'wo.stDone', stopped: 'wo.stStopped', waiting: 'wo.stWaiting', risk: 'wo.stRisk', active: 'wo.stActive' }[code]);
+  }
+  function statusStyle(code) {
+    switch (code) {
+      case 'done': return ['var(--color-success)', 'var(--color-success-fill)'];
+      case 'stopped': return ['var(--color-neutral-600)', 'var(--color-neutral-100)'];
+      case 'waiting': return ['var(--color-warning)', 'var(--color-warning-fill)'];
+      case 'risk': return ['var(--color-danger)', 'var(--color-danger-fill)'];
+      default: return ['var(--color-accent-700)', 'var(--color-accent-100)'];
+    }
+  }
+  function pctStyle(pct, risky) {
+    if (risky) return ['var(--color-danger)', 'var(--color-danger-fill)'];
+    if (pct >= 100) return ['var(--color-success)', 'var(--color-success-fill)'];
+    if (pct > 0) return ['var(--color-accent-700)', 'var(--color-accent-100)'];
+    return ['var(--color-neutral-600)', 'var(--color-neutral-100)'];
   }
 }
 
-function progress(done, target) {
-  const tgt = Number(target) || 0;
-  const pct = tgt > 0 ? Math.min(100, Math.round((done / tgt) * 100)) : 0;
-  return `<span class="progress"><span class="bar"><i class="${pct >= 100 ? 'full' : ''}" style="width:${pct}%"></i></span><span class="pct">${pct}%</span></span>`;
-}
+function readTab() { try { const v = localStorage.getItem(TAB_LS); return TABS.some(([id]) => id === v) ? v : 'siparis'; } catch { return 'siparis'; } }
+function writeTab(v) { try { localStorage.setItem(TAB_LS, v); } catch {} }
+// Date → "YYYY-MM-DD" (yerel), fmtDateTR ile göstermek için.
+function fmtISOLocal(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
