@@ -388,6 +388,16 @@ const DICT = {
     'opr.skillsHelp': 'Bu operatörün yetkin olduğu operasyonlar (çoklu seçim).',
     'opr.updated': 'Operatör güncellendi', 'opr.added': 'Operatör eklendi', 'opr.deleted': 'Operatör silindi',
     'opr.deleteTitle': 'Operatör silinsin mi?', 'opr.deleteBody': '"{name}" ve yetkinlikleri kalıcı olarak silinecek.',
+    // Operatör — sekmeler + performans
+    'opr.tabList': 'Operatör Listesi', 'opr.tabPerf': 'Performans',
+    'opr.perfRangeWeek': 'Bu Hafta', 'opr.perfRangeMonth': 'Bu Ay', 'opr.perfRangeAll': 'Tüm Zamanlar',
+    'opr.perfTitle': 'Operatör Performans Özeti',
+    'opr.perfSub': 'Üretilen, fire oranı, hedef gerçekleşme ve duruş — Üretim Girişi\'ndeki Operatör alanına göre',
+    'opr.colOperator': 'Operatör', 'opr.colRecords': 'Kayıt Sayısı', 'opr.colProduced': 'Üretilen',
+    'opr.colScrap': 'Fire', 'opr.colScrapRate': 'Fire Oranı', 'opr.colTargetPct': 'Hedef Gerçekleşme',
+    'opr.colDowntime': 'Duruş',
+    'opr.deletedOperator': '(silinmiş operatör)',
+    'opr.perfEmpty': 'Bu dönemde operatör girilmiş üretim kaydı yok. Üretim Girişi\'nde kayıt girerken Operatör seçilmesi gerekir.',
     // Rotalar
     'rt.summary': 'Ürün → operasyon → iş merkezi → sıra · {routes} rota adımı, {products} ürün',
     'rt.new': 'Yeni Rota', 'rt.newTitle': 'Yeni Rota Adımı', 'rt.editTitle': 'Rota Adımını Düzenle',
@@ -1072,6 +1082,16 @@ const DICT = {
     'opr.skillsHelp': 'Operations this operator is qualified for (multi-select).',
     'opr.updated': 'Operator updated', 'opr.added': 'Operator added', 'opr.deleted': 'Operator deleted',
     'opr.deleteTitle': 'Delete this operator?', 'opr.deleteBody': '"{name}" and their skills will be permanently deleted.',
+    // Operator — tabs + performance
+    'opr.tabList': 'Operator List', 'opr.tabPerf': 'Performance',
+    'opr.perfRangeWeek': 'This Week', 'opr.perfRangeMonth': 'This Month', 'opr.perfRangeAll': 'All Time',
+    'opr.perfTitle': 'Operator Performance Summary',
+    'opr.perfSub': 'Produced, scrap rate, target attainment and downtime — by the Operator field in Production Entry',
+    'opr.colOperator': 'Operator', 'opr.colRecords': 'Records', 'opr.colProduced': 'Produced',
+    'opr.colScrap': 'Scrap', 'opr.colScrapRate': 'Scrap Rate', 'opr.colTargetPct': 'Target Attainment',
+    'opr.colDowntime': 'Downtime',
+    'opr.deletedOperator': '(deleted operator)',
+    'opr.perfEmpty': 'No production records with an operator in this period. An Operator must be selected when entering records in Production Entry.',
     // Routes
     'rt.summary': 'Product → operation → work center → sequence · {routes} route steps, {products} products',
     'rt.new': 'New Route', 'rt.newTitle': 'New Route Step', 'rt.editTitle': 'Edit Route Step',

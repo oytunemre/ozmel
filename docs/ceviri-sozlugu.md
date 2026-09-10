@@ -732,3 +732,19 @@ BE: `GET api/search?q=` (SearchController + SearchRepository) — product_codes 
 | search.minChars | Aramak için en az 2 karakter yazın | Type at least 2 characters to search |
 
 Düğme etiketi `action.search`, grup başlıkları `menu.*`, "sonuç yok" `common.noResultsFor`.
+
+### Ek: Operatör performans sekmesi
+
+Operatörler ekranı iki sekme (`localStorage: ozmel.opr.tab`): **Operatör Listesi** (mevcut liste aynen) + **Performans** (salt okunur özet, referans v78 `viewOperatorPerformans`). Performans dönemi bitişik düğme grubu (`localStorage: ozmel.opr.perfRange`): Bu Hafta / Bu Ay / Tüm Zamanlar. `production` kayıtları operatöre göre gruplanır — yalnız `operator_id` dolu olanlar. Hesaplar: fire oranı `fire / (üretilen + fire)` (≤%2 success · ≤%5 warning · üstü danger), hedef gerçekleşme `üretilen / Σ hedef` (`report.js:thresholdClass`, eşik 90), duruş `capacity.js:downtimeMinutes` toplamı (mola düşülmüş), biçimlendirme `format.js`. Sıralama: üretilene göre azalan. Silinmiş operatör → `(silinmiş operatör)`, satır atlanmaz. Yeni BE ucu yok; veri istemcide türetilir. `veri metnine text-transform: uppercase uygulanmaz`.
+
+| Anahtar | Türkçe | English |
+|---|---|---|
+| opr.tabList / opr.tabPerf | Operatör Listesi / Performans | Operator List / Performance |
+| opr.perfRangeWeek / opr.perfRangeMonth / opr.perfRangeAll | Bu Hafta / Bu Ay / Tüm Zamanlar | This Week / This Month / All Time |
+| opr.perfTitle | Operatör Performans Özeti | Operator Performance Summary |
+| opr.perfSub | Üretilen, fire oranı, hedef gerçekleşme ve duruş — Üretim Girişi'ndeki Operatör alanına göre | Produced, scrap rate, target attainment and downtime — by the Operator field in Production Entry |
+| opr.colOperator / opr.colRecords / opr.colProduced | Operatör / Kayıt Sayısı / Üretilen | Operator / Records / Produced |
+| opr.colScrap / opr.colScrapRate | Fire / Fire Oranı | Scrap / Scrap Rate |
+| opr.colTargetPct / opr.colDowntime | Hedef Gerçekleşme / Duruş | Target Attainment / Downtime |
+| opr.deletedOperator | (silinmiş operatör) | (deleted operator) |
+| opr.perfEmpty | Bu dönemde operatör girilmiş üretim kaydı yok. Üretim Girişi'nde kayıt girerken Operatör seçilmesi gerekir. | No production records with an operator in this period. An Operator must be selected when entering records in Production Entry. |
